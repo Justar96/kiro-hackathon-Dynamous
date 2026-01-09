@@ -3,6 +3,8 @@ import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { UserButton, SignedIn, SignedOut } from '@neondatabase/neon-js/auth/react';
 import type { QueryClient } from '@tanstack/react-query';
+import { useAuthModal } from '../components';
+import { useSessionWatcher } from '../lib/useSession';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -15,10 +17,23 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
+  // Watch for sign-out events and clear cache automatically
+  // Requirements: 2.4 - Clear all user-specific cached data on sign out
+  useSessionWatcher();
+  
   return (
     <div className="min-h-screen bg-page-bg">
+      {/* Skip to main content link for keyboard navigation (Requirement 1.7) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-accent focus:text-white focus:rounded-subtle focus:text-body-small focus:font-medium"
+      >
+        Skip to main content
+      </a>
       <Navigation />
-      <Outlet />
+      <main id="main-content" tabIndex={-1} className="outline-none">
+        <Outlet />
+      </main>
       {import.meta.env.DEV && (
         <>
           <TanStackRouterDevtools position="bottom-right" />
@@ -31,15 +46,17 @@ function RootComponent() {
 
 /**
  * Clean minimal header with logo and Neon Auth UserButton
- * Requirements: 9.1, 15.3
+ * Requirements: 9.1, 15.3, 1.7, 8.4
+ * - Keyboard accessible navigation
+ * - 44px minimum touch targets
  */
 function Navigation() {
   return (
-    <nav className="bg-paper border-b border-black/[0.08]">
+    <nav className="bg-paper border-b border-black/[0.08]" aria-label="Main navigation">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14">
           {/* Logo / Brand - Clean minimal style */}
-          <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group">
+          <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group min-h-[44px]">
             <div className="w-7 h-7 bg-text-primary rounded-subtle flex items-center justify-center">
               <span className="text-paper font-heading font-semibold text-sm">P</span>
             </div>
@@ -52,7 +69,7 @@ function Navigation() {
           <div className="flex items-center gap-3 sm:gap-6">
             <Link
               to="/"
-              className="text-text-secondary hover:text-text-primary text-body-small font-medium transition-colors hidden sm:inline"
+              className="min-h-[44px] px-2 text-text-secondary hover:text-text-primary text-body-small font-medium transition-colors hidden sm:inline-flex items-center"
               activeProps={{ className: 'text-text-primary' }}
             >
               Index
@@ -63,7 +80,7 @@ function Navigation() {
               <div className="flex items-center gap-2 sm:gap-4">
                 <Link
                   to="/debates/new"
-                  className="px-2.5 sm:px-3 py-1.5 bg-text-primary text-paper text-body-small font-medium rounded-subtle hover:bg-text-primary/90 transition-colors active:bg-text-primary/80"
+                  className="min-h-[44px] px-2.5 sm:px-3 bg-text-primary text-paper text-body-small font-medium rounded-subtle hover:bg-text-primary/90 transition-colors active:bg-text-primary/80 inline-flex items-center"
                 >
                   <span className="hidden sm:inline">New Debate</span>
                   <span className="sm:hidden">+</span>
@@ -76,27 +93,39 @@ function Navigation() {
 
             {/* Auth Section - Signed Out */}
             <SignedOut>
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Link
-                  to="/auth/$pathname"
-                  params={{ pathname: 'sign-in' }}
-                  className="text-text-secondary hover:text-text-primary text-body-small font-medium transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/auth/$pathname"
-                  params={{ pathname: 'sign-up' }}
-                  className="px-2.5 sm:px-3 py-1.5 bg-text-primary text-paper text-body-small font-medium rounded-subtle hover:bg-text-primary/90 transition-colors active:bg-text-primary/80"
-                >
-                  Sign Up
-                </Link>
-              </div>
+              <AuthButtons />
             </SignedOut>
           </div>
         </div>
       </div>
     </nav>
+  );
+}
+
+/**
+ * Auth buttons component that uses the auth modal
+ * Requirements: 1.1, 1.2, 1.7, 8.4
+ * - 44px minimum touch targets for accessibility
+ * - Keyboard accessible with visible focus indicators
+ */
+function AuthButtons() {
+  const { openSignIn, openSignUp } = useAuthModal();
+
+  return (
+    <div className="flex items-center gap-2 sm:gap-3">
+      <button
+        onClick={() => openSignIn()}
+        className="min-h-[44px] px-3 text-text-secondary hover:text-text-primary text-body-small font-medium transition-colors inline-flex items-center"
+      >
+        Sign In
+      </button>
+      <button
+        onClick={() => openSignUp()}
+        className="min-h-[44px] px-2.5 sm:px-3 bg-text-primary text-paper text-body-small font-medium rounded-subtle hover:bg-text-primary/90 transition-colors active:bg-text-primary/80 inline-flex items-center"
+      >
+        Sign Up
+      </button>
+    </div>
   );
 }
 

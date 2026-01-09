@@ -85,10 +85,11 @@ export function LeftNavRail({
           
           return (
             <li key={section.id}>
+              {/* Navigation button - 44px minimum touch target for accessibility (Requirement 8.4) */}
               <button
                 onClick={() => handleSectionClick(section.id)}
                 className={`
-                  w-full text-left py-2 pr-3 rounded-subtle transition-colors duration-150
+                  w-full text-left min-h-[44px] py-2 pr-3 rounded-subtle transition-colors duration-150
                   ${indentClass}
                   ${isActive 
                     ? 'text-accent bg-accent/5 font-medium' 

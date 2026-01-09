@@ -1,8 +1,11 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useSession } from '../lib/useSession';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createDebate } from '../lib/mutations';
+import { FormField } from '../components/FormField';
+import { useFormValidation, required, maxLength } from '../lib/useFormValidation';
+import { useAuthModal, useToast } from '../components';
 
 export const Route = createFileRoute('/debates/new')({
   component: NewDebatePage,
@@ -10,16 +13,30 @@ export const Route = createFileRoute('/debates/new')({
 
 /**
  * Debate creation form with resolution input and side selection
- * Requirements: 1.1, 1.2, 15.3
+ * Uses FormField component with validation and character count
+ * Uses auth modal for unauthenticated users
+ * Requirements: 1.1, 1.2, 1.5, 2.2, 7.1, 7.3, 7.5, 15.3
  */
 function NewDebatePage() {
   const { user } = useSession();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { openSignIn, openSignUp } = useAuthModal();
+  const { showToast } = useToast();
   
-  const [resolution, setResolution] = useState('');
   const [side, setSide] = useState<'support' | 'oppose'>('support');
-  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Form validation with useFormValidation hook
+  const form = useFormValidation({
+    resolution: {
+      initialValue: '',
+      rules: [
+        required('Resolution is required'),
+        maxLength(500, 'Resolution must be 500 characters or less'),
+      ],
+    },
+  });
 
   const createDebateMutation = useMutation({
     mutationFn: async () => {
@@ -29,18 +46,26 @@ function NewDebatePage() {
       const token = user.id;
       if (!token) throw new Error('Unable to get authentication token');
       
-      return createDebate({ resolution, creatorSide: side }, token);
+      return createDebate({ resolution: form.values.resolution, creatorSide: side }, token);
     },
     onSuccess: (debate) => {
       queryClient.invalidateQueries({ queryKey: ['debates'] });
+      showToast({
+        type: 'success',
+        message: 'Debate created successfully!',
+      });
       navigate({ to: '/debates/$debateId', params: { debateId: debate.id } });
     },
     onError: (err: Error) => {
-      setError(err.message);
+      setSubmitError(err.message);
+      showToast({
+        type: 'error',
+        message: err.message || 'Failed to create debate. Please try again.',
+      });
     },
   });
 
-  // Require authentication
+  // Require authentication - show auth modal buttons instead of links
   if (!user) {
     return (
       <div className="min-h-screen bg-page-bg">
@@ -53,20 +78,18 @@ function NewDebatePage() {
               You need to be signed in to start a new debate.
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">
-              <Link
-                to="/auth/$pathname"
-                params={{ pathname: 'sign-in' }}
+              <button
+                onClick={() => openSignIn()}
                 className="px-4 py-2 bg-text-primary text-paper text-body-small font-medium rounded-subtle hover:bg-text-primary/90 transition-colors active:bg-text-primary/80"
               >
                 Sign In
-              </Link>
-              <Link
-                to="/auth/$pathname"
-                params={{ pathname: 'sign-up' }}
+              </button>
+              <button
+                onClick={() => openSignUp()}
                 className="px-4 py-2 border border-black/[0.08] text-text-primary text-body-small font-medium rounded-subtle hover:bg-page-bg transition-colors active:bg-page-bg/80"
               >
                 Sign Up
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -74,21 +97,20 @@ function NewDebatePage() {
     );
   }
 
-  const charCount = resolution.length;
-  const isValid = charCount > 0 && charCount <= 500;
   const isSubmitting = createDebateMutation.isPending;
+  const resolutionProps = form.getFieldProps('resolution');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setSubmitError(null);
     
-    if (!isValid) {
-      setError('Resolution must be between 1 and 500 characters');
+    // Validate all fields before submission (Requirements 7.3)
+    if (!form.validateAll()) {
       return;
     }
     
     createDebateMutation.mutate();
-  };
+  }, [form, createDebateMutation]);
 
   return (
     <div className="min-h-screen bg-page-bg">
@@ -115,32 +137,26 @@ function NewDebatePage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="bg-paper rounded-small border border-black/[0.08] shadow-paper p-4 sm:p-6">
-          {/* Resolution Input */}
+          {/* Resolution Input - Using FormField component (Requirements 7.1, 7.5) */}
           <div className="mb-5 sm:mb-6">
-            <label 
-              htmlFor="resolution" 
-              className="block text-label uppercase tracking-wider text-text-secondary mb-2"
-            >
-              Resolution
-            </label>
-            <textarea
-              id="resolution"
-              value={resolution}
-              onChange={(e) => setResolution(e.target.value)}
-              placeholder="Enter a clear, debatable claim (e.g., 'Remote work reduces productivity for most teams')"
-              className="w-full px-3 sm:px-4 py-3 border border-black/[0.08] rounded-subtle text-body-small sm:text-body text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent resize-none"
-              rows={4}
+            <FormField
+              name="resolution"
+              label="Resolution"
+              type="textarea"
+              value={resolutionProps.value}
+              onChange={resolutionProps.onChange}
+              onBlur={resolutionProps.onBlur}
+              error={resolutionProps.error}
+              touched={form.touched.resolution}
+              required
               maxLength={500}
+              showCharCount={true}
+              placeholder="Enter a clear, debatable claim (e.g., 'Remote work reduces productivity for most teams')"
+              rows={4}
               disabled={isSubmitting}
+              helpText="A good resolution is specific, debatable, and takes a clear position."
+              ref={form.fieldRefs.resolution}
             />
-            <div className="mt-2 flex items-start sm:items-center justify-between gap-2">
-              <p className="text-caption text-text-tertiary flex-1">
-                A good resolution is specific, debatable, and takes a clear position.
-              </p>
-              <span className={`text-caption flex-shrink-0 ${charCount > 500 ? 'text-oppose' : 'text-text-tertiary'}`}>
-                {charCount}/500
-              </span>
-            </div>
           </div>
 
           {/* Side Selection */}
@@ -178,10 +194,10 @@ function NewDebatePage() {
             </div>
           </div>
 
-          {/* Error Message */}
-          {error && (
+          {/* Submit Error Message */}
+          {submitError && (
             <div className="mb-6 px-4 py-3 bg-oppose/10 border border-oppose/20 rounded-subtle">
-              <p className="text-body-small text-oppose">{error}</p>
+              <p className="text-body-small text-oppose">{submitError}</p>
             </div>
           )}
 
@@ -195,7 +211,7 @@ function NewDebatePage() {
             </Link>
             <button
               type="submit"
-              disabled={!isValid || isSubmitting}
+              disabled={!form.isValid || isSubmitting}
               className="px-6 py-2 bg-text-primary text-paper text-body-small font-medium rounded-subtle hover:bg-text-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Creating...' : 'Create Debate'}

@@ -1,40 +1,103 @@
 /**
  * Skeleton components for paper-style loading states
  * Subtle, calm loading indicators that match the paper aesthetic
+ * 
+ * Requirements: 4.1, 4.3 - Display skeleton loaders matching paper-clean aesthetic
  */
 
-interface SkeletonProps {
+// ============================================================================
+// Types
+// ============================================================================
+
+export type SkeletonVariant = 'text' | 'heading' | 'paragraph' | 'avatar' | 'button' | 'card';
+
+export interface SkeletonProps {
   className?: string;
+  width?: string | number;
+  height?: string | number;
+  /** Test ID for property-based testing */
+  'data-testid'?: string;
 }
+
+export interface SkeletonLoaderProps extends SkeletonProps {
+  /** The type of skeleton to render */
+  variant: SkeletonVariant;
+  /** Number of lines for paragraph variant */
+  lines?: number;
+  /** Size for avatar variant */
+  size?: 'sm' | 'md' | 'lg';
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Convert width/height to CSS value
+ */
+function toCssValue(value: string | number | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value === 'number') return `${value}px`;
+  return value;
+}
+
+// ============================================================================
+// Base Skeleton Component
+// ============================================================================
 
 /**
  * Base skeleton element with pulse animation
+ * Matches paper-clean aesthetic with warm gray tones
  */
-export function Skeleton({ className = '' }: SkeletonProps) {
+export function Skeleton({ 
+  className = '', 
+  width, 
+  height,
+  'data-testid': testId,
+}: SkeletonProps) {
+  const style: React.CSSProperties = {};
+  if (width !== undefined) style.width = toCssValue(width);
+  if (height !== undefined) style.height = toCssValue(height);
+
   return (
     <div 
       className={`bg-gray-100 rounded animate-pulse ${className}`}
+      style={Object.keys(style).length > 0 ? style : undefined}
       aria-hidden="true"
+      data-testid={testId}
+      data-skeleton="true"
     />
   );
 }
 
+// ============================================================================
+// Variant Components
+// ============================================================================
+
 /**
- * Text line skeleton
+ * Text line skeleton - single line of text
  */
 export function SkeletonText({ 
   lines = 1, 
-  className = '' 
+  className = '',
+  width,
+  height,
+  'data-testid': testId,
 }: { 
   lines?: number; 
   className?: string;
+  width?: string | number;
+  height?: string | number;
+  'data-testid'?: string;
 }) {
   return (
-    <div className={`space-y-2 ${className}`}>
+    <div className={`space-y-2 ${className}`} data-testid={testId} data-skeleton="true">
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton 
           key={i} 
-          className={`h-4 ${i === lines - 1 && lines > 1 ? 'w-3/4' : 'w-full'}`} 
+          className={`${height ? '' : 'h-4'} ${i === lines - 1 && lines > 1 ? 'w-3/4' : width ? '' : 'w-full'}`}
+          width={width}
+          height={height}
         />
       ))}
     </div>
@@ -42,19 +105,65 @@ export function SkeletonText({
 }
 
 /**
- * Heading skeleton
+ * Heading skeleton - larger text for titles
  */
-export function SkeletonHeading({ className = '' }: SkeletonProps) {
-  return <Skeleton className={`h-8 w-2/3 ${className}`} />;
+export function SkeletonHeading({ 
+  className = '',
+  width,
+  height,
+  'data-testid': testId,
+}: SkeletonProps) {
+  return (
+    <Skeleton 
+      className={`${height ? '' : 'h-8'} ${width ? '' : 'w-2/3'} ${className}`}
+      width={width}
+      height={height}
+      data-testid={testId}
+    />
+  );
 }
 
 /**
- * Avatar skeleton
+ * Paragraph skeleton - multiple lines of text with natural variation
+ */
+export function SkeletonParagraph({
+  lines = 3,
+  className = '',
+  'data-testid': testId,
+}: {
+  lines?: number;
+  className?: string;
+  'data-testid'?: string;
+}) {
+  // Create natural line width variation
+  const lineWidths = Array.from({ length: lines }).map((_, i) => {
+    if (i === lines - 1) return 'w-2/3'; // Last line shorter
+    if (i % 3 === 1) return 'w-11/12'; // Some variation
+    return 'w-full';
+  });
+
+  return (
+    <div className={`space-y-2 ${className}`} data-testid={testId} data-skeleton="true">
+      {lineWidths.map((widthClass, i) => (
+        <Skeleton key={i} className={`h-4 ${widthClass}`} />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Avatar skeleton - circular placeholder for user avatars
  */
 export function SkeletonAvatar({ 
-  size = 'md' 
+  size = 'md',
+  width,
+  height,
+  'data-testid': testId,
 }: { 
   size?: 'sm' | 'md' | 'lg';
+  width?: string | number;
+  height?: string | number;
+  'data-testid'?: string;
 }) {
   const sizeClasses = {
     sm: 'w-8 h-8',
@@ -62,19 +171,160 @@ export function SkeletonAvatar({
     lg: 'w-16 h-16',
   };
   
-  return <Skeleton className={`${sizeClasses[size]} rounded-full`} />;
+  // Use custom dimensions if provided, otherwise use size preset
+  const hasCustomDimensions = width !== undefined || height !== undefined;
+  
+  return (
+    <Skeleton 
+      className={`${hasCustomDimensions ? '' : sizeClasses[size]} rounded-full`}
+      width={width}
+      height={height}
+      data-testid={testId}
+    />
+  );
+}
+
+/**
+ * Button skeleton - placeholder for action buttons
+ */
+export function SkeletonButton({
+  className = '',
+  width,
+  height,
+  'data-testid': testId,
+}: SkeletonProps) {
+  return (
+    <Skeleton 
+      className={`${height ? '' : 'h-10'} ${width ? '' : 'w-24'} rounded-md ${className}`}
+      width={width}
+      height={height}
+      data-testid={testId}
+    />
+  );
 }
 
 /**
  * Card skeleton - paper-style card loading state
  */
-export function SkeletonCard({ className = '' }: SkeletonProps) {
+export function SkeletonCard({ 
+  className = '',
+  width,
+  height,
+  'data-testid': testId,
+}: SkeletonProps) {
   return (
-    <div className={`bg-paper rounded-small border border-gray-100 shadow-paper p-6 ${className}`}>
+    <div 
+      className={`bg-paper rounded-small border border-gray-100 shadow-paper p-6 ${className}`}
+      style={{
+        width: toCssValue(width),
+        height: toCssValue(height),
+      }}
+      data-testid={testId}
+      data-skeleton="true"
+    >
       <SkeletonHeading className="mb-4" />
-      <SkeletonText lines={3} />
+      <SkeletonParagraph lines={3} />
     </div>
   );
+}
+
+// ============================================================================
+// Unified SkeletonLoader Component
+// ============================================================================
+
+/**
+ * Unified skeleton loader component with variant support
+ * Matches paper-clean aesthetic with support for custom dimensions
+ * 
+ * Requirements: 4.1, 4.3
+ * 
+ * @example
+ * // Text skeleton
+ * <SkeletonLoader variant="text" />
+ * 
+ * // Heading with custom width
+ * <SkeletonLoader variant="heading" width={200} />
+ * 
+ * // Paragraph with 5 lines
+ * <SkeletonLoader variant="paragraph" lines={5} />
+ * 
+ * // Avatar with custom size
+ * <SkeletonLoader variant="avatar" size="lg" />
+ */
+export function SkeletonLoader({
+  variant,
+  lines = 3,
+  size = 'md',
+  className = '',
+  width,
+  height,
+  'data-testid': testId,
+}: SkeletonLoaderProps) {
+  switch (variant) {
+    case 'text':
+      return (
+        <SkeletonText 
+          lines={1} 
+          className={className} 
+          width={width} 
+          height={height}
+          data-testid={testId}
+        />
+      );
+    case 'heading':
+      return (
+        <SkeletonHeading 
+          className={className} 
+          width={width} 
+          height={height}
+          data-testid={testId}
+        />
+      );
+    case 'paragraph':
+      return (
+        <SkeletonParagraph 
+          lines={lines} 
+          className={className}
+          data-testid={testId}
+        />
+      );
+    case 'avatar':
+      return (
+        <SkeletonAvatar 
+          size={size} 
+          width={width} 
+          height={height}
+          data-testid={testId}
+        />
+      );
+    case 'button':
+      return (
+        <SkeletonButton 
+          className={className} 
+          width={width} 
+          height={height}
+          data-testid={testId}
+        />
+      );
+    case 'card':
+      return (
+        <SkeletonCard 
+          className={className} 
+          width={width} 
+          height={height}
+          data-testid={testId}
+        />
+      );
+    default:
+      return (
+        <Skeleton 
+          className={className} 
+          width={width} 
+          height={height}
+          data-testid={testId}
+        />
+      );
+  }
 }
 
 /**

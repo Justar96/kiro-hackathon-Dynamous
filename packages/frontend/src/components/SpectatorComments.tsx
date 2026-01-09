@@ -164,20 +164,22 @@ function CommentForm({
         </span>
         <div className="flex gap-2">
           {onCancel && (
+            /* Cancel button - 44px minimum touch target for accessibility (Requirement 8.4) */
             <button
               type="button"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="px-3 py-1.5 text-body-small text-text-secondary hover:text-text-primary transition-colors"
+              className="min-h-[44px] px-3 text-body-small text-text-secondary hover:text-text-primary transition-colors inline-flex items-center"
             >
               Cancel
             </button>
           )}
+          {/* Submit button - 44px minimum touch target for accessibility (Requirement 8.4) */}
           <button
             type="button"
             onClick={onSubmit}
             disabled={isSubmitting || !value.trim()}
-            className="px-4 py-1.5 bg-accent text-white text-body-small rounded-subtle hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-h-[44px] px-4 bg-accent text-white text-body-small rounded-subtle hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
           >
             {isSubmitting ? 'Posting...' : isReply ? 'Reply' : 'Post'}
           </button>
@@ -250,12 +252,12 @@ function CommentThread({
           {comment.content}
         </p>
 
-        {/* Actions */}
+        {/* Actions - 44px minimum touch target for accessibility (Requirement 8.4) */}
         {currentUserId && depth < maxDepth && (
           <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => onReplyClick(isReplying ? null : comment.id)}
-              className="text-caption text-text-tertiary hover:text-accent transition-colors"
+              className="min-h-[44px] px-2 text-caption text-text-tertiary hover:text-accent transition-colors inline-flex items-center"
             >
               {isReplying ? 'Cancel' : 'Reply'}
             </button>

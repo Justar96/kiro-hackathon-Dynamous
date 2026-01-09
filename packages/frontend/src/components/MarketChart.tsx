@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { MarketDataPoint, StanceSpike } from '@debate-platform/shared';
+import type { MarketDataPoint, StanceSpike, MarketPrice } from '@debate-platform/shared';
+import { useSSE } from '../lib';
 
 interface MarketChartProps {
   debateId: string;
@@ -11,7 +12,7 @@ interface MarketChartProps {
 /**
  * MarketChart displays a timeline visualization of stance changes with labeled spikes.
  * Supports real-time updates via SSE.
- * Requirements: 4.2, 4.3, 9.4
+ * Requirements: 4.2, 4.3, 9.1, 9.4
  */
 export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }: MarketChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,33 +28,23 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
     setLiveSpikes(spikes);
   }, [dataPoints, spikes]);
 
-  // SSE connection for real-time updates
-  useEffect(() => {
-    if (!debateId) return;
+  // SSE subscription for real-time market updates
+  // Uses the shared SSEProvider context
+  const handleMarketUpdate = useCallback((data: MarketPrice & { dataPoint?: MarketDataPoint; spike?: StanceSpike }) => {
+    if (data.dataPoint) {
+      setLiveDataPoints(prev => [...prev, data.dataPoint!]);
+    }
+    if (data.spike) {
+      setLiveSpikes(prev => [...prev, data.spike!]);
+    }
+  }, []);
 
-    const eventSource = new EventSource(`/api/debates/${debateId}/stream`);
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'market_update') {
-          setLiveDataPoints(prev => [...prev, data.dataPoint]);
-        } else if (data.type === 'spike') {
-          setLiveSpikes(prev => [...prev, data.spike]);
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    };
-
-    eventSource.onerror = () => {
-      // Reconnect handled by browser
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, [debateId]);
+  // Subscribe to market events via SSE
+  const { isConnected } = useSSE<MarketPrice & { dataPoint?: MarketDataPoint; spike?: StanceSpike }>(
+    'market',
+    handleMarketUpdate,
+    [debateId]
+  );
 
   // Handle resize
   useEffect(() => {

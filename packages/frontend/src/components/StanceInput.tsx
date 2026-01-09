@@ -138,9 +138,10 @@ export function StanceInput({
             {initialValue.supportValue}%
           </span>
         </div>
+        {/* Update stance button - 44px minimum touch target for accessibility (Requirement 8.4) */}
         <button
           onClick={() => onSubmit({ supportValue, confidence })}
-          className="mt-2 text-xs text-accent hover:underline"
+          className="mt-2 min-h-[44px] px-2 text-xs text-accent hover:underline inline-flex items-center"
         >
           Update stance
         </button>
@@ -201,7 +202,7 @@ export function StanceInput({
           />
         </div>
 
-        {/* Quick select buttons */}
+        {/* Quick select buttons - 44px minimum touch target for accessibility (Requirement 8.4) */}
         <div className="flex justify-between mt-3">
           {[0, 25, 50, 75, 100].map((value) => (
             <button
@@ -209,7 +210,7 @@ export function StanceInput({
               type="button"
               onClick={() => setSupportValue(value)}
               disabled={!isInteractive}
-              className={`px-3 py-1 text-xs rounded-full transition-colors ${
+              className={`min-w-[44px] min-h-[44px] px-3 text-xs rounded-full transition-colors inline-flex items-center justify-center ${
                 supportValue === value
                   ? 'bg-emerald-100 text-emerald-700 font-medium'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -221,7 +222,7 @@ export function StanceInput({
         </div>
       </div>
 
-      {/* Confidence Level */}
+      {/* Confidence Level - 44px minimum touch target for accessibility (Requirement 8.4) */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-3">
           How confident are you in this position?
@@ -233,7 +234,7 @@ export function StanceInput({
               type="button"
               onClick={() => setConfidence(level.value)}
               disabled={!isInteractive}
-              className={`p-3 rounded-lg border-2 transition-all text-center ${
+              className={`min-h-[44px] p-3 rounded-lg border-2 transition-all text-center ${
                 confidence === level.value
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300 bg-white'

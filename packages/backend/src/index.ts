@@ -39,7 +39,7 @@ app.use('*', logger());
 
 // CORS middleware - allow frontend origin
 app.use('*', cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: ['http://localhost:5173', 'http://localhost:8080'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -434,6 +434,10 @@ app.post('/api/debates/:id/comments', authMiddleware, async (c) => {
   
   const comment = await commentService.addComment(input);
   
+  // Broadcast comment to all connected clients
+  // Requirements: 9.2
+  broadcastCommentUpdate(debateId, comment);
+  
   return c.json({ comment }, 201);
 });
 
@@ -528,6 +532,23 @@ export async function broadcastMarketUpdate(debateId: string): Promise<void> {
   }
 }
 
+// Helper function to broadcast comment updates to all connected clients
+// Requirements: 9.2
+export function broadcastCommentUpdate(debateId: string, comment: unknown): void {
+  const connections = debateConnections.get(debateId);
+  if (!connections || connections.size === 0) return;
+  
+  const data = JSON.stringify({ event: 'comment', data: { comment } });
+  
+  for (const send of connections) {
+    try {
+      send(data);
+    } catch {
+      // Connection may be closed, will be cleaned up
+    }
+  }
+}
+
 // ============================================================================
 // User API Routes (14.6)
 // ============================================================================
@@ -604,7 +625,7 @@ app.get('/api/users/:id/debates', async (c) => {
 // ============================================================================
 
 export default {
-  port: 3000,
+  port: 8080,
   fetch: app.fetch,
 };
 

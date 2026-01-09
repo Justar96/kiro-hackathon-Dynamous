@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { debatesQueryOptions } from '../lib/queries';
-import { DebateIndexList, SkeletonDebateRow } from '../components';
+import { DebateIndexList, SkeletonDebateRow, SkeletonHeading, SkeletonText } from '../components';
 import type { Debate, MarketPrice } from '@debate-platform/shared';
 import { useQueries } from '@tanstack/react-query';
 
@@ -11,7 +11,7 @@ export const Route = createFileRoute('/')({
     return { debates };
   },
   pendingComponent: HomePagePending,
-  pendingMs: 200,
+  pendingMs: 200, // Minimum loading duration as per Requirements 4.6
   component: HomePage,
 });
 
@@ -81,10 +81,10 @@ function HomePagePending() {
   return (
     <div className="min-h-screen bg-page-bg">
       <div className="max-w-paper mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* Header skeleton */}
+        {/* Header skeleton - using enhanced skeleton components */}
         <header className="mb-8 sm:mb-10">
-          <div className="h-8 sm:h-10 w-40 sm:w-48 bg-gray-200 rounded animate-pulse" />
-          <div className="mt-3 h-4 sm:h-5 w-64 sm:w-72 bg-gray-200 rounded animate-pulse" />
+          <SkeletonHeading className="mb-3" width="12rem" />
+          <SkeletonText lines={1} className="max-w-xs" />
         </header>
 
         {/* List skeleton */}
@@ -92,20 +92,20 @@ function HomePagePending() {
           {/* Header row skeleton - hidden on mobile */}
           <div className="hidden sm:flex items-center gap-4 py-3 px-2 border-b border-gray-200 bg-page-bg/30">
             <div className="flex-1">
-              <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
+              <SkeletonText lines={1} width="5rem" height={12} />
             </div>
             <div className="w-16 flex-shrink-0">
-              <div className="h-3 w-8 mx-auto bg-gray-200 rounded animate-pulse" />
+              <SkeletonText lines={1} width="2rem" height={12} className="mx-auto" />
             </div>
             <div className="w-12 flex-shrink-0 hidden md:block">
-              <div className="h-3 w-10 mx-auto bg-gray-200 rounded animate-pulse" />
+              <SkeletonText lines={1} width="2.5rem" height={12} className="mx-auto" />
             </div>
             <div className="w-16 flex-shrink-0">
-              <div className="h-3 w-12 ml-auto bg-gray-200 rounded animate-pulse" />
+              <SkeletonText lines={1} width="3rem" height={12} className="ml-auto" />
             </div>
           </div>
 
-          {/* Row skeletons */}
+          {/* Row skeletons - matching exact dimensions of content */}
           {[1, 2, 3, 4, 5].map((i) => (
             <SkeletonDebateRow key={i} />
           ))}

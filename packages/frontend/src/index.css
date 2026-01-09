@@ -13,6 +13,33 @@
   body {
     @apply font-body text-text-primary antialiased;
   }
+  
+  /* Global focus-visible styles for keyboard navigation (Requirement 1.7) */
+  /* Only show focus ring when using keyboard, not mouse */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-page-bg;
+  }
+  
+  /* Remove default focus outline since we're using focus-visible */
+  :focus:not(:focus-visible) {
+    @apply outline-none ring-0;
+  }
+  
+  /* Ensure buttons and interactive elements have visible focus */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-page-bg;
+  }
+  
+  /* Special focus styles for modal elements */
+  [role="dialog"]:focus-visible {
+    @apply outline-none ring-2 ring-accent/50 ring-offset-0;
+  }
 }
 
 @layer components {

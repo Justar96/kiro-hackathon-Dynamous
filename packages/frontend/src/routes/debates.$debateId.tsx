@@ -4,15 +4,17 @@ import { debateDetailQueryOptions, userQueryOptions } from '../lib/queries';
 import { 
   useMarket, 
   useUserStance, 
-  useRecordPreStance, 
-  useRecordPostStance,
   useAfterStanceUnlock,
   useReadingProgress,
   useAuthToken,
   useAttributeImpact,
   useComments,
-  useAddComment,
 } from '../lib/hooks';
+import { 
+  useOptimisticStance, 
+  useOptimisticComment 
+} from '../lib/optimistic';
+import { SSEProvider, useSSEComments } from '../lib';
 import {
   ThreeColumnLayout,
   LeftNavRail,
@@ -23,6 +25,14 @@ import {
   SourceCardContainer,
   useSourceCardState,
   SpectatorComments,
+  Skeleton,
+  SkeletonHeading,
+  SkeletonText,
+  SkeletonParagraph,
+  SkeletonArgumentBlock,
+  SkeletonMarketData,
+  ConnectionStatus,
+  useToast,
 } from '../components';
 import type { NavSection, Citation } from '../components';
 import type { StanceValue, User } from '@debate-platform/shared';
@@ -36,20 +46,37 @@ export const Route = createFileRoute('/debates/$debateId')({
     return { debateDetail };
   },
   pendingComponent: DebateViewPending,
-  pendingMs: 200,
-  component: DebateView,
+  pendingMs: 200, // Minimum loading duration as per Requirements 4.6
+  component: DebateViewWrapper,
 });
+
+/**
+ * Wrapper component that provides SSE context for real-time updates.
+ * Requirements: 9.1, 9.4
+ */
+function DebateViewWrapper() {
+  const { debateId } = Route.useParams();
+  
+  return (
+    <SSEProvider debateId={debateId}>
+      <DebateView />
+      <ConnectionStatus />
+    </SSEProvider>
+  );
+}
 
 /**
  * DebateView page with dossier structure.
  * Uses ThreeColumnLayout with TOC navigation, paper content, and margin data.
+ * Uses optimistic updates for stance recording and comments.
  * 
- * Requirements: 10.1, 10.2
+ * Requirements: 3.1, 3.3, 10.1, 10.2
  */
 function DebateView() {
   const { debateDetail } = Route.useLoaderData();
   const { debateId } = Route.useParams();
   const token = useAuthToken();
+  const { showToast } = useToast();
   
   // Active section for TOC highlighting
   const [activeSection, setActiveSection] = useState('resolution');
@@ -69,9 +96,22 @@ function DebateView() {
   // User stance data
   const { data: stanceData } = useUserStance(debateId);
   
-  // Stance mutations
-  const recordPreStance = useRecordPreStance();
-  const recordPostStance = useRecordPostStance();
+  // Optimistic stance mutations (Requirements: 3.1)
+  const { recordStance, isPending: isStancePending } = useOptimisticStance({
+    debateId,
+    onSuccess: () => {
+      showToast({
+        type: 'success',
+        message: 'Stance recorded successfully!',
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        message: error.message || 'Failed to record stance. Please try again.',
+      });
+    },
+  });
   
   // Impact attribution mutation
   const attributeImpact = useAttributeImpact();
@@ -97,23 +137,15 @@ function DebateView() {
     setActiveSection(sectionId);
   }, []);
 
-  // Handle before stance submission
+  // Handle before stance submission with optimistic update
   const handleBeforeStanceSubmit = useCallback((stance: StanceValue) => {
-    recordPreStance.mutate({
-      debateId,
-      supportValue: stance.supportValue,
-      confidence: stance.confidence,
-    });
-  }, [debateId, recordPreStance]);
+    recordStance('pre', stance);
+  }, [recordStance]);
 
-  // Handle after stance submission
+  // Handle after stance submission with optimistic update
   const handleAfterStanceSubmit = useCallback((stance: StanceValue) => {
-    recordPostStance.mutate({
-      debateId,
-      supportValue: stance.supportValue,
-      confidence: stance.confidence,
-    });
-  }, [debateId, recordPostStance]);
+    recordStance('post', stance);
+  }, [recordStance]);
 
   // Handle mind changed attribution
   const handleMindChanged = useCallback((argumentId: string) => {
@@ -182,7 +214,7 @@ function DebateView() {
             onBeforeStanceSubmit={token ? handleBeforeStanceSubmit : undefined}
             onAfterStanceSubmit={token ? handleAfterStanceSubmit : undefined}
             afterUnlocked={afterUnlocked}
-            isSubmitting={recordPreStance.isPending || recordPostStance.isPending}
+            isSubmitting={isStancePending}
           />
           {/* Source card displayed in margin on citation hover */}
           {hoveredSource && (
@@ -220,9 +252,31 @@ function DebateDossierContent({
   onCitationHover,
   onMindChanged,
 }: DebateDossierContentProps) {
-  // Comments data and mutation
+  // Comments data
   const { data: comments = [] } = useComments(debateId);
-  const addComment = useAddComment();
+  const { showToast } = useToast();
+  
+  // Optimistic comment mutation (Requirements: 3.3)
+  const { addComment, isPending: isCommentPending } = useOptimisticComment({
+    debateId,
+    userId: currentUserId,
+    onSuccess: () => {
+      showToast({
+        type: 'success',
+        message: 'Comment posted!',
+      });
+    },
+    onError: (error) => {
+      showToast({
+        type: 'error',
+        message: error.message || 'Failed to post comment. Please try again.',
+      });
+    },
+  });
+
+  // Subscribe to real-time comment updates via SSE
+  // Requirements: 9.2
+  useSSEComments(debateId);
 
   // Build user map for comments
   const usersMap = useMemo(() => {
@@ -232,10 +286,10 @@ function DebateDossierContent({
     return map;
   }, [supportDebater, opposeDebater]);
 
-  // Handle adding a comment
+  // Handle adding a comment with optimistic update
   const handleAddComment = useCallback((content: string, parentId?: string | null) => {
-    addComment.mutate({ debateId, content, parentId });
-  }, [debateId, addComment]);
+    addComment(content, parentId);
+  }, [addComment]);
 
   // Convert citation hover to source hover format
   const handleCitationHover = useCallback((citation: Citation | null, position: { top: number }) => {
@@ -274,7 +328,7 @@ function DebateDossierContent({
         users={usersMap}
         currentUserId={currentUserId}
         onAddComment={handleAddComment}
-        isSubmitting={addComment.isPending}
+        isSubmitting={isCommentPending}
       />
     </article>
   );
@@ -343,89 +397,68 @@ function DebateNotFound() {
 
 /**
  * Loading skeleton for debate view.
+ * Uses enhanced skeleton components matching paper-clean aesthetic.
+ * Requirements: 4.1, 4.3
  */
 function DebateViewPending() {
   return (
     <div className="min-h-screen bg-page-bg">
       <div className="hidden lg:flex justify-center min-h-screen">
-        {/* Left Rail Skeleton */}
+        {/* Left Rail Skeleton - TOC navigation */}
         <aside className="w-rail flex-shrink-0 sticky top-0 h-screen py-8 pr-6">
           <div className="space-y-2">
-            <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-4" />
+            <SkeletonText lines={1} width="5rem" className="mb-4" />
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-8 bg-gray-100 rounded animate-pulse" />
+              <Skeleton key={i} className="h-8 w-full" />
             ))}
           </div>
         </aside>
 
-        {/* Center Paper Skeleton */}
+        {/* Center Paper Skeleton - Main content */}
         <main className="w-full max-w-paper flex-shrink-0 py-8">
           <div className="paper-surface min-h-full px-12 py-10">
-            {/* Header skeleton */}
+            {/* Header skeleton - Resolution */}
             <div className="mb-8 pb-6 border-b border-gray-100">
-              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3" />
-              <div className="h-10 w-3/4 bg-gray-200 rounded animate-pulse mb-3" />
-              <div className="h-4 w-48 bg-gray-100 rounded animate-pulse" />
+              <SkeletonText lines={1} width="6rem" className="mb-3" />
+              <SkeletonHeading className="mb-3" width="75%" />
+              <SkeletonText lines={1} width="12rem" />
             </div>
 
-            {/* Round skeletons */}
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="mb-12">
+            {/* Round skeletons - matching exact dimensions */}
+            {[1, 2, 3].map((roundNum) => (
+              <div key={roundNum} className="mb-12">
+                {/* Round header */}
                 <div className="mb-6 pb-3 border-b border-gray-100">
-                  <div className="h-7 w-48 bg-gray-200 rounded animate-pulse mb-2" />
-                  <div className="h-4 w-64 bg-gray-100 rounded animate-pulse" />
+                  <SkeletonHeading className="mb-2" width="12rem" height={28} />
+                  <SkeletonText lines={1} width="16rem" />
                 </div>
+                
+                {/* Arguments - Support and Oppose */}
                 <div className="space-y-8">
-                  <div className="space-y-3">
-                    <div className="h-3 w-12 bg-green-100 rounded animate-pulse" />
-                    <div className="h-4 w-32 bg-gray-100 rounded animate-pulse" />
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                      <div className="h-4 w-3/4 bg-gray-100 rounded animate-pulse" />
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="h-3 w-16 bg-red-100 rounded animate-pulse" />
-                    <div className="h-4 w-32 bg-gray-100 rounded animate-pulse" />
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                      <div className="h-4 w-2/3 bg-gray-100 rounded animate-pulse" />
-                    </div>
-                  </div>
+                  {/* Support argument */}
+                  <SkeletonArgumentBlock />
+                  
+                  {/* Oppose argument */}
+                  <SkeletonArgumentBlock />
                 </div>
               </div>
             ))}
           </div>
         </main>
 
-        {/* Right Margin Skeleton */}
+        {/* Right Margin Skeleton - Market data */}
         <aside className="w-margin flex-shrink-0 sticky top-0 h-screen py-8 pl-6">
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
-              <div className="h-2 bg-gray-100 rounded-full animate-pulse" />
-            </div>
-            <div className="space-y-2">
-              <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
-              <div className="h-10 bg-gray-100 rounded animate-pulse" />
-            </div>
-            <div className="space-y-2">
-              <div className="h-3 w-16 bg-gray-200 rounded animate-pulse" />
-              <div className="h-1.5 bg-gray-100 rounded-full animate-pulse" />
-            </div>
-          </div>
+          <SkeletonMarketData />
         </aside>
       </div>
 
       {/* Mobile skeleton */}
       <div className="lg:hidden pt-14 pb-20 px-4 py-6">
         <div className="paper-surface px-4 py-6">
-          <div className="h-8 w-3/4 bg-gray-200 rounded animate-pulse mb-4" />
+          <SkeletonHeading className="mb-4" width="75%" />
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 bg-gray-100 rounded animate-pulse" />
+              <Skeleton key={i} className="h-32 w-full" />
             ))}
           </div>
         </div>

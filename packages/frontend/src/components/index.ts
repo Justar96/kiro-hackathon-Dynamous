@@ -29,10 +29,23 @@ export { SpectatorComments } from './SpectatorComments';
 
 // Auth Components
 export { AuthProvider } from './AuthProvider';
+export { AuthModalProvider, useAuthModal, useRequireAuth } from './AuthModal';
+
+// Modal Components
+export { ModalOverlay } from './ModalOverlay';
+export type { ModalOverlayProps } from './ModalOverlay';
+export { BottomSheet } from './BottomSheet';
+export type { BottomSheetProps } from './BottomSheet';
+export { Modal, useIsMobile } from './Modal';
+export type { ModalProps } from './Modal';
 
 // Loading & Error Components
-export { ToastProvider, useToast } from './Toast';
-export { ErrorBoundary, InlineError } from './ErrorBoundary';
+export { ToastProvider, useToast, ToastContainer, ToastItem } from './Toast';
+export type { ToastType, ToastAction, ToastOptions, Toast, ToastContextValue } from './Toast';
+export { ErrorBoundary, ErrorFallback, InlineError } from './ErrorBoundary';
+export type { ErrorBoundaryProps, ErrorFallbackProps } from './ErrorBoundary';
+export { ErrorMessage } from './ErrorMessage';
+export type { ErrorMessageProps, ErrorMessageVariant } from './ErrorMessage';
 export { 
   Skeleton, 
   SkeletonText, 
@@ -43,4 +56,16 @@ export {
   SkeletonArgumentBlock,
   SkeletonMarketData,
   SkeletonStatCard,
+  SkeletonLoader,
+  SkeletonParagraph,
+  SkeletonButton,
 } from './Skeleton';
+export type { SkeletonProps, SkeletonLoaderProps, SkeletonVariant } from './Skeleton';
+
+// Form Components
+export { FormField } from './FormField';
+export type { FormFieldProps } from './FormField';
+
+// Connection Status
+export { ConnectionStatus } from './ConnectionStatus';
+export type { ConnectionStatusProps } from './ConnectionStatus';
