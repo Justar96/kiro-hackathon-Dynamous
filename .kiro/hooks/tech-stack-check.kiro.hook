@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "Tech Stack Compliance Check",
+  "description": "Rechecks all requirements and API documentation when tech stack configuration files are modified to ensure compliance",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "package.json",
+      "tsconfig.json",
+      "*.config.ts",
+      "*.config.js",
+      ".kiro/**/*.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A tech stack or configuration file was just modified. Please review the changes against the project's requirements and API documentation in the .kiro folder (tech.md, structure.md, product.md). Verify that: 1) Dependencies align with the specified tech stack (Bun, Hono, Drizzle, React, TanStack Router/Query, Tailwind, Stack Auth), 2) Configuration follows project conventions, 3) No conflicting or incompatible packages were introduced. Report any discrepancies or concerns."
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "debate-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "bun run --cwd packages/backend dev",
+    "dev:frontend": "bun run --cwd packages/frontend dev",
+    "build": "bun run --cwd packages/backend build && bun run --cwd packages/frontend build",
+    "test": "bun run --cwd packages/backend test && bun run --cwd packages/shared test",
+    "db:generate": "bun run --cwd packages/backend db:generate",
+    "db:migrate": "bun run --cwd packages/backend db:migrate"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+out/
+*.tgz
+
+# Bun
+# Keep bun.lock (text-based lockfile, default since v1.2)
+# Ignore legacy binary lockfile if migrating
+bun.lockb
+
+# Code coverage
+coverage/
+*.lcov
+
+# Logs
+logs/
+*.log
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Caches
+.cache/
+.eslintcache
+.turbo/
+
+# IDE
+.idea/
+*.swp
+*.swo
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database (local dev)
+*.db
+*.db-journal
+
+# TanStack Router generated files (optional - can be committed)
+# packages/frontend/.tanstack/

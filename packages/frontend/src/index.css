@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Neon Auth UI styles */
+@import '@neondatabase/neon-js/auth/react/ui/styles.css';
+
+@layer base {
+  html {
+    @apply bg-page-bg;
+  }
+  
+  body {
+    @apply font-body text-text-primary antialiased;
+  }
+}
+
+@layer components {
+  /* Typography - Headings (Serif) */
+  .heading-1 {
+    @apply font-heading text-heading-1 text-text-primary;
+  }
+  
+  .heading-2 {
+    @apply font-heading text-heading-2 text-text-primary;
+  }
+  
+  .heading-3 {
+    @apply font-heading text-heading-3 text-text-primary;
+  }
+  
+  /* Typography - Body (Sans-serif) */
+  .body-large {
+    @apply font-body text-body-large text-text-primary;
+  }
+  
+  .body-text {
+    @apply font-body text-body text-text-primary;
+  }
+  
+  .body-small {
+    @apply font-body text-body-small text-text-primary;
+  }
+  
+  /* Typography - UI Elements */
+  .label-text {
+    @apply font-body text-label uppercase tracking-wider text-text-secondary;
+  }
+  
+  .caption-text {
+    @apply font-body text-caption text-text-secondary;
+  }
+  
+  /* Paper surface */
+  .paper-surface {
+    @apply bg-paper shadow-paper rounded-subtle;
+  }
+  
+  /* Hairline border */
+  .border-hairline {
+    @apply border border-black/[0.08];
+  }
+}
+
+@layer utilities {
+  /* Animation utilities for toasts */
+  .animate-in {
+    animation: animate-in 0.2s ease-out;
+  }
+  
+  .slide-in-from-right-5 {
+    --tw-enter-translate-x: 1.25rem;
+  }
+  
+  .fade-in {
+    --tw-enter-opacity: 0;
+  }
+  
+  @keyframes animate-in {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: translateX(var(--tw-enter-translate-x, 0));
+    }
+  }
+  
+  /* Line clamp utility */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  /* Subtle check animation for stance lock */
+  .animate-check {
+    animation: check-pop 0.3s ease-out;
+  }
+  
+  @keyframes check-pop {
+    0% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    50% {
+      transform: scale(1.2);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* Delta label animation for After stance */
+  .animate-delta {
+    animation: delta-slide 0.4s ease-out;
+  }
+  
+  @keyframes delta-slide {
+    0% {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Subtle pulse for newly locked values */
+  .animate-lock {
+    animation: lock-pulse 0.5s ease-out;
+  }
+  
+  @keyframes lock-pulse {
+    0% {
+      background-color: rgba(5, 150, 105, 0.1);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+}

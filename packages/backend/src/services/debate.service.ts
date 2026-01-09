@@ -1,0 +1,426 @@
+import { eq, and } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
+import { db, debates, rounds, arguments_, users } from '../db';
+import type { 
+  Debate, 
+  Round, 
+  Argument, 
+  CreateDebateInput, 
+  CreateArgumentInput,
+  DebateResult 
+} from '@debate-platform/shared';
+import { 
+  ARGUMENT_CHAR_LIMITS, 
+  RESOLUTION_MAX_LENGTH 
+} from '@debate-platform/shared';
+
+/**
+ * DebateService handles debate lifecycle including creation,
+ * argument submission, round advancement, and conclusion.
+ */
+export class DebateService {
+  /**
+   * Create a new debate with the given resolution
+   * Per Requirements 1.1, 1.2, 1.3, 1.4, 2.1:
+   * - Validates resolution text (non-empty, <= 500 chars)
+   * - Creates debate with 50/50 market price
+   * - Assigns creator as support debater
+   * - Creates 3 rounds (opening, rebuttal, closing)
+   * 
+   * @param input - The debate creation input
+   * @returns Created debate with rounds
+   * @throws Error if resolution is invalid
+   */
+  async createDebate(input: CreateDebateInput): Promise<{ debate: Debate; rounds: Round[] }> {
+    // Validate resolution text (Requirements 1.2, 1.4)
+    if (!input.resolution || input.resolution.trim().length === 0) {
+      throw new Error('Resolution text cannot be empty');
+    }
+    
+    if (input.resolution.length > RESOLUTION_MAX_LENGTH) {
+      throw new Error(`Resolution exceeds ${RESOLUTION_MAX_LENGTH} character limit`);
+    }
+
+    // Verify creator exists
+    const creator = await db.query.users.findFirst({
+      where: eq(users.id, input.creatorId),
+    });
+
+    if (!creator) {
+      throw new Error('Creator user not found');
+    }
+
+    const debateId = nanoid();
+    const now = new Date();
+
+    // Create debate (Requirements 1.1, 1.3)
+    // Creator is assigned as support debater, initial market price is 50/50
+    const [debate] = await db.insert(debates).values({
+      id: debateId,
+      resolution: input.resolution.trim(),
+      status: 'active',
+      currentRound: 1,
+      currentTurn: 'support',
+      supportDebaterId: input.creatorId,
+      opposeDebaterId: null,
+      createdAt: now,
+      concludedAt: null,
+    }).returning();
+
+    // Create 3 rounds (Requirement 2.1)
+    const roundTypes: Array<'opening' | 'rebuttal' | 'closing'> = ['opening', 'rebuttal', 'closing'];
+    const roundsData = roundTypes.map((roundType, index) => ({
+      id: nanoid(),
+      debateId: debateId,
+      roundNumber: index + 1,
+      roundType: roundType,
+      supportArgumentId: null,
+      opposeArgumentId: null,
+      completedAt: null,
+    }));
+
+    const createdRounds = await db.insert(rounds).values(roundsData).returning();
+
+    return {
+      debate: this.mapToDebate(debate),
+      rounds: createdRounds.map(r => this.mapToRound(r)),
+    };
+  }
+
+
+  /**
+   * Submit an argument for a debate round
+   * Per Requirements 2.2, 2.3, 2.6:
+   * - Validates current turn matches submitter's side
+   * - Enforces character limits per round type
+   * - Rejects out-of-turn submissions
+   * 
+   * @param input - The argument submission input
+   * @returns Created argument
+   * @throws Error if submission is invalid
+   */
+  async submitArgument(input: CreateArgumentInput): Promise<Argument> {
+    // Get the debate
+    const debate = await db.query.debates.findFirst({
+      where: eq(debates.id, input.debateId),
+    });
+
+    if (!debate) {
+      throw new Error('Debate not found');
+    }
+
+    if (debate.status === 'concluded') {
+      throw new Error('Debate has already concluded');
+    }
+
+    // Determine which side the submitter is on
+    let submitterSide: 'support' | 'oppose' | null = null;
+    if (debate.supportDebaterId === input.debaterId) {
+      submitterSide = 'support';
+    } else if (debate.opposeDebaterId === input.debaterId) {
+      submitterSide = 'oppose';
+    }
+
+    if (!submitterSide) {
+      throw new Error('Only assigned debaters can submit arguments');
+    }
+
+    // Check turn enforcement (Requirements 2.2, 2.6)
+    if (debate.currentTurn !== submitterSide) {
+      throw new Error('It is not your turn to submit');
+    }
+
+    // Get current round
+    const currentRound = await db.query.rounds.findFirst({
+      where: and(
+        eq(rounds.debateId, input.debateId),
+        eq(rounds.roundNumber, debate.currentRound)
+      ),
+    });
+
+    if (!currentRound) {
+      throw new Error('Current round not found');
+    }
+
+    // Check if this side already submitted for this round
+    const alreadySubmitted = submitterSide === 'support' 
+      ? currentRound.supportArgumentId !== null
+      : currentRound.opposeArgumentId !== null;
+
+    if (alreadySubmitted) {
+      throw new Error('This round is already complete');
+    }
+
+    // Enforce character limits (Requirement 2.3)
+    const charLimit = ARGUMENT_CHAR_LIMITS[currentRound.roundType];
+    if (input.content.length > charLimit) {
+      throw new Error(`Argument exceeds ${charLimit} character limit for ${currentRound.roundType}`);
+    }
+
+    // Create the argument
+    const argumentId = nanoid();
+    const [argument] = await db.insert(arguments_).values({
+      id: argumentId,
+      roundId: currentRound.id,
+      debaterId: input.debaterId,
+      side: submitterSide,
+      content: input.content,
+      impactScore: 0,
+      createdAt: new Date(),
+    }).returning();
+
+    // Update round with the argument
+    if (submitterSide === 'support') {
+      await db.update(rounds)
+        .set({ supportArgumentId: argumentId })
+        .where(eq(rounds.id, currentRound.id));
+    } else {
+      await db.update(rounds)
+        .set({ opposeArgumentId: argumentId })
+        .where(eq(rounds.id, currentRound.id));
+    }
+
+    // Switch turn to the other side
+    const nextTurn = submitterSide === 'support' ? 'oppose' : 'support';
+    await db.update(debates)
+      .set({ currentTurn: nextTurn })
+      .where(eq(debates.id, input.debateId));
+
+    // Check if round is complete and advance if needed
+    await this.checkAndAdvanceRound(input.debateId);
+
+    return this.mapToArgument(argument);
+  }
+
+
+  /**
+   * Check if the current round is complete and advance to next round
+   * Per Requirements 2.4, 2.5:
+   * - Advances when both sides complete a round
+   * - Concludes debate after round 3
+   * 
+   * @param debateId - The debate ID
+   */
+  private async checkAndAdvanceRound(debateId: string): Promise<void> {
+    const debate = await db.query.debates.findFirst({
+      where: eq(debates.id, debateId),
+    });
+
+    if (!debate || debate.status === 'concluded') {
+      return;
+    }
+
+    const currentRound = await db.query.rounds.findFirst({
+      where: and(
+        eq(rounds.debateId, debateId),
+        eq(rounds.roundNumber, debate.currentRound)
+      ),
+    });
+
+    if (!currentRound) {
+      return;
+    }
+
+    // Check if both sides have submitted
+    if (currentRound.supportArgumentId && currentRound.opposeArgumentId) {
+      // Mark round as complete
+      await db.update(rounds)
+        .set({ completedAt: new Date() })
+        .where(eq(rounds.id, currentRound.id));
+
+      // Advance to next round or conclude (Requirements 2.4, 2.5)
+      if (debate.currentRound < 3) {
+        await db.update(debates)
+          .set({ 
+            currentRound: debate.currentRound + 1,
+            currentTurn: 'support' // Reset turn to support for new round
+          })
+          .where(eq(debates.id, debateId));
+      } else {
+        // Conclude debate after round 3
+        await this.concludeDebate(debateId);
+      }
+    }
+  }
+
+  /**
+   * Conclude a debate and calculate final results
+   * Per Requirement 2.5
+   * 
+   * @param debateId - The debate ID
+   * @returns Debate result
+   */
+  async concludeDebate(debateId: string): Promise<DebateResult> {
+    const debate = await db.query.debates.findFirst({
+      where: eq(debates.id, debateId),
+    });
+
+    if (!debate) {
+      throw new Error('Debate not found');
+    }
+
+    // Mark debate as concluded
+    await db.update(debates)
+      .set({ 
+        status: 'concluded',
+        concludedAt: new Date()
+      })
+      .where(eq(debates.id, debateId));
+
+    // Calculate final results (simplified for now)
+    // In a full implementation, this would aggregate stance data
+    const result: DebateResult = {
+      debateId,
+      finalSupportPrice: 50, // Will be calculated from actual stance data
+      finalOpposePrice: 50,
+      totalMindChanges: 0,
+      netPersuasionDelta: 0,
+      winnerSide: 'tie',
+    };
+
+    return result;
+  }
+
+
+  /**
+   * Get a debate by ID
+   */
+  async getDebateById(debateId: string): Promise<Debate | null> {
+    const debate = await db.query.debates.findFirst({
+      where: eq(debates.id, debateId),
+    });
+
+    return debate ? this.mapToDebate(debate) : null;
+  }
+
+  /**
+   * Get rounds for a debate
+   */
+  async getRoundsByDebateId(debateId: string): Promise<Round[]> {
+    const debateRounds = await db.query.rounds.findMany({
+      where: eq(rounds.debateId, debateId),
+      orderBy: (rounds, { asc }) => [asc(rounds.roundNumber)],
+    });
+
+    return debateRounds.map(r => this.mapToRound(r));
+  }
+
+  /**
+   * Get argument by ID
+   */
+  async getArgumentById(argumentId: string): Promise<Argument | null> {
+    const argument = await db.query.arguments_.findFirst({
+      where: eq(arguments_.id, argumentId),
+    });
+
+    return argument ? this.mapToArgument(argument) : null;
+  }
+
+  /**
+   * Get debates where a user participated (as debater or voter)
+   * Per Requirement 7.5: Show debate history in user profile
+   * Supports both platform user ID and auth user ID
+   */
+  async getUserDebateHistory(userId: string): Promise<Debate[]> {
+    const { or, eq: eqOp } = await import('drizzle-orm');
+    
+    // First, try to find the platform user ID if an auth user ID was provided
+    let platformUserId = userId;
+    const user = await db.query.users.findFirst({
+      where: eqOp(users.authUserId, userId),
+    });
+    if (user) {
+      platformUserId = user.id;
+    }
+    
+    // Get debates where user is a debater
+    const userDebates = await db.query.debates.findMany({
+      where: or(
+        eq(debates.supportDebaterId, platformUserId),
+        eq(debates.opposeDebaterId, platformUserId)
+      ),
+      orderBy: (debates, { desc }) => [desc(debates.createdAt)],
+      limit: 20,
+    });
+
+    return userDebates.map(d => this.mapToDebate(d));
+  }
+
+  /**
+   * Join a debate as the oppose debater
+   */
+  async joinDebateAsOppose(debateId: string, userId: string): Promise<Debate> {
+    const debate = await db.query.debates.findFirst({
+      where: eq(debates.id, debateId),
+    });
+
+    if (!debate) {
+      throw new Error('Debate not found');
+    }
+
+    if (debate.opposeDebaterId) {
+      throw new Error('Oppose side already taken');
+    }
+
+    if (debate.supportDebaterId === userId) {
+      throw new Error('Cannot join both sides of a debate');
+    }
+
+    const [updated] = await db.update(debates)
+      .set({ opposeDebaterId: userId })
+      .where(eq(debates.id, debateId))
+      .returning();
+
+    return this.mapToDebate(updated);
+  }
+
+  /**
+   * Map database row to Debate type
+   */
+  private mapToDebate(row: typeof debates.$inferSelect): Debate {
+    return {
+      id: row.id,
+      resolution: row.resolution,
+      status: row.status,
+      currentRound: row.currentRound as 1 | 2 | 3,
+      currentTurn: row.currentTurn,
+      supportDebaterId: row.supportDebaterId,
+      opposeDebaterId: row.opposeDebaterId,
+      createdAt: row.createdAt,
+      concludedAt: row.concludedAt,
+    };
+  }
+
+  /**
+   * Map database row to Round type
+   */
+  private mapToRound(row: typeof rounds.$inferSelect): Round {
+    return {
+      id: row.id,
+      debateId: row.debateId,
+      roundNumber: row.roundNumber as 1 | 2 | 3,
+      roundType: row.roundType,
+      supportArgumentId: row.supportArgumentId,
+      opposeArgumentId: row.opposeArgumentId,
+      completedAt: row.completedAt,
+    };
+  }
+
+  /**
+   * Map database row to Argument type
+   */
+  private mapToArgument(row: typeof arguments_.$inferSelect): Argument {
+    return {
+      id: row.id,
+      roundId: row.roundId,
+      debaterId: row.debaterId,
+      side: row.side,
+      content: row.content,
+      impactScore: row.impactScore,
+      createdAt: row.createdAt,
+    };
+  }
+}
+
+// Export singleton instance
+export const debateService = new DebateService();
