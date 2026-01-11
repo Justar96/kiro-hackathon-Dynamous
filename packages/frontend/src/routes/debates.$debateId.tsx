@@ -20,7 +20,7 @@ import {
   LeftNavRail,
   RightMarginRail,
   DossierHeader,
-  UnifiedRoundSection,
+  RoundSection,
   SourceCard,
   SourceCardContainer,
   useSourceCardState,
@@ -310,8 +310,8 @@ function DebateDossierContent({
     return map;
   }, [supportDebater, opposeDebater]);
 
-  // Build arguments structure for UnifiedRoundSection
-  // Requirements: 1.1 - UnifiedRoundSection needs arguments indexed by round number and side
+  // Build arguments structure for RoundSection
+  // Requirements: 1.1 - RoundSection needs arguments indexed by round number and side
   const roundArguments = useMemo(() => {
     const args: { [roundNumber: number]: { support?: Argument | null; oppose?: Argument | null } } = {};
     rounds.forEach((round: typeof rounds[number], index: number) => {
@@ -343,7 +343,7 @@ function DebateDossierContent({
 
       {/* Unified Debate Rounds Section */}
       {/* Requirements: 1.1, 8.1, 8.2 - Single unified component replaces three RoundSection components */}
-      <UnifiedRoundSection
+      <RoundSection
         debate={debate}
         rounds={rounds}
         supportDebater={supportDebater}

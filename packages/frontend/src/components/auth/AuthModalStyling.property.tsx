@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import { AuthModalProvider, useAuthModal } from './AuthModal';
-import { ToastProvider } from './Toast';
+import { ToastProvider } from '../common/Toast';
 
 /**
  * Feature: auth-profile-enhancements
@@ -270,7 +270,7 @@ describe('Auth Modal Styling Property Tests', () => {
           expect(screen.getByTestId('is-open').textContent).toBe('true');
 
           // Verify heading is present with correct text
-          const expectedHeading = action === 'sign-up' ? 'Join Persuasion' : 'Welcome back';
+          const expectedHeading = action === 'sign-up' ? 'Create account' : 'Sign in';
           const heading = screen.getByText(expectedHeading);
           expect(heading).toBeInTheDocument();
 

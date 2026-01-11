@@ -6,8 +6,8 @@
  */
 
 import { useRef, useCallback, useState, type TouchEvent } from 'react';
-import type { RoundNavigatorProps, RoundStep } from './UnifiedRoundSection.types';
-import { deriveRoundStates, canNavigateToRound } from './UnifiedRoundSection.utils';
+import type { RoundNavigatorProps, RoundStep } from './RoundSection.types';
+import { deriveRoundStates, canNavigateToRound } from './RoundSection.utils';
 
 // Swipe threshold in pixels to trigger navigation
 const SWIPE_THRESHOLD = 50;

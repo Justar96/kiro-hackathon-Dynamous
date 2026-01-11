@@ -1,70 +1,61 @@
-// Core UI Components
-export { ResolutionCard } from './ResolutionCard';
-export { MarketChart } from './MarketChart';
-export { StanceInput, DeltaLabel } from './StanceInput';
+// ============================================
+// Components - Main Barrel Export
+// ============================================
+// This file re-exports from subdirectory barrels to maintain
+// backward compatibility with existing imports.
 
-// Index/List Components
-export { DebateIndexRow } from './DebateIndexRow';
-export { DebateIndexList } from './DebateIndexList';
-
-// Layout Components
-export { ThreeColumnLayout } from './ThreeColumnLayout';
-export { LeftNavRail, useActiveSectionObserver, generateDebateRoundsLabel, createUnifiedTocSections } from './LeftNavRail';
-export type { NavSection } from './LeftNavRail';
-export { RightMarginRail } from './RightMarginRail';
-
-// Dossier Components
-export { DossierHeader } from './DossierHeader';
-export { ArgumentBlock, ImpactBadge, MindChangedButton } from './ArgumentBlock';
-export type { Citation } from './ArgumentBlock';
-export { 
-  EvidenceFootnote, 
-  SourceCard, 
-  SourceCardContainer,
-  useSourceCardState,
-} from './EvidenceFootnote';
-export type { EvidenceSource } from './EvidenceFootnote';
-export { RoundSection } from './RoundSection';
-export { RoundProgressIndicator } from './RoundProgressIndicator';
-export { RoundNavigator } from './RoundNavigator';
-export { RoundHistory } from './RoundHistory';
-export { ActiveRoundView } from './ActiveRoundView';
-export type { ActiveRoundViewProps } from './ActiveRoundView';
-export { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
-export type { ArgumentSubmissionFormProps } from './ArgumentSubmissionForm';
-export { UnifiedRoundSection } from './UnifiedRoundSection';
-export type { UnifiedRoundSectionProps } from './UnifiedRoundSection';
-export type { RoundProgressIndicatorProps, RoundNavigatorProps, RoundHistoryProps } from './UnifiedRoundSection.types';
-export { SpectatorComments } from './SpectatorComments';
-
+// ============================================
 // Auth Components
-export { AuthProvider, validateUsername } from './AuthProvider';
-export { AuthModalProvider, useAuthModal, useRequireAuth } from './AuthModal';
-export { UserAvatar } from './UserAvatar';
-export type { UserAvatarProps } from './UserAvatar';
-export { ProfileDropdown } from './ProfileDropdown';
-export type { ProfileDropdownProps, ProfileDropdownUser } from './ProfileDropdown';
-export { OnboardingToast, useOnboardingToast, useAutoOnboarding } from './OnboardingToast';
+// ============================================
+export {
+  // AuthProvider
+  AuthProvider,
+  validateUsername,
+  // AuthModal
+  AuthModalProvider,
+  useAuthModal,
+  useRequireAuth,
+  AuthModalContext,
+  // ProfileDropdown
+  ProfileDropdown,
+  // UserAvatar
+  UserAvatar,
+  // OnboardingToast
+  OnboardingToast,
+  useOnboardingToast,
+  useAutoOnboarding,
+} from './auth';
+export type {
+  ProfileDropdownProps,
+  ProfileDropdownUser,
+  PlatformUser,
+  UserAvatarProps,
+} from './auth';
 
-// Modal Components
-export { ModalOverlay } from './ModalOverlay';
-export type { ModalOverlayProps } from './ModalOverlay';
-export { BottomSheet } from './BottomSheet';
-export type { BottomSheetProps } from './BottomSheet';
-export { Modal, useIsMobile } from './Modal';
-export type { ModalProps } from './Modal';
-
-// Loading & Error Components
-export { ToastProvider, useToast, ToastContainer, ToastItem } from './Toast';
-export type { ToastType, ToastAction, ToastOptions, Toast, ToastContextValue } from './Toast';
-export { ErrorBoundary, ErrorFallback, InlineError } from './ErrorBoundary';
-export type { ErrorBoundaryProps, ErrorFallbackProps } from './ErrorBoundary';
-export { ErrorMessage } from './ErrorMessage';
-export type { ErrorMessageProps, ErrorMessageVariant } from './ErrorMessage';
-export { 
-  Skeleton, 
-  SkeletonText, 
-  SkeletonHeading, 
+// ============================================
+// Common Components
+// ============================================
+export {
+  // Hooks
+  useIsMobile,
+  // Modal Components
+  Modal,
+  ModalOverlay,
+  BottomSheet,
+  // Toast & Notifications
+  ToastProvider,
+  useToast,
+  ToastContainer,
+  ToastItem,
+  // Error Handling
+  ErrorBoundary,
+  ErrorFallback,
+  InlineError,
+  ErrorMessage,
+  // Loading States
+  Skeleton,
+  SkeletonText,
+  SkeletonHeading,
   SkeletonAvatar,
   SkeletonCard,
   SkeletonDebateRow,
@@ -74,13 +65,101 @@ export {
   SkeletonLoader,
   SkeletonParagraph,
   SkeletonButton,
-} from './Skeleton';
-export type { SkeletonProps, SkeletonLoaderProps, SkeletonVariant } from './Skeleton';
+  // Form Components
+  FormField,
+  // Connection Status
+  ConnectionStatus,
+} from './common';
+export type {
+  ModalProps,
+  ModalOverlayProps,
+  BottomSheetProps,
+  ToastType,
+  ToastAction,
+  ToastOptions,
+  Toast,
+  ToastContextValue,
+  ErrorBoundaryProps,
+  ErrorFallbackProps,
+  ErrorMessageProps,
+  ErrorMessageVariant,
+  SkeletonProps,
+  SkeletonLoaderProps,
+  SkeletonVariant,
+  FormFieldProps,
+  ConnectionStatusProps,
+} from './common';
 
-// Form Components
-export { FormField } from './FormField';
-export type { FormFieldProps } from './FormField';
+// ============================================
+// Debate Components
+// ============================================
+export {
+  // Core Debate Components
+  ResolutionCard,
+  DossierHeader,
+  // Argument Components
+  ArgumentBlock,
+  ImpactBadge,
+  MindChangedButton,
+  // Evidence/Citation Components
+  EvidenceFootnote,
+  SourceCard,
+  SourceCardContainer,
+  useSourceCardState,
+  // Round Components
+  RoundSection,
+  UnifiedRoundSection, // Legacy alias
+  RoundProgressIndicator,
+  RoundNavigator,
+  RoundHistory,
+  ActiveRoundView,
+  ArgumentSubmissionForm,
+  // Market Components
+  MarketChart,
+  StanceInput,
+  DeltaLabel,
+  // Comments
+  SpectatorComments,
+  // Utilities
+  getRoundLabel,
+  deriveRoundStates,
+  canNavigateToRound,
+  generateExcerpt,
+  getRoundConfig,
+  getTurnLabel,
+  getProgressText,
+} from './debate';
+export type {
+  Citation,
+  EvidenceSource,
+  RoundSectionProps,
+  UnifiedRoundSectionProps, // Legacy alias
+  ActiveRoundViewProps,
+  ArgumentSubmissionFormProps,
+  RoundProgressIndicatorProps,
+  RoundNavigatorProps,
+  RoundHistoryProps,
+  RoundStepState,
+  RoundStep,
+  RoundSummary,
+  RoundSectionState,
+  UnifiedRoundSectionState, // Legacy alias
+} from './debate';
 
-// Connection Status
-export { ConnectionStatus } from './ConnectionStatus';
-export type { ConnectionStatusProps } from './ConnectionStatus';
+// ============================================
+// Index List Components
+// ============================================
+export { DebateIndexList, DebateIndexRow } from './index-list';
+
+// ============================================
+// Layout Components
+// ============================================
+export {
+  ThreeColumnLayout,
+  LeftNavRail,
+  useActiveSectionObserver,
+  generateDebateRoundsLabel,
+  createUnifiedTocSections,
+  RightMarginRail,
+} from './layout';
+export type { NavSection } from './layout';

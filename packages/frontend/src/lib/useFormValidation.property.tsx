@@ -10,7 +10,7 @@ import {
   minLength,
   FieldConfig,
 } from './useFormValidation';
-import { FormField } from '../components/FormField';
+import { FormField } from '../components/common/FormField';
 
 /**
  * Feature: uiux-improvements

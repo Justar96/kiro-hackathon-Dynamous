@@ -8,9 +8,9 @@ import {
   type ReactNode,
 } from 'react';
 import { AuthView } from '@neondatabase/neon-js/auth/react';
-import { Modal } from './Modal';
-import { useToast } from './Toast';
-import { useSession } from '../lib/useSession';
+import { Modal } from '../common/Modal';
+import { useToast } from '../common/Toast';
+import { useSession } from '../../lib/useSession';
 import { useOnboardingToast } from './OnboardingToast';
 
 // Types for auth modal state

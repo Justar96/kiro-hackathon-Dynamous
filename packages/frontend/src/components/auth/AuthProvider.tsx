@@ -1,6 +1,6 @@
 import React from 'react';
 import { NeonAuthUIProvider } from '@neondatabase/neon-js/auth/react/ui';
-import { authClient } from '../auth';
+import { authClient } from '../../auth';
 
 interface AuthProviderProps {
   children: React.ReactNode;

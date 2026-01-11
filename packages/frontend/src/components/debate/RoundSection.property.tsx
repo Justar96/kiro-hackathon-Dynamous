@@ -1,5 +1,5 @@
 /**
- * Property-based tests for UnifiedRoundSection utilities and components.
+ * Property-based tests for RoundSection utilities and components.
  * 
  * Feature: unified-round-section, Property 2: Round State Derivation Correctness
  * Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5
@@ -14,13 +14,13 @@ import {
   generateExcerpt,
   getRoundLabel,
   getProgressText,
-} from './UnifiedRoundSection.utils';
+} from './RoundSection.utils';
 import { RoundProgressIndicator } from './RoundProgressIndicator';
 import { RoundNavigator } from './RoundNavigator';
 import { RoundHistory } from './RoundHistory';
 import { ActiveRoundView } from './ActiveRoundView';
 import { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
-import { UnifiedRoundSection } from './UnifiedRoundSection';
+import { RoundSection } from './RoundSection';
 import type { Debate, Round, Argument, User } from '@debate-platform/shared';
 import { ARGUMENT_CHAR_LIMITS } from '@debate-platform/shared';
 
@@ -69,7 +69,7 @@ const debateArb: fc.Arbitrary<Debate> = fc.record({
   concludedAt: fc.option(fc.date(), { nil: null }),
 });
 
-describe('UnifiedRoundSection Property Tests - Round State Derivation', () => {
+describe('RoundSection Property Tests - Round State Derivation', () => {
   /**
    * Property 2: Round State Derivation Correctness
    * For any combination of debate state, rounds data, and viewedRound,
@@ -1654,12 +1654,12 @@ describe('ArgumentSubmissionForm Property Tests - Character Limits', () => {
 
 
 /**
- * Property-based tests for UnifiedRoundSection container component.
+ * Property-based tests for RoundSection container component.
  * 
  * Feature: unified-round-section, Property 1: Round Display Matches Debate State
  * Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5
  */
-describe('UnifiedRoundSection Property Tests - Round Display Matches Debate State', () => {
+describe('RoundSection Property Tests - Round Display Matches Debate State', () => {
   // Generate user for debater info
   const userArb: fc.Arbitrary<User> = fc.record({
     id: fc.uuid(),
@@ -1741,7 +1741,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
                   };
 
                   const { container } = render(
-                    <UnifiedRoundSection
+                    <RoundSection
                       debate={debate}
                       rounds={rounds}
                     />
@@ -1779,7 +1779,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
             };
 
             const { container } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
               />
@@ -1814,7 +1814,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
             };
 
             const { container } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
               />
@@ -1849,7 +1849,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
             };
 
             const { container } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
               />
@@ -1885,7 +1885,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
             };
 
             const { container } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
               />
@@ -1925,7 +1925,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
                   };
 
                   const { container } = render(
-                    <UnifiedRoundSection
+                    <RoundSection
                       debate={debate}
                       rounds={rounds}
                     />
@@ -1970,7 +1970,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
             };
 
             const { container } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
               />
@@ -2010,7 +2010,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
             };
 
             const { container } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
               />
@@ -2043,7 +2043,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
             };
 
             const { container } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
               />
@@ -2088,7 +2088,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
             const currentUserId = currentTurn === 'support' ? supportDebater.id : opposeDebater.id;
 
             const { container } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={roundsWithoutArgs}
                 supportDebater={supportDebater}
@@ -2131,7 +2131,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
             const spectatorId = 'spectator-id';
 
             const { container } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
                 supportDebater={supportDebater}
@@ -2159,7 +2159,7 @@ describe('UnifiedRoundSection Property Tests - Round Display Matches Debate Stat
  * Feature: unified-round-section, Property 5: State Preservation During Updates
  * Validates: Requirements 3.6, 5.4, 5.5
  */
-describe('UnifiedRoundSection Property Tests - State Preservation During Updates', () => {
+describe('RoundSection Property Tests - State Preservation During Updates', () => {
   // Generate user for debater info
   const userArb: fc.Arbitrary<User> = fc.record({
     id: fc.uuid(),
@@ -2252,7 +2252,7 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
             };
 
             const { container, rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
                 supportDebater={supportDebater}
@@ -2275,7 +2275,7 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
             };
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
                 supportDebater={supportDebater}
@@ -2343,7 +2343,7 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
             };
 
             const { container, rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={initialDebate}
                 rounds={initialRounds}
                 supportDebater={supportDebater}
@@ -2370,7 +2370,7 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
             };
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={updatedDebate}
                 rounds={updatedRounds}
                 supportDebater={supportDebater}
@@ -2448,8 +2448,8 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
             let mindChangedCalled = false;
             const onMindChanged = () => { mindChangedCalled = true; };
 
-            const { container, rerender } = render(
-              <UnifiedRoundSection
+            const { container } = render(
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
                 supportDebater={supportDebater}
@@ -2511,7 +2511,7 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
             };
 
             const { container, rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={rounds}
                 supportDebater={supportDebater}
@@ -2533,13 +2533,13 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
               concludedAt: new Date(),
             };
 
-            const concludedRounds = rounds.map((r, i) => ({
+            const concludedRounds = rounds.map((r, _i) => ({
               ...r,
               completedAt: r.completedAt || new Date(),
             }));
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={concludedDebate}
                 rounds={concludedRounds}
                 supportDebater={supportDebater}
@@ -2613,7 +2613,7 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
             };
 
             const { rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={initialRounds}
                 supportDebater={supportDebater}
@@ -2633,7 +2633,7 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
             ];
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={updatedRounds}
                 supportDebater={supportDebater}
@@ -2660,7 +2660,7 @@ describe('UnifiedRoundSection Property Tests - State Preservation During Updates
  * Feature: unified-round-section, Property 8: Round Completion Triggers Transition
  * Validates: Requirements 7.3, 7.5
  */
-describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transition', () => {
+describe('RoundSection Property Tests - Round Completion Triggers Transition', () => {
   // Generate user for debater info
   const userArb: fc.Arbitrary<User> = fc.record({
     id: fc.uuid(),
@@ -2748,7 +2748,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             };
 
             const { container, rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={initialRounds}
                 supportDebater={supportDebater}
@@ -2770,7 +2770,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             ];
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={completedRounds}
                 supportDebater={supportDebater}
@@ -2839,7 +2839,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             };
 
             const { container, rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={initialRounds}
                 supportDebater={supportDebater}
@@ -2861,7 +2861,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             ];
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={completedRounds}
                 supportDebater={supportDebater}
@@ -2930,7 +2930,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             };
 
             const { container, rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={initialRounds}
                 supportDebater={supportDebater}
@@ -2952,7 +2952,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             ];
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={completedRounds}
                 supportDebater={supportDebater}
@@ -2975,7 +2975,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
           userArb,
           userArb,
           argumentArb,
-          (currentTurn, supportDebater, opposeDebater, newArgument) => {
+          (_currentTurn, supportDebater, opposeDebater, newArgument) => {
             // Start with Round 1 active, support argument submitted
             const initialRounds: Round[] = [
               {
@@ -3034,7 +3034,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             };
 
             const { container, rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={initialRounds}
                 supportDebater={supportDebater}
@@ -3072,7 +3072,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             };
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={updatedRounds}
                 supportDebater={supportDebater}
@@ -3148,7 +3148,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             };
 
             const { container, rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={initialRounds}
                 supportDebater={supportDebater}
@@ -3174,7 +3174,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             ];
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={completedRounds}
                 supportDebater={supportDebater}
@@ -3249,7 +3249,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             };
 
             const { rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={initialRounds}
                 supportDebater={supportDebater}
@@ -3267,7 +3267,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             });
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={completedRounds}
                 supportDebater={supportDebater}
@@ -3341,7 +3341,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             };
 
             const { rerender } = render(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={initialRounds}
                 supportDebater={supportDebater}
@@ -3361,7 +3361,7 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
             ];
 
             rerender(
-              <UnifiedRoundSection
+              <RoundSection
                 debate={debate}
                 rounds={completedRounds}
                 supportDebater={supportDebater}
@@ -3379,3 +3379,4 @@ describe('UnifiedRoundSection Property Tests - Round Completion Triggers Transit
     });
   });
 });
+

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useToast } from './Toast';
-import { useSession } from '../lib/useSession';
+import { useToast } from '../common/Toast';
+import { useSession } from '../../lib/useSession';
 
 // Storage key to track if onboarding has been shown
 const ONBOARDING_SHOWN_KEY = 'debate-platform-onboarding-shown';

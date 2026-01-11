@@ -1,11 +1,11 @@
 /**
- * Utility functions for UnifiedRoundSection component.
+ * Utility functions for RoundSection component.
  * 
  * Requirements: 2.1, 2.3, 3.5, 4.3
  */
 
 import type { Debate, Round } from '@debate-platform/shared';
-import type { RoundStep, RoundStepState } from './UnifiedRoundSection.types';
+import type { RoundStep, RoundStepState } from './RoundSection.types';
 
 /**
  * Gets the display label for a round type.

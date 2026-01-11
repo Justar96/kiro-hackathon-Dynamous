@@ -6,8 +6,8 @@
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 6.2
  */
 
-import type { RoundProgressIndicatorProps, RoundStep } from './UnifiedRoundSection.types';
-import { deriveRoundStates, getProgressText } from './UnifiedRoundSection.utils';
+import type { RoundProgressIndicatorProps, RoundStep } from './RoundSection.types';
+import { deriveRoundStates, getProgressText } from './RoundSection.utils';
 
 /**
  * Visual indicator showing debate progress through rounds.

@@ -6,10 +6,10 @@
  * Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 6.2, 6.3, 6.4
  */
 
-import { useState, useEffect } from 'react';
-import type { RoundHistoryProps, RoundSummary } from './UnifiedRoundSection.types';
-import { generateExcerpt, getRoundLabel } from './UnifiedRoundSection.utils';
-import { BottomSheet } from './BottomSheet';
+import type { RoundHistoryProps, RoundSummary } from './RoundSection.types';
+import { generateExcerpt, getRoundLabel } from './RoundSection.utils';
+import { BottomSheet } from '../common/BottomSheet';
+import { useIsMobile } from '../common/hooks';
 
 // Inline SVG icons
 function ChevronDownIcon({ className }: { className?: string }) {
@@ -34,25 +34,6 @@ function CheckCircleIcon({ className }: { className?: string }) {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );
-}
-
-/**
- * Hook to detect mobile viewport
- */
-function useIsMobile(breakpoint: number = 640): boolean {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < breakpoint);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, [breakpoint]);
-
-  return isMobile;
 }
 
 /**

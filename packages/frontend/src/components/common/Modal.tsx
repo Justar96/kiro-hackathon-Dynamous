@@ -1,9 +1,7 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { ModalOverlay, type ModalOverlayProps } from './ModalOverlay';
 import { BottomSheet, type BottomSheetProps } from './BottomSheet';
-
-// Breakpoint for mobile detection (matches Tailwind's sm breakpoint)
-const MOBILE_BREAKPOINT = 640;
+import { useIsMobile } from './hooks';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -20,30 +18,6 @@ export interface ModalProps {
   // Accessibility
   ariaLabelledBy?: string;
   ariaDescribedBy?: string;
-}
-
-/**
- * Hook to detect if viewport is mobile-sized
- */
-function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.innerWidth < MOBILE_BREAKPOINT;
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    };
-
-    // Set initial value
-    handleResize();
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  return isMobile;
 }
 
 /**
@@ -104,7 +78,7 @@ export function Modal({
   );
 }
 
-// Export the hook for external use
-export { useIsMobile };
+// Re-export the hook for external use
+export { useIsMobile } from './hooks';
 
 export default Modal;

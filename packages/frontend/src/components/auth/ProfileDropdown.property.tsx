@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { ProfileDropdown, ProfileDropdownUser, PlatformUser } from './ProfileDropdown';
-import { ToastProvider } from './Toast';
+import { ToastProvider } from '../common/Toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock the useSignOut hook
-vi.mock('../lib/useSession', () => ({
+vi.mock('../../lib/useSession', () => ({
   useSignOut: () => ({
     signOut: vi.fn().mockResolvedValue(undefined),
   }),

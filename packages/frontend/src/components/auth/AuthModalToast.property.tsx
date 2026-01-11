@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { render, screen, cleanup, act, waitFor } from '@testing-library/react';
 import { AuthModalProvider, useAuthModal } from './AuthModal';
-import { ToastProvider, useToast } from './Toast';
+import { ToastProvider, useToast } from '../common/Toast';
 import React, { useEffect, useState } from 'react';
 
 /**
@@ -32,7 +32,7 @@ const MockSessionContext = React.createContext<{
 });
 
 // Mock useSession hook
-vi.mock('../lib/useSession', () => ({
+vi.mock('../../lib/useSession', () => ({
   useSession: () => {
     const context = React.useContext(MockSessionContext);
     return {

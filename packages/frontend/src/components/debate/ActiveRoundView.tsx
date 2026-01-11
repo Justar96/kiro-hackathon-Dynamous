@@ -9,7 +9,7 @@
 import type { Round, Argument, User } from '@debate-platform/shared';
 import { ArgumentBlock, type Citation } from './ArgumentBlock';
 import { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
-import { getRoundConfig } from './UnifiedRoundSection.utils';
+import { getRoundConfig } from './RoundSection.utils';
 
 export interface ActiveRoundViewProps {
   round: Round;

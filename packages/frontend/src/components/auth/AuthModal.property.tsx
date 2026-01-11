@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { AuthModalProvider, useAuthModal } from './AuthModal';
-import { ToastProvider } from './Toast';
+import { ToastProvider } from '../common/Toast';
 
 /**
  * Feature: uiux-improvements
@@ -332,7 +332,7 @@ describe('AuthModal Property Tests', () => {
 
           // Verify title is present (for context when errors occur)
           const title = screen.getByText(
-            action === 'sign-up' ? 'Join Persuasion' : 'Welcome back'
+            action === 'sign-up' ? 'Create account' : 'Sign in'
           );
           expect(title).toBeInTheDocument();
         }),

@@ -1,4 +1,4 @@
-import { useSSEContext } from '../lib';
+import { useSSEContext } from '../../lib';
 
 /**
  * ConnectionStatus Component

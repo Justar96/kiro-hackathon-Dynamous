@@ -11,7 +11,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { useAuthToken } from './hooks';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/common/Toast';
 import { queryKeys } from './queries';
 import {
   recordPreStance,

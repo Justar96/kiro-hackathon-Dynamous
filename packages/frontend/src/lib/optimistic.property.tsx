@@ -15,7 +15,7 @@ import * as fc from 'fast-check';
 import { render, cleanup, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { ToastProvider } from '../components/Toast';
+import { ToastProvider } from '../components/common/Toast';
 import { 
   useOptimisticStance, 
   useOptimisticReaction, 

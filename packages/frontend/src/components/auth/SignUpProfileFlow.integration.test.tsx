@@ -24,7 +24,7 @@ vi.mock('@tanstack/react-router', () => ({
 
 // Import after mocking
 import { ProfileDropdown, ProfileDropdownUser, PlatformUser } from './ProfileDropdown';
-import { ToastProvider } from './Toast';
+import { ToastProvider } from '../common/Toast';
 import { validateUsername } from './AuthProvider';
 
 // Create a wrapper component for tests

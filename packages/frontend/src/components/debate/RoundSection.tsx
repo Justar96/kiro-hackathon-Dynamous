@@ -1,5 +1,5 @@
 /**
- * UnifiedRoundSection is the main container component that orchestrates round display and navigation.
+ * RoundSection is the main container component that orchestrates round display and navigation.
  * It composes RoundProgressIndicator, RoundNavigator, RoundHistory, and ActiveRoundView.
  * 
  * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.6, 5.4, 5.5, 7.5
@@ -13,7 +13,7 @@ import { RoundNavigator } from './RoundNavigator';
 import { RoundHistory } from './RoundHistory';
 import { ActiveRoundView } from './ActiveRoundView';
 
-export interface UnifiedRoundSectionProps {
+export interface RoundSectionProps {
   debate: Debate;
   rounds: Round[];
   supportDebater?: User | null;
@@ -44,7 +44,7 @@ export interface UnifiedRoundSectionProps {
 }
 
 /**
- * UnifiedRoundSection consolidates three separate round sections into a single dynamic component.
+ * RoundSection consolidates three separate round sections into a single dynamic component.
  * It displays only one round at a time, with navigation and history for completed rounds.
  * 
  * State Preservation (Requirements 3.6, 5.4, 5.5):
@@ -52,7 +52,7 @@ export interface UnifiedRoundSectionProps {
  * - "This changed my mind" attribution state is preserved across round transitions
  * - Round completion triggers auto-transition only when viewing the completing round
  */
-export function UnifiedRoundSection({
+export function RoundSection({
   debate,
   rounds,
   supportDebater,
@@ -65,7 +65,7 @@ export function UnifiedRoundSection({
   onArgumentSubmit,
   isSubmitting = false,
   onRoundComplete,
-}: UnifiedRoundSectionProps) {
+}: RoundSectionProps) {
   // State for which round the user is currently viewing
   // Defaults to the current active round, or closing round if concluded
   const [viewedRound, setViewedRound] = useState<1 | 2 | 3>(() => {
@@ -313,4 +313,7 @@ export function UnifiedRoundSection({
   );
 }
 
-export default UnifiedRoundSection;
+// Legacy alias for backward compatibility
+export const UnifiedRoundSection = RoundSection;
+
+export default RoundSection;

@@ -1,5 +1,5 @@
 /**
- * Types and interfaces for the UnifiedRoundSection component and its children.
+ * Types and interfaces for the RoundSection component and its children.
  * 
  * Requirements: 1.1, 2.4
  */
@@ -38,9 +38,9 @@ export interface RoundSummary {
 }
 
 /**
- * Props for the main UnifiedRoundSection container component.
+ * Props for the main RoundSection container component.
  */
-export interface UnifiedRoundSectionProps {
+export interface RoundSectionProps {
   debate: Debate;
   rounds: Round[];
   supportDebater?: User | null;
@@ -63,9 +63,9 @@ export interface UnifiedRoundSectionProps {
 }
 
 /**
- * Internal state for UnifiedRoundSection.
+ * Internal state for RoundSection.
  */
-export interface UnifiedRoundSectionState {
+export interface RoundSectionState {
   viewedRound: 1 | 2 | 3;
   historyExpanded: boolean;
 }
@@ -148,3 +148,7 @@ export interface ArgumentSubmissionFormProps {
   onSubmit: (content: string) => void;
   isSubmitting: boolean;
 }
+
+// Legacy aliases for backward compatibility
+export type UnifiedRoundSectionProps = RoundSectionProps;
+export type UnifiedRoundSectionState = RoundSectionState;

@@ -3,7 +3,7 @@ import { useSession } from '../lib/useSession';
 import { useState, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createDebate } from '../lib/mutations';
-import { FormField } from '../components/FormField';
+import { FormField } from '../components/common/FormField';
 import { useFormValidation, required, maxLength } from '../lib/useFormValidation';
 import { useAuthModal, useToast } from '../components';
 
