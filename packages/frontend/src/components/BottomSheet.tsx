@@ -128,10 +128,10 @@ export function BottomSheet({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50" role="presentation">
+    <div className="fixed inset-0 z-modal" role="presentation">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 animate-in fade-in duration-200"
+        className="absolute inset-0 z-overlay bg-black/50 animate-in fade-in duration-200"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -145,7 +145,7 @@ export function BottomSheet({
         aria-describedby={ariaDescribedBy}
         className={`
           absolute bottom-0 left-0 right-0
-          bg-paper rounded-t-xl shadow-lg
+          bg-paper rounded-t-xl shadow-modal
           ${isDragging ? '' : 'transition-transform duration-300 ease-out'}
           animate-in slide-in-from-bottom duration-300
         `}

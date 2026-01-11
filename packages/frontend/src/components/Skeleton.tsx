@@ -61,7 +61,7 @@ export function Skeleton({
 
   return (
     <div 
-      className={`bg-gray-100 rounded animate-pulse ${className}`}
+      className={`bg-page-bg rounded animate-pulse ${className}`}
       style={Object.keys(style).length > 0 ? style : undefined}
       aria-hidden="true"
       data-testid={testId}
@@ -214,7 +214,7 @@ export function SkeletonCard({
 }: SkeletonProps) {
   return (
     <div 
-      className={`bg-paper rounded-small border border-gray-100 shadow-paper p-6 ${className}`}
+      className={`bg-paper rounded-small border border-hairline shadow-paper p-6 ${className}`}
       style={{
         width: toCssValue(width),
         height: toCssValue(height),
@@ -332,7 +332,7 @@ export function SkeletonLoader({
  */
 export function SkeletonDebateRow() {
   return (
-    <div className="flex items-center gap-2 sm:gap-4 py-4 px-2 sm:px-3 border-b border-gray-50">
+    <div className="flex items-center gap-2 sm:gap-4 py-4 px-2 sm:px-3 border-b border-hairline">
       <div className="flex-1 min-w-0">
         <Skeleton className="h-5 w-full mb-2" />
         <div className="flex gap-2">
@@ -391,7 +391,7 @@ export function SkeletonMarketData() {
  */
 export function SkeletonStatCard() {
   return (
-    <div className="bg-paper rounded-small border border-gray-100 shadow-paper p-3 sm:p-4">
+    <div className="bg-paper rounded-small border border-hairline shadow-paper p-3 sm:p-4">
       <Skeleton className="h-3 w-20 mb-2" />
       <Skeleton className="h-8 w-16" />
       <Skeleton className="h-3 w-full mt-2 hidden sm:block" />

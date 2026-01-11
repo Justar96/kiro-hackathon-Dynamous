@@ -18,7 +18,7 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
   return (
     <div className="min-h-screen bg-page-bg">
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-paper border-b border-hairline px-4 py-3 flex items-center justify-between">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-sticky bg-paper border-b border-hairline px-4 py-3 flex items-center justify-between">
         <button
           onClick={toggleDrawer}
           className="p-2 -ml-2 text-text-secondary hover:text-text-primary"
@@ -43,14 +43,14 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
       {/* Mobile Drawer Overlay */}
       {isDrawerOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/30"
+          className="lg:hidden fixed inset-0 z-overlay bg-black/30"
           onClick={closeDrawer}
         />
       )}
 
       {/* Mobile Drawer (Left Rail) */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 bottom-0 z-50 w-rail bg-paper shadow-lg transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed top-0 left-0 bottom-0 z-modal w-rail bg-paper shadow-modal transform transition-transform duration-300 ease-in-out ${
           isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -103,14 +103,14 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
       {/* Mobile Bottom Sheet Overlay */}
       {isBottomSheetOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/30"
+          className="lg:hidden fixed inset-0 z-overlay bg-black/30"
           onClick={closeBottomSheet}
         />
       )}
 
       {/* Mobile Bottom Sheet (Right Margin) */}
       <div
-        className={`lg:hidden fixed left-0 right-0 bottom-0 z-50 bg-paper rounded-t-xl shadow-lg transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed left-0 right-0 bottom-0 z-modal bg-paper rounded-t-xl shadow-modal transform transition-transform duration-300 ease-in-out ${
           isBottomSheetOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ maxHeight: '70vh' }}
@@ -134,7 +134,7 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
 
       {/* Mobile Sticky Bottom Bar (collapsed state) */}
       {!isBottomSheetOpen && (
-        <div className="lg:hidden fixed left-0 right-0 bottom-0 z-40 bg-paper border-t border-hairline px-4 py-3">
+        <div className="lg:hidden fixed left-0 right-0 bottom-0 z-sticky bg-paper border-t border-hairline px-4 py-3">
           <button
             onClick={toggleBottomSheet}
             className="w-full flex items-center justify-between text-text-secondary"

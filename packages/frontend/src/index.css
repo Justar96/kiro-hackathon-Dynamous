@@ -5,6 +5,283 @@
 /* Neon Auth UI styles */
 @import '@neondatabase/neon-js/auth/react/ui/styles.css';
 
+/**
+ * Neon Auth UI CSS Overrides
+ * Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8
+ * 
+ * Override Neon Auth UI styles to match the platform's paper-clean aesthetic:
+ * - Font families: Inter for body, Source Serif 4 for headings
+ * - Colors: Platform color scheme (text-primary, accent, support, oppose)
+ * - Border radius: Subtle (2px) and small (4px) for paper-clean look
+ * - Error/success states: oppose (#DC2626) and support (#059669)
+ */
+
+/* Root CSS custom properties for Neon Auth UI */
+:root {
+  /* Typography - Requirements: 3.1, 3.3 */
+  --auth-font-family: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
+  --auth-heading-font-family: 'Source Serif 4', 'Literata', Georgia, serif;
+  
+  /* Colors - Requirements: 3.2, 3.4 */
+  --auth-background: #FFFFFF;
+  --auth-foreground: #111111;
+  --auth-muted: #6B7280;
+  --auth-muted-foreground: #9CA3AF;
+  --auth-primary: #111111;
+  --auth-primary-foreground: #FFFFFF;
+  --auth-accent: #2563EB;
+  --auth-accent-foreground: #FFFFFF;
+  --auth-destructive: #DC2626;
+  --auth-success: #059669;
+  --auth-border: rgba(0, 0, 0, 0.08);
+  --auth-ring: #2563EB;
+  
+  /* Spacing & Radius - Requirements: 3.4 */
+  --auth-radius: 2px;
+  --auth-radius-lg: 4px;
+}
+
+/* Neon Auth form container styling */
+[data-auth-view],
+.neon-auth-view {
+  font-family: var(--auth-font-family) !important;
+}
+
+/* Auth form headings - Requirements: 3.3 */
+[data-auth-view] h1,
+[data-auth-view] h2,
+[data-auth-view] h3,
+.neon-auth-view h1,
+.neon-auth-view h2,
+.neon-auth-view h3 {
+  font-family: var(--auth-heading-font-family) !important;
+  color: var(--auth-foreground) !important;
+}
+
+/* Auth form inputs - Requirements: 3.1, 3.4 */
+[data-auth-view] input,
+[data-auth-view] textarea,
+.neon-auth-view input,
+.neon-auth-view textarea {
+  font-family: var(--auth-font-family) !important;
+  border-radius: var(--auth-radius) !important;
+  border-color: var(--auth-border) !important;
+  background-color: var(--auth-background) !important;
+  color: var(--auth-foreground) !important;
+}
+
+[data-auth-view] input:focus,
+[data-auth-view] textarea:focus,
+.neon-auth-view input:focus,
+.neon-auth-view textarea:focus {
+  border-color: var(--auth-ring) !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+  outline: none !important;
+}
+
+[data-auth-view] input::placeholder,
+[data-auth-view] textarea::placeholder,
+.neon-auth-view input::placeholder,
+.neon-auth-view textarea::placeholder {
+  color: var(--auth-muted-foreground) !important;
+}
+
+/* Auth form labels - Requirements: 3.1 */
+[data-auth-view] label,
+.neon-auth-view label {
+  font-family: var(--auth-font-family) !important;
+  color: var(--auth-foreground) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+
+/* Primary buttons (Sign In, Sign Up) - Requirements: 3.2 */
+[data-auth-view] button[type="submit"],
+[data-auth-view] button[data-primary],
+.neon-auth-view button[type="submit"],
+.neon-auth-view button[data-primary] {
+  font-family: var(--auth-font-family) !important;
+  background-color: var(--auth-primary) !important;
+  color: var(--auth-primary-foreground) !important;
+  border-radius: var(--auth-radius) !important;
+  font-weight: 500 !important;
+  transition: background-color 0.15s ease, transform 0.1s ease !important;
+}
+
+[data-auth-view] button[type="submit"]:hover,
+[data-auth-view] button[data-primary]:hover,
+.neon-auth-view button[type="submit"]:hover,
+.neon-auth-view button[data-primary]:hover {
+  background-color: #1a1a1a !important;
+}
+
+[data-auth-view] button[type="submit"]:active,
+[data-auth-view] button[data-primary]:active,
+.neon-auth-view button[type="submit"]:active,
+.neon-auth-view button[data-primary]:active {
+  transform: scale(0.98) !important;
+}
+
+[data-auth-view] button[type="submit"]:disabled,
+[data-auth-view] button[data-primary]:disabled,
+.neon-auth-view button[type="submit"]:disabled,
+.neon-auth-view button[data-primary]:disabled {
+  background-color: var(--auth-muted) !important;
+  cursor: not-allowed !important;
+}
+
+/* OAuth/Social buttons - Requirements: 3.7 */
+[data-auth-view] button[data-social],
+[data-auth-view] [data-oauth-button],
+.neon-auth-view button[data-social],
+.neon-auth-view [data-oauth-button] {
+  font-family: var(--auth-font-family) !important;
+  background-color: var(--auth-background) !important;
+  color: var(--auth-foreground) !important;
+  border: 1px solid var(--auth-border) !important;
+  border-radius: var(--auth-radius) !important;
+  font-weight: 500 !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+
+[data-auth-view] button[data-social]:hover,
+[data-auth-view] [data-oauth-button]:hover,
+.neon-auth-view button[data-social]:hover,
+.neon-auth-view [data-oauth-button]:hover {
+  background-color: #F7F6F2 !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Error messages - Requirements: 3.5 */
+[data-auth-view] [data-error],
+[data-auth-view] [role="alert"],
+[data-auth-view] .error,
+[data-auth-view] [data-state="error"],
+.neon-auth-view [data-error],
+.neon-auth-view [role="alert"],
+.neon-auth-view .error,
+.neon-auth-view [data-state="error"] {
+  color: var(--auth-destructive) !important;
+  font-family: var(--auth-font-family) !important;
+  font-size: 0.875rem !important;
+}
+
+/* Error state for inputs */
+[data-auth-view] input[data-state="error"],
+[data-auth-view] input[aria-invalid="true"],
+.neon-auth-view input[data-state="error"],
+.neon-auth-view input[aria-invalid="true"] {
+  border-color: var(--auth-destructive) !important;
+}
+
+[data-auth-view] input[data-state="error"]:focus,
+[data-auth-view] input[aria-invalid="true"]:focus,
+.neon-auth-view input[data-state="error"]:focus,
+.neon-auth-view input[aria-invalid="true"]:focus {
+  border-color: var(--auth-destructive) !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
+}
+
+/* Success messages - Requirements: 3.6 */
+[data-auth-view] [data-success],
+[data-auth-view] [data-state="success"],
+[data-auth-view] .success,
+.neon-auth-view [data-success],
+.neon-auth-view [data-state="success"],
+.neon-auth-view .success {
+  color: var(--auth-success) !important;
+  font-family: var(--auth-font-family) !important;
+  font-size: 0.875rem !important;
+}
+
+/* Success state for inputs */
+[data-auth-view] input[data-state="success"],
+.neon-auth-view input[data-state="success"] {
+  border-color: var(--auth-success) !important;
+}
+
+[data-auth-view] input[data-state="success"]:focus,
+.neon-auth-view input[data-state="success"]:focus {
+  border-color: var(--auth-success) !important;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2) !important;
+}
+
+/* Links - Requirements: 3.8 */
+[data-auth-view] a,
+[data-auth-view] button[data-link],
+.neon-auth-view a,
+.neon-auth-view button[data-link] {
+  color: var(--auth-accent) !important;
+  font-family: var(--auth-font-family) !important;
+  text-decoration: none !important;
+  transition: color 0.15s ease !important;
+}
+
+[data-auth-view] a:hover,
+[data-auth-view] button[data-link]:hover,
+.neon-auth-view a:hover,
+.neon-auth-view button[data-link]:hover {
+  color: #1D4ED8 !important;
+  text-decoration: underline !important;
+}
+
+/* Divider/separator styling */
+[data-auth-view] [data-separator],
+[data-auth-view] hr,
+.neon-auth-view [data-separator],
+.neon-auth-view hr {
+  border-color: var(--auth-border) !important;
+}
+
+[data-auth-view] [data-separator-text],
+.neon-auth-view [data-separator-text] {
+  color: var(--auth-muted) !important;
+  font-family: var(--auth-font-family) !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Form container background - Requirements: 3.4 */
+[data-auth-view] [data-form-container],
+[data-auth-view] form,
+.neon-auth-view [data-form-container],
+.neon-auth-view form {
+  background-color: var(--auth-background) !important;
+}
+
+/* Secondary/muted text */
+[data-auth-view] [data-muted],
+[data-auth-view] p,
+.neon-auth-view [data-muted],
+.neon-auth-view p {
+  color: var(--auth-muted) !important;
+  font-family: var(--auth-font-family) !important;
+}
+
+/* Loading spinner styling */
+[data-auth-view] [data-loading],
+[data-auth-view] [role="progressbar"],
+.neon-auth-view [data-loading],
+.neon-auth-view [role="progressbar"] {
+  color: var(--auth-primary) !important;
+}
+
+/* Toggle between sign-in/sign-up text */
+[data-auth-view] [data-toggle-view],
+.neon-auth-view [data-toggle-view] {
+  font-family: var(--auth-font-family) !important;
+  color: var(--auth-muted) !important;
+}
+
+[data-auth-view] [data-toggle-view] button,
+[data-auth-view] [data-toggle-view] a,
+.neon-auth-view [data-toggle-view] button,
+.neon-auth-view [data-toggle-view] a {
+  color: var(--auth-accent) !important;
+  font-weight: 500 !important;
+}
+
 @layer base {
   html {
     @apply bg-page-bg;

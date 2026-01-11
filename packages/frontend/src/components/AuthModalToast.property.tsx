@@ -43,6 +43,17 @@ vi.mock('../lib/useSession', () => ({
   },
 }));
 
+// Mock useOnboardingToast hook - always return hasShownOnboarding as true to skip onboarding
+vi.mock('./OnboardingToast', () => ({
+  useOnboardingToast: () => ({
+    showOnboarding: vi.fn(),
+    hasShownOnboarding: true, // Always true to skip onboarding and show regular welcome toast
+    resetOnboarding: vi.fn(),
+  }),
+  OnboardingToast: () => null,
+  useAutoOnboarding: () => {},
+}));
+
 // Test component that exposes auth modal controls and toast state
 function TestAuthModalConsumer({
   onStateChange,

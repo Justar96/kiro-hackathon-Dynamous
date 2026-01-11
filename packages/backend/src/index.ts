@@ -553,6 +553,67 @@ export function broadcastCommentUpdate(debateId: string, comment: unknown): void
 // User API Routes (14.6)
 // ============================================================================
 
+// GET /api/users/check-username - Check if username is available
+// Requirements: 2.3 - Validate username uniqueness
+app.get('/api/users/check-username', async (c) => {
+  const username = c.req.query('username');
+  
+  if (!username) {
+    return c.json({ error: 'Username is required' }, 400);
+  }
+  
+  // Validate username format first
+  if (username.length < 3) {
+    return c.json({ available: false, reason: 'Username must be at least 3 characters' });
+  }
+  
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    return c.json({ available: false, reason: 'Username can only contain letters, numbers, and underscores' });
+  }
+  
+  const available = await authService.isUsernameAvailable(username);
+  
+  return c.json({ 
+    available, 
+    reason: available ? null : 'Username is already taken' 
+  });
+});
+
+// POST /api/users/profile - Create platform user profile after sign-up
+// Requirements: 2.4 - Create user profile with provided username on sign-up success
+app.post('/api/users/profile', authMiddleware, async (c) => {
+  const authUserId = c.get('authUserId');
+  const body = await c.req.json();
+  const { username } = body;
+  
+  if (!username) {
+    return c.json({ error: 'Username is required' }, 400);
+  }
+  
+  // Validate username format
+  if (username.length < 3) {
+    return c.json({ error: 'Username must be at least 3 characters' }, 400);
+  }
+  
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    return c.json({ error: 'Username can only contain letters, numbers, and underscores' }, 400);
+  }
+  
+  // Check if username is available
+  const available = await authService.isUsernameAvailable(username);
+  if (!available) {
+    return c.json({ error: 'Username is already taken' }, 409);
+  }
+  
+  try {
+    const user = await authService.createPlatformUserWithUsername(authUserId!, username);
+    return c.json({ user }, 201);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to create profile';
+    return c.json({ error: message }, 500);
+  }
+});
+
 // GET /api/users/me - Get current authenticated user
 app.get('/api/users/me', authMiddleware, async (c) => {
   const userId = c.get('userId');

@@ -17,10 +17,6 @@ import { useFormPreservation } from './useFormPreservation';
 const fieldValueArbitrary = fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9]*$/)
   .filter(s => s.length >= 1 && s.length <= 50);
 
-// Arbitrary for generating form field names
-const fieldNameArbitrary = fc.stringMatching(/^[a-z][a-zA-Z0-9]*$/)
-  .filter(s => s.length >= 2 && s.length <= 20);
-
 describe('useFormPreservation Property Tests', () => {
   beforeEach(() => {
     cleanup();

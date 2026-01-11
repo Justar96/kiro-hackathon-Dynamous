@@ -148,12 +148,12 @@ export function ModalOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-modal flex items-center justify-center"
       role="presentation"
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 animate-in fade-in duration-200"
+        className="absolute inset-0 z-overlay bg-black/50 animate-in fade-in duration-200"
         aria-hidden="true"
       />
       
@@ -172,7 +172,7 @@ export function ModalOverlay({
           tabIndex={-1}
           className={`
             relative w-full ${sizeClasses[size]}
-            bg-paper rounded-small shadow-lg
+            bg-paper rounded-small shadow-modal
             animate-in zoom-in-95 fade-in duration-200
             focus:outline-none
           `}

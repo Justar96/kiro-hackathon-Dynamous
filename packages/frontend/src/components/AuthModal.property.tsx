@@ -60,12 +60,6 @@ function TestWrapper({
 // Arbitrary for generating trigger actions
 const triggerActionArbitrary = fc.constantFrom('sign-in', 'sign-up') as fc.Arbitrary<'sign-in' | 'sign-up'>;
 
-// Arbitrary for generating optional return URLs
-const returnUrlArbitrary = fc.option(
-  fc.stringMatching(/^\/[a-z0-9/-]*$/),
-  { nil: undefined }
-);
-
 describe('AuthModal Property Tests', () => {
   beforeEach(() => {
     cleanup();
@@ -338,7 +332,7 @@ describe('AuthModal Property Tests', () => {
 
           // Verify title is present (for context when errors occur)
           const title = screen.getByText(
-            action === 'sign-up' ? 'Create your account' : 'Sign in'
+            action === 'sign-up' ? 'Join Persuasion' : 'Welcome back'
           );
           expect(title).toBeInTheDocument();
         }),

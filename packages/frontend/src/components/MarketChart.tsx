@@ -40,7 +40,7 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
   }, []);
 
   // Subscribe to market events via SSE
-  const { isConnected } = useSSE<MarketPrice & { dataPoint?: MarketDataPoint; spike?: StanceSpike }>(
+  useSSE<MarketPrice & { dataPoint?: MarketDataPoint; spike?: StanceSpike }>(
     'market',
     handleMarketUpdate,
     [debateId]
@@ -255,7 +255,7 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
     <div className="relative">
       <div 
         ref={containerRef} 
-        className="w-full h-48 bg-white rounded-lg border border-gray-200"
+        className="w-full h-48 bg-paper rounded-lg border border-hairline"
       >
         <canvas
           ref={canvasRef}
@@ -268,30 +268,30 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
       
       {/* Spike tooltip */}
       {hoveredSpike && (
-        <div className="absolute top-2 right-2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 max-w-xs z-10">
+        <div className="absolute top-2 right-2 bg-paper border border-hairline rounded-lg shadow-elevated p-3 max-w-xs z-dropdown">
           <div className="flex items-center gap-2 mb-1">
             <span 
               className={`w-2 h-2 rounded-full ${
-                hoveredSpike.direction === 'support' ? 'bg-emerald-500' : 'bg-rose-500'
+                hoveredSpike.direction === 'support' ? 'bg-support' : 'bg-oppose'
               }`} 
             />
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-text-primary">
               {hoveredSpike.direction === 'support' ? '+' : '-'}{Math.abs(hoveredSpike.deltaAmount).toFixed(1)}%
             </span>
           </div>
-          <p className="text-sm text-gray-600">{hoveredSpike.label}</p>
+          <p className="text-sm text-text-secondary">{hoveredSpike.label}</p>
         </div>
       )}
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-6 mt-3 text-xs text-gray-500">
+      <div className="flex items-center justify-center gap-6 mt-3 text-xs text-text-secondary">
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-emerald-500 rounded" />
+          <span className="w-3 h-0.5 bg-support rounded" />
           <span>Support %</span>
         </div>
         {liveSpikes.length > 0 && (
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="w-2 h-2 rounded-full bg-support" />
             <span>Stance shift</span>
           </div>
         )}

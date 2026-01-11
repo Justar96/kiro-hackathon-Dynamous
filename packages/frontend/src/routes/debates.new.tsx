@@ -65,6 +65,22 @@ function NewDebatePage() {
     },
   });
 
+  const isSubmitting = createDebateMutation.isPending;
+  const resolutionProps = form.getFieldProps('resolution');
+
+  // All hooks must be called before any early returns
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+    
+    // Validate all fields before submission (Requirements 7.3)
+    if (!form.validateAll()) {
+      return;
+    }
+    
+    createDebateMutation.mutate();
+  }, [form, createDebateMutation]);
+
   // Require authentication - show auth modal buttons instead of links
   if (!user) {
     return (
@@ -96,21 +112,6 @@ function NewDebatePage() {
       </div>
     );
   }
-
-  const isSubmitting = createDebateMutation.isPending;
-  const resolutionProps = form.getFieldProps('resolution');
-
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitError(null);
-    
-    // Validate all fields before submission (Requirements 7.3)
-    if (!form.validateAll()) {
-      return;
-    }
-    
-    createDebateMutation.mutate();
-  }, [form, createDebateMutation]);
 
   return (
     <div className="min-h-screen bg-page-bg">

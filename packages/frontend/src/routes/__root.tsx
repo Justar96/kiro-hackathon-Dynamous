@@ -1,10 +1,10 @@
 import { createRootRouteWithContext, Outlet, Link } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { UserButton, SignedIn, SignedOut } from '@neondatabase/neon-js/auth/react';
 import type { QueryClient } from '@tanstack/react-query';
-import { useAuthModal } from '../components';
-import { useSessionWatcher } from '../lib/useSession';
+import { useAuthModal, ProfileDropdown } from '../components';
+import { useSessionWatcher, useSession } from '../lib/useSession';
+import { useCurrentUser } from '../lib/hooks';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -45,12 +45,26 @@ function RootComponent() {
 }
 
 /**
- * Clean minimal header with logo and Neon Auth UserButton
+ * Clean minimal header with logo and custom ProfileDropdown
  * Requirements: 9.1, 15.3, 1.7, 8.4
  * - Keyboard accessible navigation
  * - 44px minimum touch targets
+ * Requirements: 1.1 - Display dropdown menu when clicking avatar
+ * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5 - Display user info, sandbox status, reputation
  */
 function Navigation() {
+  const { user, isLoading } = useSession();
+  const { data: currentUserData, isLoading: isLoadingPlatformUser } = useCurrentUser();
+
+  // Map platform user data to ProfileDropdown format
+  const platformUser = currentUserData?.user ? {
+    id: currentUserData.user.id,
+    username: currentUserData.user.username,
+    reputationScore: currentUserData.user.reputationScore,
+    sandboxCompleted: currentUserData.user.sandboxCompleted,
+    debatesParticipated: currentUserData.user.debatesParticipated,
+  } : null;
+
   return (
     <nav className="bg-paper border-b border-black/[0.08]" aria-label="Main navigation">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
@@ -76,7 +90,7 @@ function Navigation() {
             </Link>
 
             {/* Auth Section - Signed In */}
-            <SignedIn>
+            {!isLoading && user && (
               <div className="flex items-center gap-2 sm:gap-4">
                 <Link
                   to="/debates/new"
@@ -85,16 +99,28 @@ function Navigation() {
                   <span className="hidden sm:inline">New Debate</span>
                   <span className="sm:hidden">+</span>
                 </Link>
-                <div className="ml-0.5 sm:ml-1">
-                  <UserButton />
-                </div>
+                <ProfileDropdown
+                  user={{
+                    id: user.id,
+                    name: user.name || null,
+                    email: user.email,
+                    image: user.image || null,
+                  }}
+                  platformUser={platformUser}
+                  showName={false}
+                />
               </div>
-            </SignedIn>
+            )}
 
             {/* Auth Section - Signed Out */}
-            <SignedOut>
+            {!isLoading && !user && (
               <AuthButtons />
-            </SignedOut>
+            )}
+
+            {/* Loading state */}
+            {isLoading && (
+              <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+            )}
           </div>
         </div>
       </div>
@@ -103,29 +129,22 @@ function Navigation() {
 }
 
 /**
- * Auth buttons component that uses the auth modal
- * Requirements: 1.1, 1.2, 1.7, 8.4
+ * Auth button component that uses the auth modal
+ * Single "Sign In" button - modal allows switching to sign-up
+ * Requirements: 1.1, 1.7, 8.4
  * - 44px minimum touch targets for accessibility
  * - Keyboard accessible with visible focus indicators
  */
 function AuthButtons() {
-  const { openSignIn, openSignUp } = useAuthModal();
+  const { openSignIn } = useAuthModal();
 
   return (
-    <div className="flex items-center gap-2 sm:gap-3">
-      <button
-        onClick={() => openSignIn()}
-        className="min-h-[44px] px-3 text-text-secondary hover:text-text-primary text-body-small font-medium transition-colors inline-flex items-center"
-      >
-        Sign In
-      </button>
-      <button
-        onClick={() => openSignUp()}
-        className="min-h-[44px] px-2.5 sm:px-3 bg-text-primary text-paper text-body-small font-medium rounded-subtle hover:bg-text-primary/90 transition-colors active:bg-text-primary/80 inline-flex items-center"
-      >
-        Sign Up
-      </button>
-    </div>
+    <button
+      onClick={() => openSignIn()}
+      className="min-h-[44px] px-4 bg-paper text-text-primary border border-hairline text-body-small font-medium rounded-small hover:bg-page-bg transition-colors inline-flex items-center"
+    >
+      Sign In
+    </button>
   );
 }
 

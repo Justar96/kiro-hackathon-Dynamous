@@ -77,14 +77,14 @@ export function StanceInput({
   // Locked Before stance display (compact with check)
   if (isPreStance && locked && initialValue) {
     return (
-      <div className="bg-white rounded-lg border border-gray-100 p-4">
+      <div className="bg-paper rounded-lg border border-hairline p-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-text-secondary">Before</h3>
           <span className="text-support text-sm" aria-label="Stance locked">✓</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-page-bg rounded-full overflow-hidden">
               <div 
                 className="h-full bg-text-secondary transition-all"
                 style={{ width: `${initialValue.supportValue}%` }}
@@ -105,11 +105,11 @@ export function StanceInput({
   // Locked After stance display (waiting for scroll unlock)
   if (isPostStance && !afterUnlocked && !initialValue) {
     return (
-      <div className="bg-white rounded-lg border border-gray-100 p-4 opacity-60">
+      <div className="bg-paper rounded-lg border border-hairline p-4 opacity-60">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-text-secondary">After</h3>
         </div>
-        <div className="h-2 bg-gray-100 rounded-full" />
+        <div className="h-2 bg-page-bg rounded-full" />
         <p className="mt-2 text-xs text-text-tertiary italic">
           Keep reading to unlock
         </p>
@@ -120,14 +120,14 @@ export function StanceInput({
   // After stance already recorded (show with delta)
   if (isPostStance && initialValue && delta !== null) {
     return (
-      <div className="bg-white rounded-lg border border-gray-100 p-4">
+      <div className="bg-paper rounded-lg border border-hairline p-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-text-secondary">After</h3>
           <DeltaLabel delta={delta} />
         </div>
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-page-bg rounded-full overflow-hidden">
               <div 
                 className="h-full bg-accent transition-all"
                 style={{ width: `${initialValue.supportValue}%` }}
@@ -150,13 +150,13 @@ export function StanceInput({
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-paper rounded-lg border border-hairline p-6">
       {/* Header */}
       <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-1">
+        <h3 className="text-lg font-medium text-text-primary mb-1">
           {isPreStance ? 'Record Your Initial Stance' : 'Update Your Stance'}
         </h3>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-text-secondary">
           {isPreStance 
             ? 'Before reading the arguments, where do you stand on this resolution?'
             : 'After reading the arguments, has your position changed?'
@@ -168,20 +168,20 @@ export function StanceInput({
       <div className="mb-8">
         <div className="flex justify-between items-center mb-3">
           <div className="text-center">
-            <span className="text-2xl font-semibold text-emerald-600">{supportValue}%</span>
-            <p className="text-sm text-gray-500">Support</p>
+            <span className="text-2xl font-semibold text-support">{supportValue}%</span>
+            <p className="text-sm text-text-secondary">Support</p>
           </div>
           <div className="text-center">
-            <span className="text-2xl font-semibold text-rose-600">{opposeValue}%</span>
-            <p className="text-sm text-gray-500">Oppose</p>
+            <span className="text-2xl font-semibold text-oppose">{opposeValue}%</span>
+            <p className="text-sm text-text-secondary">Oppose</p>
           </div>
         </div>
 
         {/* Custom slider */}
         <div className="relative">
-          <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-3 bg-page-bg rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-150"
+              className="h-full bg-support transition-all duration-150"
               style={{ width: `${supportValue}%` }}
             />
           </div>
@@ -197,7 +197,7 @@ export function StanceInput({
           />
           {/* Slider thumb indicator */}
           <div 
-            className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 border-emerald-500 rounded-full shadow-sm pointer-events-none transition-all duration-150"
+            className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-paper border-2 border-support rounded-full shadow-sm pointer-events-none transition-all duration-150"
             style={{ left: `calc(${supportValue}% - 10px)` }}
           />
         </div>
@@ -212,8 +212,8 @@ export function StanceInput({
               disabled={!isInteractive}
               className={`min-w-[44px] min-h-[44px] px-3 text-xs rounded-full transition-colors inline-flex items-center justify-center ${
                 supportValue === value
-                  ? 'bg-emerald-100 text-emerald-700 font-medium'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-support/10 text-support font-medium'
+                  : 'bg-page-bg text-text-secondary hover:bg-page-bg/80'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {value}%
@@ -224,7 +224,7 @@ export function StanceInput({
 
       {/* Confidence Level - 44px minimum touch target for accessibility (Requirement 8.4) */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-text-primary mb-3">
           How confident are you in this position?
         </label>
         <div className="grid grid-cols-5 gap-2">
@@ -236,8 +236,8 @@ export function StanceInput({
               disabled={!isInteractive}
               className={`min-h-[44px] p-3 rounded-lg border-2 transition-all text-center ${
                 confidence === level.value
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300 bg-white'
+                  ? 'border-accent bg-accent/10'
+                  : 'border-hairline hover:border-black/[0.12] bg-paper'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <div className="text-lg mb-1">
@@ -247,13 +247,13 @@ export function StanceInput({
                 {level.value === 4 && '🙂'}
                 {level.value === 5 && '😎'}
               </div>
-              <div className="text-xs font-medium text-gray-700 leading-tight">
+              <div className="text-xs font-medium text-text-primary leading-tight">
                 {level.label}
               </div>
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-gray-500 text-center">
+        <p className="mt-2 text-xs text-text-secondary text-center">
           {CONFIDENCE_LEVELS.find(l => l.value === confidence)?.description}
         </p>
       </div>
@@ -263,7 +263,7 @@ export function StanceInput({
         type="button"
         onClick={handleSubmit}
         disabled={!isInteractive}
-        className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 px-4 bg-accent text-white font-medium rounded-lg hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center gap-2">
@@ -277,7 +277,7 @@ export function StanceInput({
 
       {/* Info text */}
       {isPreStance && (
-        <p className="mt-4 text-xs text-gray-400 text-center">
+        <p className="mt-4 text-xs text-text-tertiary text-center">
           Your initial stance will be recorded before you see the debate arguments.
           This helps measure how persuasive the arguments are.
         </p>

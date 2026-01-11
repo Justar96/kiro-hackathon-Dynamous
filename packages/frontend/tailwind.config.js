@@ -46,8 +46,21 @@ export default {
         'subtle': '2px',
         'small': '4px',
       },
+      borderColor: {
+        'hairline': 'rgba(0,0,0,0.08)',
+      },
       boxShadow: {
         'paper': '0 1px 3px rgba(0,0,0,0.04)',
+        'elevated': '0 4px 12px rgba(0,0,0,0.08)',
+        'modal': '0 8px 24px rgba(0,0,0,0.12)',
+        'toast': '0 4px 12px rgba(0,0,0,0.1)',
+      },
+      zIndex: {
+        'dropdown': '100',
+        'sticky': '200',
+        'overlay': '300',
+        'modal': '400',
+        'toast': '600',
       },
       fontSize: {
         // Headings - Serif

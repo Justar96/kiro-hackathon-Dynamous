@@ -28,8 +28,13 @@ export { RoundSection } from './RoundSection';
 export { SpectatorComments } from './SpectatorComments';
 
 // Auth Components
-export { AuthProvider } from './AuthProvider';
+export { AuthProvider, validateUsername } from './AuthProvider';
 export { AuthModalProvider, useAuthModal, useRequireAuth } from './AuthModal';
+export { UserAvatar } from './UserAvatar';
+export type { UserAvatarProps } from './UserAvatar';
+export { ProfileDropdown } from './ProfileDropdown';
+export type { ProfileDropdownProps, ProfileDropdownUser } from './ProfileDropdown';
+export { OnboardingToast, useOnboardingToast, useAutoOnboarding } from './OnboardingToast';
 
 // Modal Components
 export { ModalOverlay } from './ModalOverlay';

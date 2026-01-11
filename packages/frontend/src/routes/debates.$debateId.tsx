@@ -28,7 +28,6 @@ import {
   Skeleton,
   SkeletonHeading,
   SkeletonText,
-  SkeletonParagraph,
   SkeletonArgumentBlock,
   SkeletonMarketData,
   ConnectionStatus,

@@ -159,7 +159,7 @@ export function ToastContainer({
 
   return (
     <div 
-      className={`fixed ${positionClasses} z-50 flex ${stackDirection} gap-2 max-w-sm pointer-events-none`}
+      className={`fixed ${positionClasses} z-toast flex ${stackDirection} gap-2 max-w-sm pointer-events-none`}
       role="region"
       aria-label="Notifications"
     >
@@ -243,7 +243,7 @@ export function ToastItem({
   return (
     <div
       className={`
-        flex items-start gap-3 px-4 py-3 rounded-lg border shadow-md
+        flex items-start gap-3 px-4 py-3 rounded-lg border shadow-toast
         pointer-events-auto
         ${typeStyles}
         ${animationClass}
