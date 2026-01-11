@@ -12,6 +12,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { useAuthToken } from './hooks';
 import { useToast } from '../components/Toast';
+import { queryKeys } from './queries';
 import {
   recordPreStance,
   recordPostStance,
@@ -108,13 +109,13 @@ export function useOptimisticStance({ debateId, onSuccess, onError }: UseOptimis
       // Note: isPendingRef is already set to true in recordStance before mutate is called
       
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['debate', debateId, 'stance'] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
       
       // Snapshot the previous value
-      const previousData = queryClient.getQueryData<StanceResponse>(['debate', debateId, 'stance']);
+      const previousData = queryClient.getQueryData<StanceResponse>(queryKeys.stances.byDebate(debateId));
       
       // Optimistically update the cache
-      queryClient.setQueryData<StanceResponse>(['debate', debateId, 'stance'], (old) => {
+      queryClient.setQueryData<StanceResponse>(queryKeys.stances.byDebate(debateId), (old) => {
         if (!old) {
           // Create new stance response if none exists
           const newStance: Stance = {
@@ -183,7 +184,7 @@ export function useOptimisticStance({ debateId, onSuccess, onError }: UseOptimis
       
       // Rollback to previous state
       if (context?.previousData !== undefined) {
-        queryClient.setQueryData(['debate', debateId, 'stance'], context.previousData);
+        queryClient.setQueryData(queryKeys.stances.byDebate(debateId), context.previousData);
       }
       
       // Show error toast
@@ -198,8 +199,8 @@ export function useOptimisticStance({ debateId, onSuccess, onError }: UseOptimis
       isPendingRef.current = false;
       
       // Invalidate to reconcile with server data
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'stance'] });
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'market'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.market.byDebate(debateId) });
       
       onSuccess?.();
     },
@@ -268,13 +269,13 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
       // Note: isPendingRef is already set to true in addReactionOptimistic before mutate is called
       
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['argument', argumentId, 'reactions'] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });
       
       // Snapshot the previous value
-      const previousData = queryClient.getQueryData<ReactionsResponse>(['argument', argumentId, 'reactions']);
+      const previousData = queryClient.getQueryData<ReactionsResponse>(queryKeys.arguments.reactions(argumentId));
       
       // Optimistically update the cache
-      queryClient.setQueryData<ReactionsResponse>(['argument', argumentId, 'reactions'], (old) => {
+      queryClient.setQueryData<ReactionsResponse>(queryKeys.arguments.reactions(argumentId), (old) => {
         if (!old) {
           return {
             counts: {
@@ -307,7 +308,7 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
       
       // Rollback to previous state
       if (context?.previousData !== undefined) {
-        queryClient.setQueryData(['argument', argumentId, 'reactions'], context.previousData);
+        queryClient.setQueryData(queryKeys.arguments.reactions(argumentId), context.previousData);
       }
       
       // Show error toast
@@ -322,7 +323,7 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
       isPendingRef.current = false;
       
       // Invalidate to reconcile with server data
-      queryClient.invalidateQueries({ queryKey: ['argument', argumentId, 'reactions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });
       
       onSuccess?.();
     },
@@ -340,13 +341,13 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
       // Note: isPendingRef is already set to true in removeReactionOptimistic before mutate is called
       
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['argument', argumentId, 'reactions'] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });
       
       // Snapshot the previous value
-      const previousData = queryClient.getQueryData<ReactionsResponse>(['argument', argumentId, 'reactions']);
+      const previousData = queryClient.getQueryData<ReactionsResponse>(queryKeys.arguments.reactions(argumentId));
       
       // Optimistically update the cache
-      queryClient.setQueryData<ReactionsResponse>(['argument', argumentId, 'reactions'], (old) => {
+      queryClient.setQueryData<ReactionsResponse>(queryKeys.arguments.reactions(argumentId), (old) => {
         if (!old) return old;
         
         return {
@@ -368,7 +369,7 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
       
       // Rollback to previous state
       if (context?.previousData !== undefined) {
-        queryClient.setQueryData(['argument', argumentId, 'reactions'], context.previousData);
+        queryClient.setQueryData(queryKeys.arguments.reactions(argumentId), context.previousData);
       }
       
       // Show error toast
@@ -383,7 +384,7 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
       isPendingRef.current = false;
       
       // Invalidate to reconcile with server data
-      queryClient.invalidateQueries({ queryKey: ['argument', argumentId, 'reactions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });
       
       onSuccess?.();
     },
@@ -466,10 +467,10 @@ export function useOptimisticComment({ debateId, userId, onSuccess, onError }: U
       // Note: isPendingRef is already set to true in addCommentOptimistic before mutate is called
       
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['debate', debateId, 'comments'] });
+      await queryClient.cancelQueries({ queryKey: queryKeys.comments.byDebate(debateId) });
       
       // Snapshot the previous value
-      const previousData = queryClient.getQueryData<Comment[]>(['debate', debateId, 'comments']);
+      const previousData = queryClient.getQueryData<Comment[]>(queryKeys.comments.byDebate(debateId));
       
       // Create optimistic comment
       const optimisticComment: Comment = {
@@ -485,7 +486,7 @@ export function useOptimisticComment({ debateId, userId, onSuccess, onError }: U
       pendingCommentsRef.current = [...pendingCommentsRef.current, optimisticComment];
       
       // Optimistically update the cache
-      queryClient.setQueryData<Comment[]>(['debate', debateId, 'comments'], (old) => {
+      queryClient.setQueryData<Comment[]>(queryKeys.comments.byDebate(debateId), (old) => {
         if (!old) return [optimisticComment];
         return [...old, optimisticComment];
       });
@@ -508,7 +509,7 @@ export function useOptimisticComment({ debateId, userId, onSuccess, onError }: U
       
       // Rollback to previous state
       if (context?.previousData !== undefined) {
-        queryClient.setQueryData(['debate', debateId, 'comments'], context.previousData);
+        queryClient.setQueryData(queryKeys.comments.byDebate(debateId), context.previousData);
       }
       
       // Show error toast
@@ -530,7 +531,7 @@ export function useOptimisticComment({ debateId, userId, onSuccess, onError }: U
       }
       
       // Invalidate to reconcile with server data
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.comments.byDebate(debateId) });
       
       onSuccess?.();
     },

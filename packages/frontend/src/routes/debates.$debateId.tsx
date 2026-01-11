@@ -1,14 +1,14 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { useState, useCallback, useMemo } from 'react';
-import { debateDetailQueryOptions, userQueryOptions } from '../lib/queries';
+import { debateFullQueryOptions } from '../lib/queries';
 import { 
-  useMarket, 
   useUserStance, 
   useAfterStanceUnlock,
   useReadingProgress,
   useAuthToken,
   useAttributeImpact,
   useComments,
+  useSubmitArgument,
 } from '../lib/hooks';
 import { 
   useOptimisticStance, 
@@ -20,7 +20,7 @@ import {
   LeftNavRail,
   RightMarginRail,
   DossierHeader,
-  RoundSection,
+  UnifiedRoundSection,
   SourceCard,
   SourceCardContainer,
   useSourceCardState,
@@ -32,21 +32,27 @@ import {
   SkeletonMarketData,
   ConnectionStatus,
   useToast,
+  createUnifiedTocSections,
 } from '../components';
 import type { NavSection, Citation } from '../components';
-import type { StanceValue, User } from '@debate-platform/shared';
-import { useQuery } from '@tanstack/react-query';
+import type { StanceValue, User, Argument } from '@debate-platform/shared';
 
 export const Route = createFileRoute('/debates/$debateId')({
   loader: async ({ context, params }) => {
-    const debateDetail = await context.queryClient.ensureQueryData(
-      debateDetailQueryOptions(params.debateId)
+    // Get token from context if available for authenticated requests
+    const token = undefined; // Token will be used in component via useAuthToken
+
+    // Fetch debate with ALL related data in a single request
+    // Errors will be caught by errorComponent
+    const debateData = await context.queryClient.ensureQueryData(
+      debateFullQueryOptions(params.debateId, token)
     );
-    return { debateDetail };
+    return { debateData };
   },
   pendingComponent: DebateViewPending,
   pendingMs: 200, // Minimum loading duration as per Requirements 4.6
   component: DebateViewWrapper,
+  errorComponent: DebateViewError,
 });
 
 /**
@@ -72,7 +78,7 @@ function DebateViewWrapper() {
  * Requirements: 3.1, 3.3, 10.1, 10.2
  */
 function DebateView() {
-  const { debateDetail } = Route.useLoaderData();
+  const { debateData } = Route.useLoaderData();
   const { debateId } = Route.useParams();
   const token = useAuthToken();
   const { showToast } = useToast();
@@ -89,10 +95,7 @@ function DebateView() {
   // Reading progress tracking
   const readingProgress = useReadingProgress();
   
-  // Market data
-  const { data: marketData } = useMarket(debateId);
-  
-  // User stance data
+  // User stance data (still separate - user-specific)
   const { data: stanceData } = useUserStance(debateId);
   
   // Optimistic stance mutations (Requirements: 3.1)
@@ -115,16 +118,13 @@ function DebateView() {
   // Impact attribution mutation
   const attributeImpact = useAttributeImpact();
   
-  // Fetch debater user profiles
-  const { data: supportDebater } = useQuery({
-    ...userQueryOptions(debateDetail?.debate?.supportDebaterId || ''),
-    enabled: !!debateDetail?.debate?.supportDebaterId,
-  });
+  // Argument submission mutation
+  // Requirements: 7.1, 7.3 - Argument submission integration
+  const submitArgumentMutation = useSubmitArgument();
   
-  const { data: opposeDebater } = useQuery({
-    ...userQueryOptions(debateDetail?.debate?.opposeDebaterId || ''),
-    enabled: !!debateDetail?.debate?.opposeDebaterId,
-  });
+  // Extract debaters from consolidated response (no separate queries needed)
+  const supportDebater = debateData?.debaters?.support ?? null;
+  const opposeDebater = debateData?.debaters?.oppose ?? null;
 
   // Handle section click from TOC
   const handleSectionClick = useCallback((sectionId: string) => {
@@ -151,21 +151,40 @@ function DebateView() {
     attributeImpact.mutate({ debateId, argumentId });
   }, [debateId, attributeImpact]);
 
-  if (!debateDetail?.debate) {
+  // Handle argument submission
+  // Requirements: 7.1, 7.3 - Argument submission within unified round view
+  const handleArgumentSubmit = useCallback((content: string) => {
+    submitArgumentMutation.mutate(
+      { debateId, content },
+      {
+        onSuccess: () => {
+          showToast({
+            type: 'success',
+            message: 'Argument submitted successfully!',
+          });
+        },
+        onError: (error) => {
+          showToast({
+            type: 'error',
+            message: error.message || 'Failed to submit argument. Please try again.',
+          });
+        },
+      }
+    );
+  }, [debateId, submitArgumentMutation, showToast]);
+
+  if (!debateData?.debate) {
     return <DebateNotFound />;
   }
 
-  const { debate, rounds } = debateDetail;
+  const { debate, rounds, market } = debateData;
 
-  // Build TOC sections
-  const tocSections: NavSection[] = useMemo(() => [
-    { id: 'resolution', label: 'Resolution' },
-    { id: 'round-1', label: 'Round 1: Openings', indent: 1 },
-    { id: 'round-2', label: 'Round 2: Rebuttals', indent: 1 },
-    { id: 'round-3', label: 'Round 3: Closings', indent: 1 },
-    { id: 'outcome', label: 'Outcome' },
-    { id: 'comments', label: 'Discussion' },
-  ], []);
+  // Build TOC sections - unified structure with single "Debate Rounds" entry
+  // Requirements: 8.1, 8.2, 8.3
+  const tocSections: NavSection[] = useMemo(() => 
+    createUnifiedTocSections(debate.currentRound),
+    [debate.currentRound]
+  );
 
   // User stance values for margin rail
   const userStance = useMemo(() => ({
@@ -173,9 +192,9 @@ function DebateView() {
     after: stanceData?.stances?.post?.supportValue,
   }), [stanceData]);
 
-  // Market prices
-  const supportPrice = marketData?.marketPrice?.supportPrice ?? 50;
-  const opposePrice = marketData?.marketPrice?.opposePrice ?? 50;
+  // Market prices from consolidated response
+  const supportPrice = market?.marketPrice?.supportPrice ?? 50;
+  const opposePrice = market?.marketPrice?.opposePrice ?? 50;
 
   return (
     <ThreeColumnLayout
@@ -197,6 +216,8 @@ function DebateView() {
           currentUserId={token}
           onCitationHover={handleCitationHover}
           onMindChanged={handleMindChanged}
+          onArgumentSubmit={handleArgumentSubmit}
+          isArgumentSubmitting={submitArgumentMutation.isPending}
         />
       }
       rightMargin={
@@ -205,8 +226,8 @@ function DebateView() {
             debateId={debateId}
             supportPrice={supportPrice}
             opposePrice={opposePrice}
-            dataPoints={marketData?.history || []}
-            spikes={marketData?.spikes || []}
+            dataPoints={market?.history || []}
+            spikes={market?.spikes || []}
             userStance={userStance}
             debateStatus={debate.status}
             readingProgress={readingProgress}
@@ -232,13 +253,15 @@ function DebateView() {
  */
 interface DebateDossierContentProps {
   debateId: string;
-  debate: NonNullable<ReturnType<typeof Route.useLoaderData>['debateDetail']>['debate'];
-  rounds: NonNullable<ReturnType<typeof Route.useLoaderData>['debateDetail']>['rounds'];
+  debate: NonNullable<ReturnType<typeof Route.useLoaderData>['debateData']>['debate'];
+  rounds: NonNullable<ReturnType<typeof Route.useLoaderData>['debateData']>['rounds'];
   supportDebater?: User | null;
   opposeDebater?: User | null;
   currentUserId?: string;
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
   onMindChanged?: (argumentId: string) => void;
+  onArgumentSubmit?: (content: string) => void;
+  isArgumentSubmitting?: boolean;
 }
 
 function DebateDossierContent({
@@ -250,6 +273,8 @@ function DebateDossierContent({
   currentUserId,
   onCitationHover,
   onMindChanged,
+  onArgumentSubmit,
+  isArgumentSubmitting,
 }: DebateDossierContentProps) {
   // Comments data
   const { data: comments = [] } = useComments(debateId);
@@ -285,6 +310,20 @@ function DebateDossierContent({
     return map;
   }, [supportDebater, opposeDebater]);
 
+  // Build arguments structure for UnifiedRoundSection
+  // Requirements: 1.1 - UnifiedRoundSection needs arguments indexed by round number and side
+  const roundArguments = useMemo(() => {
+    const args: { [roundNumber: number]: { support?: Argument | null; oppose?: Argument | null } } = {};
+    rounds.forEach((round: typeof rounds[number], index: number) => {
+      const roundNumber = index + 1;
+      args[roundNumber] = {
+        support: round.supportArgument || null,
+        oppose: round.opposeArgument || null,
+      };
+    });
+    return args;
+  }, [rounds]);
+
   // Handle adding a comment with optimistic update
   const handleAddComment = useCallback((content: string, parentId?: string | null) => {
     addComment(content, parentId);
@@ -302,20 +341,20 @@ function DebateDossierContent({
       {/* Resolution Header */}
       <DossierHeader debate={debate} />
 
-      {/* Debate Rounds */}
-      {rounds.map((round: typeof rounds[number], index: number) => (
-        <RoundSection
-          key={round.id}
-          round={round}
-          roundNumber={(index + 1) as 1 | 2 | 3}
-          supportArgument={round.supportArgument}
-          opposeArgument={round.opposeArgument}
-          supportAuthor={supportDebater}
-          opposeAuthor={opposeDebater}
-          onCitationHover={handleCitationHover}
-          onMindChanged={onMindChanged}
-        />
-      ))}
+      {/* Unified Debate Rounds Section */}
+      {/* Requirements: 1.1, 8.1, 8.2 - Single unified component replaces three RoundSection components */}
+      <UnifiedRoundSection
+        debate={debate}
+        rounds={rounds}
+        supportDebater={supportDebater}
+        opposeDebater={opposeDebater}
+        currentUserId={currentUserId}
+        arguments={roundArguments}
+        onCitationHover={handleCitationHover}
+        onMindChanged={onMindChanged}
+        onArgumentSubmit={onArgumentSubmit}
+        isSubmitting={isArgumentSubmitting}
+      />
 
       {/* Outcome Section */}
       <OutcomeSection debate={debate} />
@@ -337,7 +376,7 @@ function DebateDossierContent({
  * Outcome section showing debate results.
  */
 interface OutcomeSectionProps {
-  debate: NonNullable<ReturnType<typeof Route.useLoaderData>['debateDetail']>['debate'];
+  debate: NonNullable<ReturnType<typeof Route.useLoaderData>['debateData']>['debate'];
 }
 
 function OutcomeSection({ debate }: OutcomeSectionProps) {
@@ -397,6 +436,7 @@ function DebateNotFound() {
 /**
  * Loading skeleton for debate view.
  * Uses enhanced skeleton components matching paper-clean aesthetic.
+ * Updated to match unified round section structure.
  * Requirements: 4.1, 4.3
  */
 function DebateViewPending() {
@@ -407,7 +447,8 @@ function DebateViewPending() {
         <aside className="w-rail flex-shrink-0 sticky top-0 h-screen py-8 pr-6">
           <div className="space-y-2">
             <SkeletonText lines={1} width="5rem" className="mb-4" />
-            {[1, 2, 3, 4, 5].map((i) => (
+            {/* Unified TOC structure: Resolution, Debate Rounds, Outcome, Discussion */}
+            {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-8 w-full" />
             ))}
           </div>
@@ -423,9 +464,23 @@ function DebateViewPending() {
               <SkeletonText lines={1} width="12rem" />
             </div>
 
-            {/* Round skeletons - matching exact dimensions */}
-            {[1, 2, 3].map((roundNum) => (
-              <div key={roundNum} className="mb-12">
+            {/* Unified Round Section skeleton */}
+            <div className="mb-12 space-y-4">
+              {/* Progress indicator skeleton */}
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-6 w-24" />
+              </div>
+              
+              {/* Round navigator skeleton - three tabs */}
+              <div className="flex gap-2 border-b border-gray-100 pb-2">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-10 w-24 rounded-subtle" />
+                ))}
+              </div>
+              
+              {/* Active round content skeleton */}
+              <div className="pt-4">
                 {/* Round header */}
                 <div className="mb-6 pb-3 border-b border-gray-100">
                   <SkeletonHeading className="mb-2" width="12rem" height={28} />
@@ -441,7 +496,13 @@ function DebateViewPending() {
                   <SkeletonArgumentBlock />
                 </div>
               </div>
-            ))}
+            </div>
+
+            {/* Outcome section skeleton */}
+            <div className="mb-8 pt-8 border-t border-gray-100">
+              <SkeletonHeading className="mb-4" width="8rem" height={24} />
+              <Skeleton className="h-24 w-full rounded-subtle" />
+            </div>
           </div>
         </main>
 
@@ -455,10 +516,18 @@ function DebateViewPending() {
       <div className="lg:hidden pt-14 pb-20 px-4 py-6">
         <div className="paper-surface px-4 py-6">
           <SkeletonHeading className="mb-4" width="75%" />
+          {/* Unified round section - single skeleton instead of three */}
           <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-32 w-full" />
-            ))}
+            {/* Progress indicator */}
+            <Skeleton className="h-6 w-32" />
+            {/* Navigator tabs */}
+            <div className="flex gap-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-8 w-20 rounded-subtle" />
+              ))}
+            </div>
+            {/* Single round content */}
+            <Skeleton className="h-48 w-full" />
           </div>
         </div>
       </div>
@@ -469,9 +538,44 @@ function DebateViewPending() {
 function formatDate(date: Date | string | null): string {
   if (!date) return '';
   const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-US', { 
-    month: 'short', 
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
     day: 'numeric',
     year: 'numeric'
   });
+}
+
+/**
+ * Error component for the debate view page.
+ * Displays user-friendly error message with retry option.
+ */
+function DebateViewError() {
+  const router = useRouter();
+
+  return (
+    <div className="min-h-screen bg-page-bg flex items-center justify-center">
+      <div className="bg-paper rounded-subtle shadow-sm p-8 text-center max-w-md mx-4">
+        <h2 className="font-heading text-heading-2 text-text-primary mb-2">
+          Unable to load debate
+        </h2>
+        <p className="text-body text-text-secondary mb-6">
+          We couldn't load this debate. It may have been removed or there was a connection issue.
+        </p>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={() => router.invalidate()}
+            className="px-4 py-2 bg-accent text-white rounded-subtle hover:bg-accent-hover transition-colors"
+          >
+            Try Again
+          </button>
+          <Link
+            to="/"
+            className="px-4 py-2 border border-hairline text-text-primary rounded-subtle hover:bg-page-bg transition-colors"
+          >
+            Back to Index
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
 }

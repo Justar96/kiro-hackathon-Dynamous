@@ -10,8 +10,14 @@ import './index.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60,
+      staleTime: 1000 * 60, // 1 minute default
+      gcTime: 1000 * 60 * 10, // 10 minutes garbage collection
       retry: 1,
+      refetchOnWindowFocus: false, // Prevent excessive refetches on tab switch
+      refetchOnReconnect: true, // Refetch when network reconnects
+    },
+    mutations: {
+      retry: 0, // Don't retry mutations by default
     },
   },
 });

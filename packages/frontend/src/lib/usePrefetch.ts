@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { debateDetailQueryOptions } from './queries';
+import { debateFullQueryOptions } from './queries';
 
 /**
  * Options for prefetch behavior
@@ -10,7 +10,7 @@ export interface UsePrefetchOptions {
    * Delay in milliseconds before prefetching starts (default: 100ms)
    */
   delay?: number;
-  
+
   /**
    * How long the prefetched data should be considered fresh (default: 5 minutes)
    */
@@ -27,10 +27,10 @@ const DEFAULT_OPTIONS: Required<UsePrefetchOptions> = {
 
 /**
  * Hook specifically for prefetching debate data on hover.
- * Prefetches debate details after 100ms hover delay.
- * 
+ * Prefetches full debate details (including debaters and market) after 100ms hover delay.
+ *
  * Requirements: 10.3
- * 
+ *
  * @param debateId - The ID of the debate to prefetch
  * @param options - Configuration options for prefetch behavior
  * @returns Object with prefetch trigger functions and state
@@ -40,35 +40,47 @@ export function usePrefetchDebate(debateId: string, options: UsePrefetchOptions 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPrefetched, setIsPrefetched] = useState(false);
   const [isPrefetching, setIsPrefetching] = useState(false);
-  
-  const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
-  const queryOptions = debateDetailQueryOptions(debateId);
-  
+
+  // Use refs for state checks inside callbacks to avoid dependency changes
+  const isPrefetchedRef = useRef(isPrefetched);
+  const isPrefetchingRef = useRef(isPrefetching);
+  isPrefetchedRef.current = isPrefetched;
+  isPrefetchingRef.current = isPrefetching;
+
+  // Memoize options to prevent object recreation on every render
+  const mergedOptions = useMemo(() => ({ ...DEFAULT_OPTIONS, ...options }), [options.delay, options.staleTime]);
+
+  // Memoize query options to prevent object recreation on every render
+  const queryOptions = useMemo(() => debateFullQueryOptions(debateId), [debateId]);
+
+  // Memoize query key for stable reference
+  const queryKey = queryOptions.queryKey;
+
   /**
    * Start prefetching after delay
    */
   const prefetch = useCallback(() => {
-    // Don't prefetch if already prefetched or prefetching
-    if (isPrefetched || isPrefetching) {
+    // Don't prefetch if already prefetched or prefetching (using refs for current value)
+    if (isPrefetchedRef.current || isPrefetchingRef.current) {
       return;
     }
-    
+
     // Check if data is already in cache and fresh
-    const existingData = queryClient.getQueryData(queryOptions.queryKey);
+    const existingData = queryClient.getQueryData(queryKey);
     if (existingData) {
       setIsPrefetched(true);
       return;
     }
-    
+
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    
+
     // Start prefetch after delay
     timeoutRef.current = setTimeout(async () => {
       setIsPrefetching(true);
-      
+
       try {
         await queryClient.prefetchQuery({
           ...queryOptions,
@@ -81,7 +93,7 @@ export function usePrefetchDebate(debateId: string, options: UsePrefetchOptions 
         setIsPrefetching(false);
       }
     }, mergedOptions.delay);
-  }, [queryClient, queryOptions, mergedOptions.delay, mergedOptions.staleTime, isPrefetched, isPrefetching]);
+  }, [queryClient, queryKey, queryOptions, mergedOptions.delay, mergedOptions.staleTime]);
   
   /**
    * Cancel pending prefetch

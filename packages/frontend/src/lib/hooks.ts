@@ -2,9 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from './useSession';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
+  queryKeys,
   debatesQueryOptions,
   debateQueryOptions,
   debateDetailQueryOptions,
+  debateFullQueryOptions,
   marketQueryOptions,
   userStanceQueryOptions,
   commentsQueryOptions,
@@ -170,19 +172,28 @@ export function useDebateDetail(debateId: string) {
 }
 
 /**
+ * Fetch debate with ALL related data (debate, rounds, debaters, market) in one request.
+ * Use this for the debate detail page to minimize API calls.
+ */
+export function useDebateFull(debateId: string) {
+  const token = useAuthToken();
+  return useQuery(debateFullQueryOptions(debateId, token));
+}
+
+/**
  * Create a new debate
  */
 export function useCreateDebate() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
-  
+
   return useMutation({
     mutationFn: (input: { resolution: string; creatorSide?: 'support' | 'oppose' }) => {
       if (!token) throw new Error('Authentication required');
       return createDebate(input, token);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['debates'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.all });
     },
   });
 }
@@ -193,15 +204,15 @@ export function useCreateDebate() {
 export function useJoinDebate() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
-  
+
   return useMutation({
     mutationFn: (debateId: string) => {
       if (!token) throw new Error('Authentication required');
       return joinDebate(debateId, token);
     },
     onSuccess: (_, debateId) => {
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId] });
-      queryClient.invalidateQueries({ queryKey: ['debates'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.detail(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.all });
     },
   });
 }
@@ -212,14 +223,15 @@ export function useJoinDebate() {
 export function useSubmitArgument() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
-  
+
   return useMutation({
     mutationFn: ({ debateId, content }: { debateId: string; content: string }) => {
       if (!token) throw new Error('Authentication required');
       return submitArgument(debateId, { content }, token);
     },
     onSuccess: (_, { debateId }) => {
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.detail(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.full(debateId) });
     },
   });
 }
@@ -254,23 +266,23 @@ export function useUserStance(debateId: string) {
 export function useRecordPreStance() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
-  
+
   return useMutation({
-    mutationFn: ({ 
-      debateId, 
-      supportValue, 
-      confidence 
-    }: { 
-      debateId: string; 
-      supportValue: number; 
+    mutationFn: ({
+      debateId,
+      supportValue,
+      confidence
+    }: {
+      debateId: string;
+      supportValue: number;
       confidence: number;
     }) => {
       if (!token) throw new Error('Authentication required');
       return recordPreStance(debateId, { supportValue, confidence }, token);
     },
     onSuccess: (_, { debateId }) => {
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'stance'] });
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'market'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.market.byDebate(debateId) });
     },
   });
 }
@@ -281,16 +293,16 @@ export function useRecordPreStance() {
 export function useRecordPostStance() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
-  
+
   return useMutation({
-    mutationFn: ({ 
-      debateId, 
-      supportValue, 
+    mutationFn: ({
+      debateId,
+      supportValue,
       confidence,
       lastArgumentSeen,
-    }: { 
-      debateId: string; 
-      supportValue: number; 
+    }: {
+      debateId: string;
+      supportValue: number;
       confidence: number;
       lastArgumentSeen?: string | null;
     }) => {
@@ -298,8 +310,8 @@ export function useRecordPostStance() {
       return recordPostStance(debateId, { supportValue, confidence, lastArgumentSeen }, token);
     },
     onSuccess: (_, { debateId }) => {
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'stance'] });
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'market'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.market.byDebate(debateId) });
     },
   });
 }
@@ -321,22 +333,22 @@ export function useComments(debateId: string) {
 export function useAddComment() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
-  
+
   return useMutation({
-    mutationFn: ({ 
-      debateId, 
-      content, 
-      parentId 
-    }: { 
-      debateId: string; 
-      content: string; 
+    mutationFn: ({
+      debateId,
+      content,
+      parentId
+    }: {
+      debateId: string;
+      content: string;
       parentId?: string | null;
     }) => {
       if (!token) throw new Error('Authentication required');
       return addComment(debateId, { content, parentId }, token);
     },
     onSuccess: (_, { debateId }) => {
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'comments'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.comments.byDebate(debateId) });
     },
   });
 }
@@ -359,20 +371,20 @@ export function useReactions(argumentId: string) {
 export function useAddReaction() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
-  
+
   return useMutation({
-    mutationFn: ({ 
-      argumentId, 
-      type 
-    }: { 
-      argumentId: string; 
+    mutationFn: ({
+      argumentId,
+      type
+    }: {
+      argumentId: string;
       type: 'agree' | 'strong_reasoning';
     }) => {
       if (!token) throw new Error('Authentication required');
       return addReaction(argumentId, { type }, token);
     },
     onSuccess: (_, { argumentId }) => {
-      queryClient.invalidateQueries({ queryKey: ['argument', argumentId, 'reactions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });
     },
   });
 }
@@ -383,20 +395,20 @@ export function useAddReaction() {
 export function useRemoveReaction() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
-  
+
   return useMutation({
-    mutationFn: ({ 
-      argumentId, 
-      type 
-    }: { 
-      argumentId: string; 
+    mutationFn: ({
+      argumentId,
+      type
+    }: {
+      argumentId: string;
       type: 'agree' | 'strong_reasoning';
     }) => {
       if (!token) throw new Error('Authentication required');
       return removeReaction(argumentId, type, token);
     },
     onSuccess: (_, { argumentId }) => {
-      queryClient.invalidateQueries({ queryKey: ['argument', argumentId, 'reactions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });
     },
   });
 }
@@ -413,13 +425,13 @@ export function useRemoveReaction() {
 export function useAttributeImpact() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
-  
+
   return useMutation({
-    mutationFn: ({ 
-      debateId, 
-      argumentId 
-    }: { 
-      debateId: string; 
+    mutationFn: ({
+      debateId,
+      argumentId
+    }: {
+      debateId: string;
       argumentId: string;
     }) => {
       if (!token) throw new Error('Authentication required');
@@ -427,11 +439,12 @@ export function useAttributeImpact() {
     },
     onSuccess: (_, { debateId }) => {
       // Invalidate stance to update lastArgumentSeen
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'stance'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
       // Invalidate market to update impact scores
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'market'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.market.byDebate(debateId) });
       // Invalidate debate detail to refresh argument impact scores
-      queryClient.invalidateQueries({ queryKey: ['debate', debateId, 'detail'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.detail(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.full(debateId) });
     },
   });
 }

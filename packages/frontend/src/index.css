@@ -21,8 +21,8 @@
   /* Typography - Requirements: 3.1, 3.3 */
   --auth-font-family: 'Inter', 'IBM Plex Sans', system-ui, sans-serif;
   --auth-heading-font-family: 'Source Serif 4', 'Literata', Georgia, serif;
-  
-  /* Colors - Requirements: 3.2, 3.4 */
+
+  /* Colors - Requirements: 3.2, 3.4 - Paper-clean palette */
   --auth-background: #FFFFFF;
   --auth-foreground: #111111;
   --auth-muted: #6B7280;
@@ -35,10 +35,11 @@
   --auth-success: #059669;
   --auth-border: rgba(0, 0, 0, 0.08);
   --auth-ring: #2563EB;
-  
-  /* Spacing & Radius - Requirements: 3.4 */
-  --auth-radius: 2px;
-  --auth-radius-lg: 4px;
+  --auth-input-bg: #FAFAF9;
+
+  /* Spacing & Radius - Requirements: 3.4 - Paper-clean subtle radius */
+  --auth-radius: 4px;
+  --auth-radius-lg: 6px;
 }
 
 /* Neon Auth form container styling */
@@ -58,16 +59,27 @@
   color: var(--auth-foreground) !important;
 }
 
-/* Auth form inputs - Requirements: 3.1, 3.4 */
+/* Auth form inputs - Requirements: 3.1, 3.4 - Paper-clean styling */
 [data-auth-view] input,
 [data-auth-view] textarea,
 .neon-auth-view input,
 .neon-auth-view textarea {
   font-family: var(--auth-font-family) !important;
+  font-size: 0.9375rem !important;
   border-radius: var(--auth-radius) !important;
-  border-color: var(--auth-border) !important;
-  background-color: var(--auth-background) !important;
+  border: 1px solid var(--auth-border) !important;
+  background-color: var(--auth-input-bg) !important;
   color: var(--auth-foreground) !important;
+  padding: 0.75rem 1rem !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+[data-auth-view] input:hover,
+[data-auth-view] textarea:hover,
+.neon-auth-view input:hover,
+.neon-auth-view textarea:hover {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  background-color: var(--auth-background) !important;
 }
 
 [data-auth-view] input:focus,
@@ -75,7 +87,8 @@
 .neon-auth-view input:focus,
 .neon-auth-view textarea:focus {
   border-color: var(--auth-ring) !important;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+  background-color: var(--auth-background) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
   outline: none !important;
 }
 
@@ -95,24 +108,29 @@
   font-weight: 500 !important;
 }
 
-/* Primary buttons (Sign In, Sign Up) - Requirements: 3.2 */
+/* Primary buttons (Sign In, Sign Up) - Requirements: 3.2 - Paper-clean styling */
 [data-auth-view] button[type="submit"],
 [data-auth-view] button[data-primary],
 .neon-auth-view button[type="submit"],
 .neon-auth-view button[data-primary] {
   font-family: var(--auth-font-family) !important;
+  font-size: 0.9375rem !important;
   background-color: var(--auth-primary) !important;
   color: var(--auth-primary-foreground) !important;
+  border: none !important;
   border-radius: var(--auth-radius) !important;
   font-weight: 500 !important;
-  transition: background-color 0.15s ease, transform 0.1s ease !important;
+  padding: 0.75rem 1.5rem !important;
+  width: 100% !important;
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease !important;
 }
 
 [data-auth-view] button[type="submit"]:hover,
 [data-auth-view] button[data-primary]:hover,
 .neon-auth-view button[type="submit"]:hover,
 .neon-auth-view button[data-primary]:hover {
-  background-color: #1a1a1a !important;
+  background-color: #262626 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 [data-auth-view] button[type="submit"]:active,
@@ -120,28 +138,38 @@
 .neon-auth-view button[type="submit"]:active,
 .neon-auth-view button[data-primary]:active {
   transform: scale(0.98) !important;
+  box-shadow: none !important;
 }
 
 [data-auth-view] button[type="submit"]:disabled,
 [data-auth-view] button[data-primary]:disabled,
 .neon-auth-view button[type="submit"]:disabled,
 .neon-auth-view button[data-primary]:disabled {
-  background-color: var(--auth-muted) !important;
+  background-color: #D1D5DB !important;
+  color: #9CA3AF !important;
   cursor: not-allowed !important;
+  box-shadow: none !important;
 }
 
-/* OAuth/Social buttons - Requirements: 3.7 */
+/* OAuth/Social buttons - Requirements: 3.7 - Paper-clean styling */
 [data-auth-view] button[data-social],
 [data-auth-view] [data-oauth-button],
 .neon-auth-view button[data-social],
 .neon-auth-view [data-oauth-button] {
   font-family: var(--auth-font-family) !important;
+  font-size: 0.9375rem !important;
   background-color: var(--auth-background) !important;
   color: var(--auth-foreground) !important;
   border: 1px solid var(--auth-border) !important;
   border-radius: var(--auth-radius) !important;
   font-weight: 500 !important;
-  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+  padding: 0.75rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
 [data-auth-view] button[data-social]:hover,
@@ -149,7 +177,30 @@
 .neon-auth-view button[data-social]:hover,
 .neon-auth-view [data-oauth-button]:hover {
   background-color: #F7F6F2 !important;
-  border-color: rgba(0, 0, 0, 0.15) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-auth-view] button[data-social]:active,
+[data-auth-view] [data-oauth-button]:active,
+.neon-auth-view button[data-social]:active,
+.neon-auth-view [data-oauth-button]:active {
+  background-color: #F0EFEB !important;
+  transform: scale(0.99) !important;
+}
+
+/* Google button icon sizing */
+[data-auth-view] button[data-social] svg,
+[data-auth-view] button[data-social] img,
+[data-auth-view] [data-oauth-button] svg,
+[data-auth-view] [data-oauth-button] img,
+.neon-auth-view button[data-social] svg,
+.neon-auth-view button[data-social] img,
+.neon-auth-view [data-oauth-button] svg,
+.neon-auth-view [data-oauth-button] img {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  flex-shrink: 0 !important;
 }
 
 /* Error messages - Requirements: 3.5 */
@@ -282,13 +333,91 @@
   font-weight: 500 !important;
 }
 
+/* ============================================
+   Compact Auth Modal Styles
+   Paper-minimal clean design
+   ============================================ */
+
+/* Override CSS variables for shadcn/ui components */
+.auth-modal-compact,
+.auth-modal-compact * {
+  --input: 0 0% 100%;
+  --background: 0 0% 100%;
+  --card: 0 0% 100%;
+  --foreground: 0 0% 7%;
+  --primary: 0 0% 7%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 40 20% 96%;
+  --muted-foreground: 220 9% 46%;
+  --border: 0 0% 0% / 0.1;
+  --ring: 221 83% 53%;
+  --radius: 4px;
+}
+
+/* Ensure inputs have white background */
+.auth-modal-compact input {
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+}
+
+/* Constrain OAuth button icons */
+.auth-modal-compact button svg,
+.auth-modal-compact button img {
+  width: 18px !important;
+  height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Icon wrapper constraint */
+.auth-modal-compact button > div:first-child:has(svg),
+.auth-modal-compact button > span:first-child:has(svg) {
+  width: 18px !important;
+  height: 18px !important;
+  overflow: hidden !important;
+}
+
 @layer base {
   html {
     @apply bg-page-bg;
+    /* Minimal scrollbar for webkit browsers */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
   }
-  
+
   body {
     @apply font-body text-text-primary antialiased;
+  }
+
+  /* Webkit scrollbar styling (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0, 0, 0, 0.25);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Hide scrollbar arrows */
+  ::-webkit-scrollbar-button {
+    display: none;
   }
   
   /* Global focus-visible styles for keyboard navigation (Requirement 1.7) */

@@ -1,5 +1,37 @@
 import { useEffect, useRef, useCallback, type ReactNode } from 'react';
 
+/**
+ * Get the width of the scrollbar to prevent layout shift
+ */
+function getScrollbarWidth(): number {
+  // If there's no scrollbar (content doesn't overflow), return 0
+  if (document.documentElement.scrollHeight <= document.documentElement.clientHeight) {
+    return 0;
+  }
+  return window.innerWidth - document.documentElement.clientWidth;
+}
+
+/**
+ * Lock body scroll while preserving layout (no shift)
+ * Returns a cleanup function to restore original state
+ */
+function lockBodyScroll(): () => void {
+  const scrollbarWidth = getScrollbarWidth();
+  const originalPaddingRight = document.body.style.paddingRight;
+  const originalOverflow = document.body.style.overflow;
+
+  // Add padding to compensate for scrollbar removal
+  if (scrollbarWidth > 0) {
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+  }
+  document.body.style.overflow = 'hidden';
+
+  return () => {
+    document.body.style.paddingRight = originalPaddingRight;
+    document.body.style.overflow = originalOverflow;
+  };
+}
+
 export interface ModalOverlayProps {
   isOpen: boolean;
   onClose: () => void;
@@ -56,16 +88,6 @@ export function ModalOverlay({
     return Array.from(modalRef.current.querySelectorAll<HTMLElement>(focusableSelectors));
   }, []);
 
-  // Handle overlay click
-  const handleOverlayClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      if (closeOnOverlayClick && event.target === event.currentTarget) {
-        onClose();
-      }
-    },
-    [closeOnOverlayClick, onClose]
-  );
-
   // Document-level keyboard handler for focus trap and escape
   useEffect(() => {
     if (!isOpen) return;
@@ -112,55 +134,51 @@ export function ModalOverlay({
 
   // Lock body scroll and manage focus when modal opens/closes
   useEffect(() => {
-    if (isOpen) {
-      // Store the currently focused element
-      previousActiveElement.current = document.activeElement as HTMLElement;
-      
-      // Lock body scroll
-      document.body.style.overflow = 'hidden';
-      
-      // Focus the first focusable element in the modal
-      requestAnimationFrame(() => {
-        const focusableElements = getFocusableElements();
-        if (focusableElements.length > 0) {
-          focusableElements[0].focus();
-        } else {
-          // If no focusable elements, focus the modal itself
-          modalRef.current?.focus();
-        }
-      });
-    } else {
+    if (!isOpen) return;
+
+    // Store the currently focused element
+    previousActiveElement.current = document.activeElement as HTMLElement;
+
+    // Lock body scroll with scrollbar compensation to prevent layout shift
+    const unlockScroll = lockBodyScroll();
+
+    // Focus the first focusable element in the modal
+    requestAnimationFrame(() => {
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      } else {
+        // If no focusable elements, focus the modal itself
+        modalRef.current?.focus();
+      }
+    });
+
+    return () => {
       // Unlock body scroll
-      document.body.style.overflow = '';
-      
+      unlockScroll();
+
       // Restore focus to the previously focused element
       if (previousActiveElement.current) {
         previousActiveElement.current.focus();
       }
-    }
-
-    return () => {
-      document.body.style.overflow = '';
     };
   }, [isOpen, getFocusableElements]);
 
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-modal flex items-center justify-center"
-      role="presentation"
-    >
-      {/* Backdrop */}
+    <>
+      {/* Backdrop - separate fixed layer */}
       <div
-        className="absolute inset-0 z-overlay bg-black/50 animate-in fade-in duration-200"
+        className="fixed inset-0 z-overlay bg-black/50 animate-in fade-in duration-200"
         aria-hidden="true"
+        onClick={closeOnOverlayClick ? onClose : undefined}
       />
-      
-      {/* Modal container - handles click outside */}
+
+      {/* Modal container */}
       <div
-        className="absolute inset-0 flex items-center justify-center p-4"
-        onClick={handleOverlayClick}
+        className="fixed inset-0 z-modal flex items-center justify-center p-4 pointer-events-none"
+        role="presentation"
       >
         {/* Modal content */}
         <div
@@ -174,13 +192,13 @@ export function ModalOverlay({
             relative w-full ${sizeClasses[size]}
             bg-paper rounded-small shadow-modal
             animate-in zoom-in-95 fade-in duration-200
-            focus:outline-none
+            focus:outline-none pointer-events-auto
           `}
         >
           {children}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

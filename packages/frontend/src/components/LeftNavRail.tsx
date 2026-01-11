@@ -6,6 +6,40 @@ export interface NavSection {
   indent?: number;
 }
 
+/**
+ * Generates the unified "Debate Rounds" TOC label with round indicator.
+ * Format: "Debate Rounds (X/3)" where X is the current round number.
+ * 
+ * Requirements: 8.3 - TOC SHALL show the current round indicator next to "Debate Rounds"
+ * 
+ * @param currentRound - The current round number (1, 2, or 3)
+ * @returns The formatted label string
+ */
+export function generateDebateRoundsLabel(currentRound: 1 | 2 | 3): string {
+  return `Debate Rounds (${currentRound}/3)`;
+}
+
+/**
+ * Creates the unified TOC sections array for a debate page.
+ * Replaces three separate round entries with a single "Debate Rounds" entry.
+ * 
+ * Requirements: 8.1, 8.3, 8.4
+ * - 8.1: Single "Debate Rounds" section instead of three separate round entries
+ * - 8.3: Current round indicator next to "Debate Rounds"
+ * - 8.4: Maintain entries for Resolution, Outcome, and Discussion sections
+ * 
+ * @param currentRound - The current round number (1, 2, or 3)
+ * @returns Array of NavSection objects for the TOC
+ */
+export function createUnifiedTocSections(currentRound: 1 | 2 | 3): NavSection[] {
+  return [
+    { id: 'resolution', label: 'Resolution' },
+    { id: 'debate-rounds', label: generateDebateRoundsLabel(currentRound) },
+    { id: 'outcome', label: 'Outcome' },
+    { id: 'comments', label: 'Discussion' },
+  ];
+}
+
 interface LeftNavRailProps {
   sections: NavSection[];
   activeSection: string;

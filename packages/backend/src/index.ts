@@ -195,9 +195,10 @@ app.post('/api/debates', authMiddleware, async (c) => {
   return c.json(result, 201);
 });
 
-// GET /api/debates - List debates
+// GET /api/debates - List debates with optional market data
 app.get('/api/debates', async (c) => {
-  // For now, return all debates - pagination can be added later
+  const includeMarket = c.req.query('includeMarket') === 'true';
+  
   const { db } = await import('./db');
   const { debates } = await import('./db/schema');
   const { desc } = await import('drizzle-orm');
@@ -207,12 +208,30 @@ app.get('/api/debates', async (c) => {
     limit: 50,
   });
   
+  // If market data requested, fetch it in parallel for all debates
+  if (includeMarket) {
+    const debatesWithMarket = await Promise.all(
+      allDebates.map(async (debate) => {
+        try {
+          const marketPrice = await marketService.calculateMarketPrice(debate.id);
+          return { debate, marketPrice };
+        } catch {
+          return { debate, marketPrice: null };
+        }
+      })
+    );
+    return c.json({ debates: debatesWithMarket, includesMarket: true });
+  }
+  
   return c.json({ debates: allDebates });
 });
 
-// GET /api/debates/:id - Get debate details
+// GET /api/debates/:id - Get debate details with optional expanded data
 app.get('/api/debates/:id', optionalAuthMiddleware, async (c) => {
   const debateId = c.req.param('id');
+  const includeDebaters = c.req.query('includeDebaters') === 'true';
+  const includeMarket = c.req.query('includeMarket') === 'true';
+  const userId = c.get('userId');
   
   const debate = await debateService.getDebateById(debateId);
   
@@ -240,7 +259,40 @@ app.get('/api/debates/:id', optionalAuthMiddleware, async (c) => {
     })
   );
   
-  return c.json({ debate, rounds: roundsWithArguments });
+  // Build response with optional expanded data
+  const response: Record<string, unknown> = { debate, rounds: roundsWithArguments };
+  
+  // Include debater profiles if requested
+  if (includeDebaters) {
+    const [supportDebater, opposeDebater] = await Promise.all([
+      debate.supportDebaterId ? userService.getUserById(debate.supportDebaterId) : null,
+      debate.opposeDebaterId ? userService.getUserById(debate.opposeDebaterId) : null,
+    ]);
+    response.debaters = { support: supportDebater, oppose: opposeDebater };
+  }
+  
+  // Include market data if requested (respects blind voting)
+  if (includeMarket) {
+    let canAccessMarket = true;
+    if (userId) {
+      const access = await votingService.canAccessMarketPrice(debateId, userId);
+      canAccessMarket = access.canAccess;
+    }
+    
+    if (canAccessMarket) {
+      const [marketPrice, history, spikes] = await Promise.all([
+        marketService.calculateMarketPrice(debateId),
+        marketService.getMarketHistory(debateId),
+        marketService.getSpikes(debateId),
+      ]);
+      response.market = { marketPrice, history, spikes };
+    } else {
+      response.market = null;
+      response.marketBlocked = true;
+    }
+  }
+  
+  return c.json(response);
 });
 
 // POST /api/debates/:id/arguments - Submit argument (requires auth)

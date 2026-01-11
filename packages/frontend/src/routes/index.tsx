@@ -1,49 +1,24 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { debatesQueryOptions } from '../lib/queries';
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { debatesWithMarketQueryOptions } from '../lib/queries';
 import { DebateIndexList, SkeletonDebateRow, SkeletonHeading, SkeletonText } from '../components';
-import type { Debate, MarketPrice } from '@debate-platform/shared';
-import { useQueries } from '@tanstack/react-query';
 
 export const Route = createFileRoute('/')({
   loader: async ({ context }) => {
-    // Prefetch debates data using React Query's ensureQueryData
-    const debates = await context.queryClient.ensureQueryData(debatesQueryOptions);
-    return { debates };
+    // Prefetch debates WITH market data in a single request (eliminates N+1)
+    // Errors will be caught by errorComponent
+    const debatesWithMarket = await context.queryClient.ensureQueryData(
+      debatesWithMarketQueryOptions
+    );
+    return { debatesWithMarket };
   },
   pendingComponent: HomePagePending,
   pendingMs: 200, // Minimum loading duration as per Requirements 4.6
   component: HomePage,
+  errorComponent: HomePageError,
 });
 
-interface MarketResponse {
-  marketPrice: MarketPrice;
-}
-
 function HomePage() {
-  const { debates } = Route.useLoaderData();
-
-  // Fetch market data for each debate to show support/oppose and mind changes
-  const marketQueries = useQueries({
-    queries: debates.map((debate: Debate) => ({
-      queryKey: ['debate', debate.id, 'market-public'] as const,
-      queryFn: async (): Promise<MarketResponse | null> => {
-        try {
-          const response = await fetch(`/api/debates/${debate.id}/market`);
-          if (!response.ok) return null;
-          return response.json();
-        } catch {
-          return null;
-        }
-      },
-      staleTime: 1000 * 30, // 30 seconds
-    })),
-  });
-
-  // Combine debates with their market data
-  const debatesWithMarket = debates.map((debate: Debate, index: number) => ({
-    debate,
-    marketPrice: marketQueries[index]?.data?.marketPrice as MarketPrice | null | undefined,
-  }));
+  const { debatesWithMarket } = Route.useLoaderData();
 
   return (
     <div className="min-h-screen bg-page-bg">
@@ -109,6 +84,41 @@ function HomePagePending() {
           {[1, 2, 3, 4, 5].map((i) => (
             <SkeletonDebateRow key={i} />
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Error component for the home page.
+ * Displays user-friendly error message with retry option.
+ */
+function HomePageError() {
+  const router = useRouter();
+
+  return (
+    <div className="min-h-screen bg-page-bg flex items-center justify-center">
+      <div className="bg-paper rounded-subtle shadow-sm p-8 text-center max-w-md mx-4">
+        <h2 className="font-heading text-heading-2 text-text-primary mb-2">
+          Unable to load debates
+        </h2>
+        <p className="text-body text-text-secondary mb-6">
+          We couldn't load the debate list. This might be a temporary issue.
+        </p>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={() => router.invalidate()}
+            className="px-4 py-2 bg-accent text-white rounded-subtle hover:bg-accent-hover transition-colors"
+          >
+            Try Again
+          </button>
+          <Link
+            to="/"
+            className="px-4 py-2 border border-hairline text-text-primary rounded-subtle hover:bg-page-bg transition-colors"
+          >
+            Refresh Page
+          </Link>
         </div>
       </div>
     </div>

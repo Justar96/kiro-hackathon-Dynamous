@@ -9,7 +9,7 @@ export { DebateIndexList } from './DebateIndexList';
 
 // Layout Components
 export { ThreeColumnLayout } from './ThreeColumnLayout';
-export { LeftNavRail, useActiveSectionObserver } from './LeftNavRail';
+export { LeftNavRail, useActiveSectionObserver, generateDebateRoundsLabel, createUnifiedTocSections } from './LeftNavRail';
 export type { NavSection } from './LeftNavRail';
 export { RightMarginRail } from './RightMarginRail';
 
@@ -25,6 +25,16 @@ export {
 } from './EvidenceFootnote';
 export type { EvidenceSource } from './EvidenceFootnote';
 export { RoundSection } from './RoundSection';
+export { RoundProgressIndicator } from './RoundProgressIndicator';
+export { RoundNavigator } from './RoundNavigator';
+export { RoundHistory } from './RoundHistory';
+export { ActiveRoundView } from './ActiveRoundView';
+export type { ActiveRoundViewProps } from './ActiveRoundView';
+export { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
+export type { ArgumentSubmissionFormProps } from './ArgumentSubmissionForm';
+export { UnifiedRoundSection } from './UnifiedRoundSection';
+export type { UnifiedRoundSectionProps } from './UnifiedRoundSection';
+export type { RoundProgressIndicatorProps, RoundNavigatorProps, RoundHistoryProps } from './UnifiedRoundSection.types';
 export { SpectatorComments } from './SpectatorComments';
 
 // Auth Components

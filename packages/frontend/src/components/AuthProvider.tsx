@@ -24,6 +24,15 @@ export function validateUsername(value: string): string | true {
 }
 
 /**
+ * Async username validation for the auth provider
+ * Wraps validateUsername to match the expected Promise<boolean> signature
+ */
+async function validateUsernameAsync(value: string): Promise<boolean> {
+  const result = validateUsername(value);
+  return result === true;
+}
+
+/**
  * Additional fields configuration for sign-up
  * Requirements: 2.1 - Collect username during sign-up
  * Requirements: 2.2 - Validate username format
@@ -34,7 +43,7 @@ const additionalFields = {
     placeholder: 'Choose a username',
     type: 'string' as const,
     required: true,
-    validate: validateUsername,
+    validate: validateUsernameAsync,
   },
 };
 

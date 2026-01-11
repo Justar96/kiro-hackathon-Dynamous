@@ -1,5 +1,34 @@
 import { useEffect, useRef, useCallback, useState, type ReactNode, type TouchEvent } from 'react';
 
+/**
+ * Get the width of the scrollbar to prevent layout shift
+ */
+function getScrollbarWidth(): number {
+  if (document.documentElement.scrollHeight <= document.documentElement.clientHeight) {
+    return 0;
+  }
+  return window.innerWidth - document.documentElement.clientWidth;
+}
+
+/**
+ * Lock body scroll while preserving layout (no shift)
+ */
+function lockBodyScroll(): () => void {
+  const scrollbarWidth = getScrollbarWidth();
+  const originalPaddingRight = document.body.style.paddingRight;
+  const originalOverflow = document.body.style.overflow;
+
+  if (scrollbarWidth > 0) {
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+  }
+  document.body.style.overflow = 'hidden';
+
+  return () => {
+    document.body.style.paddingRight = originalPaddingRight;
+    document.body.style.overflow = originalOverflow;
+  };
+}
+
 export interface BottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
@@ -98,18 +127,16 @@ export function BottomSheet({
     setCurrentSnapIndex(nextIndex);
   }, [currentSnapIndex, snapPoints.length]);
 
-  // Lock body scroll when open
+  // Lock body scroll when open (with scrollbar compensation)
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      setTranslateY(0);
-      setCurrentSnapIndex(initialSnap);
-    } else {
-      document.body.style.overflow = '';
-    }
+    if (!isOpen) return;
+
+    setTranslateY(0);
+    setCurrentSnapIndex(initialSnap);
+    const unlockScroll = lockBodyScroll();
 
     return () => {
-      document.body.style.overflow = '';
+      unlockScroll();
     };
   }, [isOpen, initialSnap]);
 

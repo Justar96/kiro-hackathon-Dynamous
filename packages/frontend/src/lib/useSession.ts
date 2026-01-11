@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient, QueryClient } from '@tanstack/react-query';
 import { authClient } from '../auth';
+import { queryKeys } from './queries';
 
 interface User {
   id: string;
@@ -41,20 +42,19 @@ function isSessionExpired(session: Session | null): boolean {
  * Requirements: 2.4 - Clear all user-specific cached data on sign out
  */
 function clearUserCache(queryClient: QueryClient) {
-  // Clear user-specific queries
-  queryClient.removeQueries({ queryKey: ['currentUser'] });
+  // Clear user-specific queries using query key factory
+  queryClient.removeQueries({ queryKey: queryKeys.users.current() });
   queryClient.removeQueries({ predicate: (query) => {
     const key = query.queryKey;
     // Clear stance queries (user-specific)
-    if (Array.isArray(key) && key.includes('stance')) return true;
+    if (Array.isArray(key) && key[0] === 'stances') return true;
     // Clear any queries that might contain user-specific data
-    if (Array.isArray(key) && key[0] === 'argument' && key.includes('reactions')) return true;
+    if (Array.isArray(key) && key[0] === 'arguments' && key.includes('reactions')) return true;
     return false;
   }});
-  
+
   // Invalidate debates to refetch without user context
-  queryClient.invalidateQueries({ queryKey: ['debates'] });
-  queryClient.invalidateQueries({ queryKey: ['debate'] });
+  queryClient.invalidateQueries({ queryKey: queryKeys.debates.all });
 }
 
 /**
@@ -200,14 +200,18 @@ export function useSignOut() {
 /**
  * Hook that watches for sign-out events and clears the cache automatically
  * This is useful when using Neon Auth's UserButton which handles sign-out internally
- * 
+ *
  * Requirements: 2.4 - Clear all user-specific cached data on sign out
- * 
+ *
+ * @param sessionState - The session state from useSession (required - share from parent to avoid duplicate fetches)
  * @param onSignOut - Optional callback to run when sign-out is detected
  */
-export function useSessionWatcher(onSignOut?: () => void) {
+export function useSessionWatcher(
+  sessionState: { user: { id: string } | null; isLoading: boolean },
+  onSignOut?: () => void
+) {
   const queryClient = useQueryClient();
-  const { user, isLoading } = useSession();
+  const { user, isLoading } = sessionState;
   const previousUserIdRef = useRef<string | null>(null);
   const wasLoadingRef = useRef(true);
 
@@ -227,7 +231,7 @@ export function useSessionWatcher(onSignOut?: () => void) {
       // User signed out - clear cache
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
       clearUserCache(queryClient);
-      
+
       // Call optional callback
       onSignOut?.();
     }

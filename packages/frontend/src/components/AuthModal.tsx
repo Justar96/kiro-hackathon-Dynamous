@@ -161,36 +161,29 @@ function AuthModal() {
     <Modal
       isOpen={isOpen}
       onClose={close}
-      size="md"
+      size="sm"
       closeOnOverlayClick={true}
       closeOnEscape={true}
       trapFocus={true}
       ariaLabelledBy="auth-modal-title"
     >
-      <div className="p-6">
-        {/* Header with close button */}
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
-            <h2
-              id="auth-modal-title"
-              className="font-heading text-2xl font-semibold text-text-primary"
-            >
-              {isSignUp ? 'Join Persuasion' : 'Welcome back'}
-            </h2>
-            {isSignUp && (
-              <p className="text-sm text-text-secondary mt-1">
-                Track debates, make predictions, build your reputation
-              </p>
-            )}
-          </div>
-          {/* Close button - 44px minimum touch target for accessibility */}
+      <div className="p-5">
+        {/* Compact header with inline close button */}
+        <div className="flex items-center justify-between mb-4">
+          <h2
+            id="auth-modal-title"
+            className="font-heading text-xl font-semibold text-text-primary"
+          >
+            {isSignUp ? 'Create account' : 'Sign in'}
+          </h2>
+          {/* Close button - minimal style */}
           <button
             onClick={close}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-text-tertiary hover:text-text-primary transition-colors rounded-lg hover:bg-black/5 -mr-2 -mt-1"
+            className="w-8 h-8 flex items-center justify-center text-text-tertiary hover:text-text-primary transition-colors rounded hover:bg-black/5 -mr-1"
             aria-label="Close modal"
           >
             <svg
-              className="w-5 h-5"
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -207,16 +200,29 @@ function AuthModal() {
 
         {/* Auth Form - Neon Auth handles loading states, error display, and view toggle */}
         {/* Google OAuth button appears automatically via NeonAuthUIProvider social config */}
-        <div className="mt-4">
-          <AuthView pathname={pathname} />
+        <div className="auth-modal-compact">
+          <AuthView
+            pathname={pathname}
+            classNames={{
+              // Hide default title and description - we have our own header
+              title: 'hidden',
+              description: 'hidden',
+              header: 'hidden',
+              // Style the form elements for paper-minimal look
+              form: {
+                input: 'bg-white border-black/10 text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-accent/10',
+                label: 'text-sm font-medium text-text-primary',
+                primaryButton: 'bg-text-primary hover:bg-text-primary/90 text-white',
+                providerButton: 'bg-white border-black/10 hover:bg-page-bg text-text-primary',
+                icon: 'w-[18px] h-[18px] flex-shrink-0',
+              },
+              separator: 'text-xs text-text-tertiary',
+              continueWith: 'text-xs text-text-tertiary text-center justify-center',
+              footer: 'text-xs text-center justify-center',
+              footerLink: 'text-accent hover:text-accent-hover',
+            }}
+          />
         </div>
-
-        {/* Footer note for sign-up */}
-        {isSignUp && (
-          <p className="text-xs text-text-tertiary text-center mt-4">
-            By signing up, you agree to our Terms of Service and Privacy Policy
-          </p>
-        )}
       </div>
     </Modal>
   );

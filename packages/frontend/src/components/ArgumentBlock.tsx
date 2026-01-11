@@ -18,6 +18,8 @@ interface ArgumentBlockProps {
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
   /** Callback when user clicks "This changed my mind" button */
   onMindChanged?: () => void;
+  /** Whether this argument has been attributed as "changed my mind" */
+  attributed?: boolean;
 }
 
 /**
@@ -37,6 +39,7 @@ export function ArgumentBlock({
   onAttributeImpact,
   onCitationHover,
   onMindChanged,
+  attributed = false,
 }: ArgumentBlockProps) {
   const sideConfig = getSideConfig(side);
   const hasImpact = argument.impactScore > 0;
@@ -86,7 +89,8 @@ export function ArgumentBlock({
         {/* "This changed my mind" button - for impact attribution */}
         {(onAttributeImpact || onMindChanged) && (
           <MindChangedButton 
-            onClick={onMindChanged || onAttributeImpact} 
+            onClick={onMindChanged || onAttributeImpact}
+            attributed={attributed}
           />
         )}
       </div>

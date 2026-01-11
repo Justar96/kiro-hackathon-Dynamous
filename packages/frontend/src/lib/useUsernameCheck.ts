@@ -1,4 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from './queries';
 
 interface UsernameCheckResult {
   available: boolean;
@@ -12,101 +14,110 @@ interface UseUsernameCheckReturn {
   reset: () => void;
 }
 
+// Add username check to query keys
+const usernameCheckKey = (username: string) => [...queryKeys.users.current(), 'check', username] as const;
+
+/**
+ * Validate username format on client side
+ */
+function validateUsernameFormat(username: string): UsernameCheckResult | null {
+  if (!username || username.length < 3) {
+    return null; // Too short, no result
+  }
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+    return {
+      available: false,
+      reason: 'Username can only contain letters, numbers, and underscores',
+    };
+  }
+  return null; // Valid format, need to check server
+}
+
 /**
  * Hook for checking username availability with debouncing
+ * Uses TanStack Query for caching, deduplication, and automatic retry
+ *
  * Requirements: 2.3 - Check username uniqueness on blur or debounced input
- * 
+ *
  * @param debounceMs - Debounce delay in milliseconds (default: 300ms)
  * @returns Object with checking state, result, and check function
  */
 export function useUsernameCheck(debounceMs = 300): UseUsernameCheckReturn {
-  const [isChecking, setIsChecking] = useState(false);
-  const [result, setResult] = useState<UsernameCheckResult | null>(null);
+  const [username, setUsername] = useState('');
+  const [debouncedUsername, setDebouncedUsername] = useState('');
+  const [clientValidationResult, setClientValidationResult] = useState<UsernameCheckResult | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Cleanup on unmount
+  // Debounce username changes
   useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
-  const checkUsername = useCallback((username: string) => {
-    // Clear previous timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Abort previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    // Reset result if username is too short
-    if (!username || username.length < 3) {
-      setResult(null);
-      setIsChecking(false);
-      return;
-    }
-
     // Client-side validation first
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      setResult({
-        available: false,
-        reason: 'Username can only contain letters, numbers, and underscores',
-      });
-      setIsChecking(false);
+    const validationResult = validateUsernameFormat(username);
+    if (validationResult) {
+      setClientValidationResult(validationResult);
+      setDebouncedUsername(''); // Don't query server
       return;
     }
 
-    setIsChecking(true);
+    setClientValidationResult(null);
 
-    // Debounce the API call
-    timeoutRef.current = setTimeout(async () => {
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+    // Valid format - debounce server check
+    if (username.length >= 3) {
+      timeoutRef.current = setTimeout(() => {
+        setDebouncedUsername(username);
+      }, debounceMs);
+    } else {
+      setDebouncedUsername('');
+    }
 
-      try {
-        const response = await fetch(
-          `/api/users/check-username?username=${encodeURIComponent(username)}`,
-          { signal: controller.signal }
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to check username');
-        }
-
-        const data: UsernameCheckResult = await response.json();
-        setResult(data);
-      } catch (error) {
-        // Ignore abort errors
-        if (error instanceof Error && error.name === 'AbortError') {
-          return;
-        }
-        // On error, don't show availability status
-        setResult(null);
-      } finally {
-        setIsChecking(false);
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
-    }, debounceMs);
-  }, [debounceMs]);
+    };
+  }, [username, debounceMs]);
+
+  // Query for username availability
+  const { data, isFetching, isError } = useQuery({
+    queryKey: usernameCheckKey(debouncedUsername),
+    queryFn: async ({ signal }): Promise<UsernameCheckResult> => {
+      const response = await fetch(
+        `/api/users/check-username?username=${encodeURIComponent(debouncedUsername)}`,
+        { signal }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to check username');
+      }
+
+      return response.json();
+    },
+    enabled: debouncedUsername.length >= 3,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+    gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const checkUsername = useCallback((newUsername: string) => {
+    setUsername(newUsername);
+  }, []);
 
   const reset = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    setResult(null);
-    setIsChecking(false);
+    setUsername('');
+    setDebouncedUsername('');
+    setClientValidationResult(null);
   }, []);
+
+  // Determine final result
+  const result = clientValidationResult ?? (isError ? null : data ?? null);
+  const isChecking = isFetching || (username.length >= 3 && username !== debouncedUsername && !clientValidationResult);
 
   return {
     isChecking,

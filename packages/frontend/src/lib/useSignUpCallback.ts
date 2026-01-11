@@ -1,41 +1,37 @@
-import { useCallback, useRef } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from './useSession';
+import { queryKeys } from './queries';
 
 interface CreateProfileResult {
   success: boolean;
   error?: string;
 }
 
+interface CreateProfileResponse {
+  user: {
+    id: string;
+    username: string;
+  };
+}
+
 /**
  * Hook to handle sign-up success and create platform user profile
+ * Uses TanStack Query mutation for consistency with other mutations
+ *
  * Requirements: 2.4 - Create user profile with provided username on sign-up success
- * 
- * @returns Object with createProfile function
+ *
+ * @returns Object with createProfile function and mutation state
  */
 export function useSignUpCallback() {
   const { user } = useSession();
-  const creatingRef = useRef(false);
+  const queryClient = useQueryClient();
 
-  /**
-   * Create platform user profile with the provided username
-   * Should be called after successful sign-up
-   * 
-   * @param username - The username from the sign-up form
-   * @returns Result object with success status and optional error
-   */
-  const createProfile = useCallback(async (username: string): Promise<CreateProfileResult> => {
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
+  const mutation = useMutation({
+    mutationFn: async (username: string): Promise<CreateProfileResponse> => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
 
-    // Prevent duplicate calls
-    if (creatingRef.current) {
-      return { success: false, error: 'Profile creation in progress' };
-    }
-
-    creatingRef.current = true;
-
-    try {
       const response = await fetch('/api/users/profile', {
         method: 'POST',
         headers: {
@@ -47,19 +43,44 @@ export function useSignUpCallback() {
 
       if (!response.ok) {
         const data = await response.json();
-        return { success: false, error: data.error || 'Failed to create profile' };
+        throw new Error(data.error || 'Failed to create profile');
       }
 
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate current user query to fetch the new profile
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.current() });
+    },
+  });
+
+  /**
+   * Create platform user profile with the provided username
+   * Should be called after successful sign-up
+   *
+   * @param username - The username from the sign-up form
+   * @returns Result object with success status and optional error
+   */
+  const createProfile = async (username: string): Promise<CreateProfileResult> => {
+    // Prevent duplicate calls
+    if (mutation.isPending) {
+      return { success: false, error: 'Profile creation in progress' };
+    }
+
+    try {
+      await mutation.mutateAsync(username);
       return { success: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create profile';
       return { success: false, error: message };
-    } finally {
-      creatingRef.current = false;
     }
-  }, [user]);
+  };
 
-  return { createProfile };
+  return {
+    createProfile,
+    isPending: mutation.isPending,
+    error: mutation.error,
+  };
 }
 
 export default useSignUpCallback;

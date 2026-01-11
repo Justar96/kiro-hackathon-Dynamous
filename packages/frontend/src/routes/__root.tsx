@@ -17,10 +17,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootComponent() {
+  // Single source of session state - shared with Navigation and SessionWatcher
+  const sessionState = useSession();
+
   // Watch for sign-out events and clear cache automatically
   // Requirements: 2.4 - Clear all user-specific cached data on sign out
-  useSessionWatcher();
-  
+  // Pass sessionState to avoid duplicate useSession calls
+  useSessionWatcher(sessionState);
+
   return (
     <div className="min-h-screen bg-page-bg">
       {/* Skip to main content link for keyboard navigation (Requirement 1.7) */}
@@ -30,7 +34,7 @@ function RootComponent() {
       >
         Skip to main content
       </a>
-      <Navigation />
+      <Navigation sessionState={sessionState} />
       <main id="main-content" tabIndex={-1} className="outline-none">
         <Outlet />
       </main>
@@ -44,6 +48,13 @@ function RootComponent() {
   );
 }
 
+interface NavigationProps {
+  sessionState: {
+    user: { id: string; email: string; name: string; image?: string | null } | null;
+    isLoading: boolean;
+  };
+}
+
 /**
  * Clean minimal header with logo and custom ProfileDropdown
  * Requirements: 9.1, 15.3, 1.7, 8.4
@@ -52,9 +63,9 @@ function RootComponent() {
  * Requirements: 1.1 - Display dropdown menu when clicking avatar
  * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5 - Display user info, sandbox status, reputation
  */
-function Navigation() {
-  const { user, isLoading } = useSession();
-  const { data: currentUserData, isLoading: isLoadingPlatformUser } = useCurrentUser();
+function Navigation({ sessionState }: NavigationProps) {
+  const { user, isLoading } = sessionState;
+  const { data: currentUserData } = useCurrentUser();
 
   // Map platform user data to ProfileDropdown format
   const platformUser = currentUserData?.user ? {

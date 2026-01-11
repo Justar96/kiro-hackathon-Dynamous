@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { Debate, MarketPrice } from '@debate-platform/shared';
+import { useDebateLinkPrefetch } from '../lib/usePrefetch';
 
 interface DebateIndexRowProps {
   debate: Debate;
@@ -9,7 +10,8 @@ interface DebateIndexRowProps {
 /**
  * DebateIndexRow displays a debate as a compact row in the index-style list.
  * Library catalog aesthetic: resolution title, muted tags, tiny support/oppose bar, sparkline, mind-changes.
- * Requirements: 12.1, 12.2, 12.3, 12.4
+ * Includes prefetching on hover for faster navigation.
+ * Requirements: 12.1, 12.2, 12.3, 12.4, 10.3
  */
 export function DebateIndexRow({ debate, marketPrice }: DebateIndexRowProps) {
   const supportPercent = marketPrice?.supportPrice ?? 50;
@@ -17,12 +19,16 @@ export function DebateIndexRow({ debate, marketPrice }: DebateIndexRowProps) {
   const mindChangeCount = marketPrice?.mindChangeCount ?? 0;
 
   const statusLabel = debate.status === 'concluded' ? 'Resolved' : `R${debate.currentRound}`;
+  
+  // Prefetch debate data on hover for faster navigation
+  const prefetchProps = useDebateLinkPrefetch(debate.id);
 
   return (
     <Link
       to="/debates/$debateId"
       params={{ debateId: debate.id }}
       className="group block"
+      {...prefetchProps}
     >
       <article className="flex items-center gap-2 sm:gap-4 py-4 px-2 sm:px-3 border-b border-gray-100 hover:bg-page-bg/50 transition-colors active:bg-page-bg/70">
         {/* Resolution title - main content */}
