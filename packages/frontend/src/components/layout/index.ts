@@ -1,5 +1,6 @@
 // Layout Components
 export { ThreeColumnLayout } from './ThreeColumnLayout';
+export { IndexThreeColumnLayout } from './IndexThreeColumnLayout';
 export { 
   LeftNavRail, 
   useActiveSectionObserver, 

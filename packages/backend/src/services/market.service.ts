@@ -384,6 +384,59 @@ export class MarketService {
       label: s.label,
     }));
   }
+
+  /**
+   * Get top arguments by impact score (for leaderboard)
+   * Returns arguments that changed the most minds
+   */
+  async getTopArguments(limit: number = 10): Promise<Array<{
+    id: string;
+    content: string;
+    side: 'support' | 'oppose';
+    impactScore: number;
+    debateId: string;
+    resolution: string;
+    authorUsername: string;
+  }>> {
+    const { desc } = await import('drizzle-orm');
+    const { debates, users, rounds } = await import('../db');
+
+    const topArgs = await db.query.arguments_.findMany({
+      orderBy: [desc(arguments_.impactScore)],
+      limit,
+    });
+
+    const results = [];
+    for (const arg of topArgs) {
+      if (arg.impactScore <= 0) continue;
+
+      const round = await db.query.rounds.findFirst({
+        where: eq(rounds.id, arg.roundId),
+      });
+      if (!round) continue;
+
+      const debate = await db.query.debates.findFirst({
+        where: eq(debates.id, round.debateId),
+      });
+      if (!debate) continue;
+
+      const author = await db.query.users.findFirst({
+        where: eq(users.id, arg.debaterId),
+      });
+
+      results.push({
+        id: arg.id,
+        content: arg.content.substring(0, 200) + (arg.content.length > 200 ? '...' : ''),
+        side: arg.side as 'support' | 'oppose',
+        impactScore: arg.impactScore,
+        debateId: round.debateId,
+        resolution: debate.resolution,
+        authorUsername: author?.username || 'Unknown',
+      });
+    }
+
+    return results;
+  }
 }
 
 // Export singleton instance

@@ -67,7 +67,7 @@ export class VotingService {
       voterId: input.voterId,
       type: 'pre',
       supportValue: input.supportValue,
-      confidence: input.confidence,
+      confidence: input.confidence ?? 3,
       lastArgumentSeen: input.lastArgumentSeen || null,
       createdAt: new Date(),
     }).returning();
@@ -134,7 +134,7 @@ export class VotingService {
       const [updated] = await db.update(stances)
         .set({
           supportValue: input.supportValue,
-          confidence: input.confidence,
+          confidence: input.confidence ?? 3,
           lastArgumentSeen: input.lastArgumentSeen || existingPostStance.lastArgumentSeen,
         })
         .where(eq(stances.id, existingPostStance.id))
@@ -148,7 +148,7 @@ export class VotingService {
         voterId: input.voterId,
         type: 'post',
         supportValue: input.supportValue,
-        confidence: input.confidence,
+        confidence: input.confidence ?? 3,
         lastArgumentSeen: input.lastArgumentSeen || null,
         createdAt: new Date(),
       }).returning();
@@ -317,7 +317,9 @@ export class VotingService {
       throw new Error('Stance must be between 0 and 100');
     }
 
-    if (input.confidence < 1 || input.confidence > 5) {
+    // Confidence is now optional, default to 3 if not provided
+    const confidence = input.confidence ?? 3;
+    if (confidence < 1 || confidence > 5) {
       throw new Error('Confidence must be between 1 and 5');
     }
   }
@@ -335,6 +337,50 @@ export class VotingService {
       confidence: row.confidence,
       lastArgumentSeen: row.lastArgumentSeen,
       createdAt: row.createdAt,
+    };
+  }
+
+  /**
+   * Get aggregate stance statistics for a debate (for spectators)
+   * Shows how the audience's minds changed without requiring login
+   */
+  async getDebateStanceStats(debateId: string): Promise<{
+    totalVoters: number;
+    avgPreStance: number;
+    avgPostStance: number;
+    avgDelta: number;
+    mindChangedCount: number;
+  }> {
+    const allStances = await db.query.stances.findMany({
+      where: eq(stances.debateId, debateId),
+    });
+
+    const byVoter = new Map<string, { pre?: number; post?: number }>();
+    for (const s of allStances) {
+      const existing = byVoter.get(s.voterId) || {};
+      if (s.type === 'pre') existing.pre = s.supportValue;
+      if (s.type === 'post') existing.post = s.supportValue;
+      byVoter.set(s.voterId, existing);
+    }
+
+    const votersWithBoth = [...byVoter.values()].filter(v => v.pre !== undefined && v.post !== undefined);
+    const totalVoters = votersWithBoth.length;
+
+    if (totalVoters === 0) {
+      return { totalVoters: 0, avgPreStance: 50, avgPostStance: 50, avgDelta: 0, mindChangedCount: 0 };
+    }
+
+    const avgPreStance = votersWithBoth.reduce((sum, v) => sum + v.pre!, 0) / totalVoters;
+    const avgPostStance = votersWithBoth.reduce((sum, v) => sum + v.post!, 0) / totalVoters;
+    const avgDelta = avgPostStance - avgPreStance;
+    const mindChangedCount = votersWithBoth.filter(v => Math.abs(v.post! - v.pre!) >= 10).length;
+
+    return {
+      totalVoters,
+      avgPreStance: Math.round(avgPreStance),
+      avgPostStance: Math.round(avgPostStance),
+      avgDelta: Math.round(avgDelta * 10) / 10,
+      mindChangedCount,
     };
   }
 }

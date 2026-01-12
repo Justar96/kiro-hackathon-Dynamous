@@ -8,12 +8,11 @@ interface StanceInputProps {
   onSubmit: (stance: StanceValue) => void;
   isSubmitting?: boolean;
   disabled?: boolean;
-  /** Whether the stance has been locked (for Before stance) */
   locked?: boolean;
-  /** The Before stance value (for calculating delta on After stance) */
   beforeValue?: number;
-  /** Whether the After slider is unlocked (based on scroll position) */
   afterUnlocked?: boolean;
+  /** Simplified mode for new users - hides confidence selector */
+  simplified?: boolean;
 }
 
 const CONFIDENCE_LEVELS = [
@@ -45,6 +44,7 @@ export function StanceInput({
   locked = false,
   beforeValue,
   afterUnlocked = true,
+  simplified = false,
 }: StanceInputProps) {
   const [supportValue, setSupportValue] = useState(initialValue?.supportValue ?? 50);
   const [confidence, setConfidence] = useState(initialValue?.confidence ?? 3);
@@ -53,7 +53,7 @@ export function StanceInput({
   useEffect(() => {
     if (initialValue) {
       setSupportValue(initialValue.supportValue);
-      setConfidence(initialValue.confidence);
+      setConfidence(initialValue.confidence ?? 3);
     }
   }, [initialValue]);
 
@@ -222,41 +222,43 @@ export function StanceInput({
         </div>
       </div>
 
-      {/* Confidence Level - 44px minimum touch target for accessibility (Requirement 8.4) */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-text-primary mb-3">
-          How confident are you in this position?
-        </label>
-        <div className="grid grid-cols-5 gap-2">
-          {CONFIDENCE_LEVELS.map((level) => (
-            <button
-              key={level.value}
-              type="button"
-              onClick={() => setConfidence(level.value)}
-              disabled={!isInteractive}
-              className={`min-h-[44px] p-3 rounded-lg border-2 transition-all text-center ${
-                confidence === level.value
-                  ? 'border-accent bg-accent/10'
-                  : 'border-hairline hover:border-black/[0.12] bg-paper'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              <div className="text-lg mb-1">
-                {level.value === 1 && '😕'}
-                {level.value === 2 && '🤔'}
-                {level.value === 3 && '😐'}
-                {level.value === 4 && '🙂'}
-                {level.value === 5 && '😎'}
-              </div>
-              <div className="text-xs font-medium text-text-primary leading-tight">
-                {level.label}
-              </div>
-            </button>
-          ))}
+      {/* Confidence Level - hidden in simplified mode */}
+      {!simplified && (
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-text-primary mb-3">
+            How confident are you in this position?
+          </label>
+          <div className="grid grid-cols-5 gap-2">
+            {CONFIDENCE_LEVELS.map((level) => (
+              <button
+                key={level.value}
+                type="button"
+                onClick={() => setConfidence(level.value)}
+                disabled={!isInteractive}
+                className={`min-h-[44px] p-3 rounded-lg border-2 transition-all text-center ${
+                  confidence === level.value
+                    ? 'border-accent bg-accent/10'
+                    : 'border-hairline hover:border-black/[0.12] bg-paper'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <div className="text-lg mb-1">
+                  {level.value === 1 && '😕'}
+                  {level.value === 2 && '🤔'}
+                  {level.value === 3 && '😐'}
+                  {level.value === 4 && '🙂'}
+                  {level.value === 5 && '😎'}
+                </div>
+                <div className="text-xs font-medium text-text-primary leading-tight">
+                  {level.label}
+                </div>
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-text-secondary text-center">
+            {CONFIDENCE_LEVELS.find(l => l.value === confidence)?.description}
+          </p>
         </div>
-        <p className="mt-2 text-xs text-text-secondary text-center">
-          {CONFIDENCE_LEVELS.find(l => l.value === confidence)?.description}
-        </p>
-      </div>
+      )}
 
       {/* Submit Button */}
       <button

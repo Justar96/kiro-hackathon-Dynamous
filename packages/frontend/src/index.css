@@ -434,12 +434,16 @@
   /* Ensure buttons and interactive elements have visible focus */
   button:focus-visible,
   a:focus-visible,
-  input:focus-visible,
-  textarea:focus-visible,
-  select:focus-visible,
   [role="button"]:focus-visible,
   [tabindex]:focus-visible {
     @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-page-bg;
+  }
+  
+  /* Input/textarea focus - use border only (single line, no ring) */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply outline-none ring-0 ring-offset-0;
   }
   
   /* Special focus styles for modal elements */
@@ -570,6 +574,19 @@
     }
     100% {
       background-color: transparent;
+    }
+  }
+  
+  /* Shake animation for error states */
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-4px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(4px);
     }
   }
 }

@@ -53,6 +53,15 @@ export const queryKeys = {
     stats: (id: string) => ['users', id, 'stats'] as const,
     debates: (id: string) => ['users', id, 'debates'] as const,
   },
+  // Leaderboard
+  leaderboard: {
+    arguments: () => ['leaderboard', 'arguments'] as const,
+    users: () => ['leaderboard', 'users'] as const,
+  },
+  // Stance Stats (public)
+  stanceStats: {
+    byDebate: (debateId: string) => ['stanceStats', debateId] as const,
+  },
   // Health
   health: ['health'] as const,
 } as const;
@@ -471,3 +480,82 @@ export const healthCheckQueryOptions = queryOptions({
   staleTime: 1000 * 30, // 30 seconds
   gcTime: 1000 * 60, // 1 minute
 });
+
+// ============================================================================
+// Leaderboard Queries (Public)
+// ============================================================================
+
+export interface TopArgument {
+  id: string;
+  content: string;
+  side: 'support' | 'oppose';
+  impactScore: number;
+  debateId: string;
+  resolution: string;
+  authorUsername: string;
+}
+
+/**
+ * Query options for fetching top persuasive arguments
+ */
+export const leaderboardQueryOptions = (limit: number = 10) =>
+  queryOptions({
+    queryKey: queryKeys.leaderboard.arguments(),
+    queryFn: async (): Promise<TopArgument[]> => {
+      const response = await fetchApi<{ arguments: TopArgument[] }>(`/api/leaderboard/arguments?limit=${limit}`);
+      return response.arguments;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+// ============================================================================
+// Top Users Leaderboard Queries (Public)
+// ============================================================================
+
+export interface TopUser {
+  id: string;
+  username: string;
+  reputationScore: number;
+  predictionAccuracy: number;
+  debatesParticipated: number;
+  sandboxCompleted: boolean;
+  totalImpact?: number;
+}
+
+/**
+ * Query options for fetching top users by reputation
+ */
+export const topUsersQueryOptions = (limit: number = 10) =>
+  queryOptions({
+    queryKey: queryKeys.leaderboard.users(),
+    queryFn: async (): Promise<TopUser[]> => {
+      const response = await fetchApi<{ users: TopUser[] }>(`/api/leaderboard/users?limit=${limit}`);
+      return response.users;
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+
+// ============================================================================
+// Stance Stats Queries (Public - for spectators)
+// ============================================================================
+
+export interface StanceStats {
+  totalVoters: number;
+  avgPreStance: number;
+  avgPostStance: number;
+  avgDelta: number;
+  mindChangedCount: number;
+}
+
+/**
+ * Query options for fetching aggregate stance stats (public)
+ */
+export const stanceStatsQueryOptions = (debateId: string) =>
+  queryOptions({
+    queryKey: queryKeys.stanceStats.byDebate(debateId),
+    queryFn: async (): Promise<StanceStats> => {
+      return fetchApi<StanceStats>(`/api/debates/${debateId}/stance-stats`);
+    },
+    staleTime: 1000 * 60, // 1 minute
+    enabled: !!debateId,
+  });

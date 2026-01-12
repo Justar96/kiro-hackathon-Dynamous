@@ -179,6 +179,21 @@ app.get('/api/health', (c) => c.json({ status: 'healthy' }));
 // Debate API Routes (14.2)
 // ============================================================================
 
+// GET /api/leaderboard/arguments - Get top persuasive arguments (public)
+app.get('/api/leaderboard/arguments', async (c) => {
+  const limit = parseInt(c.req.query('limit') || '10', 10);
+  const topArguments = await marketService.getTopArguments(Math.min(limit, 50));
+  return c.json({ arguments: topArguments });
+});
+
+// GET /api/leaderboard/users - Get top users by reputation (public)
+// Requirements: Index Page Improvement 3B - Top Users Leaderboard
+app.get('/api/leaderboard/users', async (c) => {
+  const limit = parseInt(c.req.query('limit') || '10', 10);
+  const topUsers = await userService.getTopUsers(Math.min(limit, 50));
+  return c.json({ users: topUsers });
+});
+
 // POST /api/debates - Create new debate (requires auth)
 app.post('/api/debates', authMiddleware, async (c) => {
   const userId = c.get('userId');
@@ -271,25 +286,14 @@ app.get('/api/debates/:id', optionalAuthMiddleware, async (c) => {
     response.debaters = { support: supportDebater, oppose: opposeDebater };
   }
   
-  // Include market data if requested (respects blind voting)
+  // Include market data if requested (no longer requires pre-stance)
   if (includeMarket) {
-    let canAccessMarket = true;
-    if (userId) {
-      const access = await votingService.canAccessMarketPrice(debateId, userId);
-      canAccessMarket = access.canAccess;
-    }
-    
-    if (canAccessMarket) {
-      const [marketPrice, history, spikes] = await Promise.all([
-        marketService.calculateMarketPrice(debateId),
-        marketService.getMarketHistory(debateId),
-        marketService.getSpikes(debateId),
-      ]);
-      response.market = { marketPrice, history, spikes };
-    } else {
-      response.market = null;
-      response.marketBlocked = true;
-    }
+    const [marketPrice, history, spikes] = await Promise.all([
+      marketService.calculateMarketPrice(debateId),
+      marketService.getMarketHistory(debateId),
+      marketService.getSpikes(debateId),
+    ]);
+    response.market = { marketPrice, history, spikes };
   }
   
   return c.json(response);
@@ -325,6 +329,49 @@ app.post('/api/debates/:id/join', authMiddleware, async (c) => {
 // ============================================================================
 // Voting API Routes (14.3)
 // ============================================================================
+
+// POST /api/debates/:id/stance/quick - Quick stance from index (requires auth)
+// Simplified: just support/oppose, records as pre-stance if none exists
+app.post('/api/debates/:id/stance/quick', authMiddleware, async (c) => {
+  const debateId = c.req.param('id');
+  const userId = c.get('userId');
+  const body = await c.req.json();
+  
+  // Convert side to supportValue (support=75, oppose=25)
+  const supportValue = body.side === 'support' ? 75 : 25;
+  
+  // Check if user already has a pre-stance
+  const existingStances = await votingService.getUserStances(debateId, userId!);
+  
+  if (existingStances.pre) {
+    // Update as post-stance
+    const input: CreateStanceInput = {
+      debateId,
+      voterId: userId!,
+      type: 'post',
+      supportValue,
+      confidence: 3,
+    };
+    const result = await votingService.recordPostStance(input);
+    
+    // Update market
+    const marketPrice = await marketService.calculateMarketPrice(debateId);
+    await marketService.recordMarketDataPoint(debateId, marketPrice.supportPrice, marketPrice.totalVotes);
+    
+    return c.json({ stance: result.stance, delta: result.delta, type: 'post' }, 201);
+  } else {
+    // Record as pre-stance
+    const input: CreateStanceInput = {
+      debateId,
+      voterId: userId!,
+      type: 'pre',
+      supportValue,
+      confidence: 3,
+    };
+    const stance = await votingService.recordPreStance(input);
+    return c.json({ stance, type: 'pre' }, 201);
+  }
+});
 
 // POST /api/debates/:id/stance/pre - Record pre-read stance (requires auth)
 app.post('/api/debates/:id/stance/pre', authMiddleware, async (c) => {
@@ -383,23 +430,14 @@ app.post('/api/debates/:id/stance/post', authMiddleware, async (c) => {
 });
 
 // GET /api/debates/:id/market - Get current market price
-// Enforces blind voting - requires pre-stance to be recorded first
+// Market is now visible to everyone (removed blind voting requirement)
 app.get('/api/debates/:id/market', optionalAuthMiddleware, async (c) => {
   const debateId = c.req.param('id');
-  const userId = c.get('userId');
   
   // Check if debate exists
   const debate = await debateService.getDebateById(debateId);
   if (!debate) {
     throw new HTTPException(404, { message: 'Debate not found' });
-  }
-  
-  // Enforce blind voting if user is authenticated
-  if (userId) {
-    const canAccess = await votingService.canAccessMarketPrice(debateId, userId);
-    if (!canAccess.canAccess) {
-      throw new HTTPException(403, { message: canAccess.reason || 'Record your pre-read stance first' });
-    }
   }
   
   const marketPrice = await marketService.calculateMarketPrice(debateId);
@@ -418,6 +456,13 @@ app.get('/api/debates/:id/stance', authMiddleware, async (c) => {
   const delta = await votingService.getPersuasionDelta(debateId, userId!);
   
   return c.json({ stances, delta });
+});
+
+// GET /api/debates/:id/stance-stats - Get aggregate stance stats (public, for spectators)
+app.get('/api/debates/:id/stance-stats', async (c) => {
+  const debateId = c.req.param('id');
+  const stats = await votingService.getDebateStanceStats(debateId);
+  return c.json(stats);
 });
 
 // ============================================================================

@@ -78,7 +78,4 @@ export function Modal({
   );
 }
 
-// Re-export the hook for external use
-export { useIsMobile } from './hooks';
-
 export default Modal;

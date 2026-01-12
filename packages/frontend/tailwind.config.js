@@ -17,9 +17,9 @@ export default {
         'text-secondary': '#6B7280',
         'text-tertiary': '#9CA3AF',
         
-        // Accent
-        'accent': '#2563EB',
-        'accent-hover': '#1D4ED8',
+        // Accent - muted paper blue
+        'accent': '#5B7B9A',
+        'accent-hover': '#4A6A89',
         
         // Semantic
         'support': '#059669',

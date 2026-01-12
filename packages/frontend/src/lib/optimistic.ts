@@ -220,7 +220,7 @@ export function useOptimisticStance({ debateId, onSuccess, onError }: UseOptimis
       mutation.mutate({
         type,
         supportValue: value.supportValue,
-        confidence: value.confidence,
+        confidence: value.confidence ?? 3,
         lastArgumentSeen,
       });
     },

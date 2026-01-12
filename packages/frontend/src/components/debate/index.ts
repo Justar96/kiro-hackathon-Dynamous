@@ -20,7 +20,7 @@ export {
 export type { EvidenceSource } from './EvidenceFootnote';
 
 // Round Components
-export { RoundSection, UnifiedRoundSection } from './RoundSection';
+export { RoundSection } from './RoundSection';
 export type { RoundSectionProps } from './RoundSection';
 export { RoundProgressIndicator } from './RoundProgressIndicator';
 export { RoundNavigator } from './RoundNavigator';
@@ -39,9 +39,6 @@ export type {
   RoundStep,
   RoundSummary,
   RoundSectionState,
-  // Legacy aliases for backward compatibility
-  UnifiedRoundSectionProps,
-  UnifiedRoundSectionState,
 } from './RoundSection.types';
 
 // Utilities
@@ -58,6 +55,13 @@ export {
 // Market Components
 export { MarketChart } from './MarketChart';
 export { StanceInput, DeltaLabel } from './StanceInput';
+export { SimpleStanceInput } from './SimpleStanceInput';
+
+// Audience Stats (for spectators)
+export { AudienceStats } from './AudienceStats';
 
 // Comments
 export { SpectatorComments } from './SpectatorComments';
+
+// New Debate Modal
+export { NewDebateModalProvider, useNewDebateModal } from './NewDebateModal';

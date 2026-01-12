@@ -72,21 +72,21 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
       </aside>
 
       {/* Desktop Layout */}
-      <div className="hidden lg:flex justify-center min-h-screen">
+      <div className="hidden lg:flex justify-center min-h-screen pt-6">
         {/* Left Rail - TOC Navigation */}
-        <aside className="w-rail flex-shrink-0 sticky top-0 h-screen overflow-y-auto py-8 pr-6">
+        <aside className="w-rail flex-shrink-0 sticky top-6 h-[calc(100vh-1.5rem)] overflow-y-auto pr-6 pt-6">
           {leftRail}
         </aside>
 
         {/* Center Paper - Main Content */}
-        <main className="w-full max-w-paper flex-shrink-0 py-8">
-          <div className="paper-surface min-h-full px-12 py-10">
+        <main className="w-full max-w-paper flex-shrink-0 pb-6">
+          <div className="paper-surface min-h-full px-10 py-6">
             {centerPaper}
           </div>
         </main>
 
         {/* Right Margin - Market Data & Stance */}
-        <aside className="w-margin flex-shrink-0 sticky top-0 h-screen overflow-y-auto py-8 pl-6">
+        <aside className="w-margin flex-shrink-0 sticky top-6 h-[calc(100vh-1.5rem)] overflow-y-auto pl-6 pt-6">
           {rightMargin}
         </aside>
       </div>

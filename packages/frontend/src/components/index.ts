@@ -108,7 +108,6 @@ export {
   useSourceCardState,
   // Round Components
   RoundSection,
-  UnifiedRoundSection, // Legacy alias
   RoundProgressIndicator,
   RoundNavigator,
   RoundHistory,
@@ -118,8 +117,13 @@ export {
   MarketChart,
   StanceInput,
   DeltaLabel,
+  // Audience Stats (for spectators)
+  AudienceStats,
   // Comments
   SpectatorComments,
+  // New Debate Modal
+  NewDebateModalProvider,
+  useNewDebateModal,
   // Utilities
   getRoundLabel,
   deriveRoundStates,
@@ -133,7 +137,6 @@ export type {
   Citation,
   EvidenceSource,
   RoundSectionProps,
-  UnifiedRoundSectionProps, // Legacy alias
   ActiveRoundViewProps,
   ArgumentSubmissionFormProps,
   RoundProgressIndicatorProps,
@@ -143,19 +146,37 @@ export type {
   RoundStep,
   RoundSummary,
   RoundSectionState,
-  UnifiedRoundSectionState, // Legacy alias
 } from './debate';
+
+// ============================================
+// Leaderboard Components
+// ============================================
+export { MindChangeLeaderboard, LeaderboardSection, TopArgumentsSection, TopUsersSection, TopArgumentCard, TopUserCard } from './leaderboard';
+export type { TopArgument, TopUser } from './leaderboard';
 
 // ============================================
 // Index List Components
 // ============================================
-export { DebateIndexList, DebateIndexRow } from './index-list';
+export { 
+  DebateIndexList, 
+  DebateIndexRow, 
+  DebateTabs, 
+  getPersistedTab, 
+  TrendingDebatesCard,
+  QuickStanceWidget,
+  SeekingOpponentsSection,
+  OnboardingBanner,
+  resetOnboardingBanner,
+  SandboxProgress,
+} from './index-list';
+export type { DebateTabType } from './index-list';
 
 // ============================================
 // Layout Components
 // ============================================
 export {
   ThreeColumnLayout,
+  IndexThreeColumnLayout,
   LeftNavRail,
   useActiveSectionObserver,
   generateDebateRoundsLabel,

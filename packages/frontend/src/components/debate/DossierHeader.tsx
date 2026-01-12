@@ -14,21 +14,21 @@ export function DossierHeader({ debate, tags = [] }: DossierHeaderProps) {
   const statusConfig = getStatusConfig(debate.status, debate.currentRound);
   
   return (
-    <header className="mb-8 pb-6 border-b border-gray-100" id="resolution">
+    <header className="mb-6 pb-4 border-b border-gray-100" id="resolution">
       {/* Status indicator - tiny caps */}
-      <div className="mb-3">
+      <div className="mb-2">
         <span className={`text-label uppercase tracking-wider ${statusConfig.color}`}>
           {statusConfig.label}
         </span>
       </div>
       
       {/* Resolution as serif heading */}
-      <h1 className="font-heading text-heading-1 text-text-primary mb-3">
+      <h1 className="font-heading text-heading-1 text-text-primary mb-2">
         {debate.resolution}
       </h1>
       
       {/* Subtitle with date */}
-      <p className="text-body-small text-text-secondary mb-4">
+      <p className="text-body-small text-text-secondary">
         Started {formatDate(debate.createdAt)}
         {debate.concludedAt && (
           <> · Concluded {formatDate(debate.concludedAt)}</>
@@ -37,7 +37,7 @@ export function DossierHeader({ debate, tags = [] }: DossierHeaderProps) {
       
       {/* Muted tags */}
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 mt-3">
           {tags.map((tag, index) => (
             <span 
               key={index}

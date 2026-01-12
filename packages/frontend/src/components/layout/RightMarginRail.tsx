@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { MarketDataPoint, StanceSpike, StanceValue } from '@debate-platform/shared';
+import { AudienceStats } from '../debate/AudienceStats';
 
 interface RightMarginRailProps {
   debateId: string;
@@ -14,9 +15,12 @@ interface RightMarginRailProps {
   onAfterStanceSubmit?: (stance: StanceValue) => void;
   afterUnlocked?: boolean;
   isSubmitting?: boolean;
+  /** Whether user is logged in - shows AudienceStats for spectators */
+  isAuthenticated?: boolean;
 }
 
 export function RightMarginRail({
+  debateId,
   supportPrice,
   opposePrice,
   dataPoints = [],
@@ -27,6 +31,7 @@ export function RightMarginRail({
   onAfterStanceSubmit,
   afterUnlocked = false,
   isSubmitting = false,
+  isAuthenticated = false,
 }: RightMarginRailProps) {
   const [beforeValue, setBeforeValue] = useState(userStance?.before ?? 50);
   const [afterValue, setAfterValue] = useState(userStance?.after ?? 50);
@@ -47,9 +52,9 @@ export function RightMarginRail({
   }, [afterValue, afterConfidence, onAfterStanceSubmit]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Support/Oppose Meter */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <h3 className="label-text">Market Position</h3>
         <div className="space-y-1">
           <div className="flex justify-between text-body-small">
@@ -75,113 +80,125 @@ export function RightMarginRail({
 
       {/* Sparkline Chart */}
       {dataPoints.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <h3 className="label-text">Trend</h3>
           <MiniSparkline dataPoints={dataPoints} />
         </div>
       )}
 
-      {/* Before Stance */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="label-text">Before</h3>
-          {beforeLocked && (
-            <span className="text-support text-xs animate-check">✓</span>
-          )}
-        </div>
-        {beforeLocked ? (
-          <div className="flex items-center gap-2 animate-lock rounded-sm p-1 -m-1">
-            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-text-secondary transition-all"
-                style={{ width: `${userStance?.before}%` }}
-              />
-            </div>
-            <span className="text-caption w-8 text-right">{userStance?.before}%</span>
+      {/* Before Stance - only for authenticated users */}
+      {isAuthenticated ? (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <h3 className="label-text">Before</h3>
+            {beforeLocked && (
+              <span className="text-support text-xs animate-check">✓</span>
+            )}
           </div>
-        ) : (
-          <div className="space-y-2">
-            <MiniSlider 
-              value={beforeValue} 
-              onChange={setBeforeValue}
-              disabled={isSubmitting}
-            />
-            <MiniConfidence 
-              value={beforeConfidence} 
-              onChange={setBeforeConfidence}
-              disabled={isSubmitting}
-            />
-            <button
-              onClick={handleBeforeSubmit}
-              disabled={isSubmitting}
-              className="w-full py-1.5 text-xs bg-accent text-white rounded-subtle hover:bg-accent-hover transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? 'Saving...' : 'Lock In'}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* After Stance */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h3 className="label-text">After</h3>
-          {delta !== null && (
-            <span className={`text-xs font-medium animate-delta ${delta > 0 ? 'text-support' : delta < 0 ? 'text-oppose' : 'text-text-secondary'}`}>
-              Δ {delta > 0 ? '+' : ''}{delta}
-            </span>
-          )}
-        </div>
-        {!beforeLocked ? (
-          <p className="text-caption italic">Record your Before stance first</p>
-        ) : !afterUnlocked ? (
-          <p className="text-caption italic">Keep reading to unlock</p>
-        ) : userStance?.after !== undefined ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
+          {beforeLocked ? (
+            <div className="flex items-center gap-2 animate-lock rounded-sm p-1 -m-1">
               <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-accent transition-all"
-                  style={{ width: `${userStance.after}%` }}
+                  className="h-full bg-text-secondary transition-all"
+                  style={{ width: `${userStance?.before}%` }}
                 />
               </div>
-              <span className="text-caption w-8 text-right">{userStance.after}%</span>
+              <span className="text-caption w-8 text-right">{userStance?.before}%</span>
             </div>
-            {/* Allow updating after stance */}
-            <button
-              onClick={() => onAfterStanceSubmit?.({ supportValue: afterValue, confidence: afterConfidence })}
-              className="w-full py-1 text-xs text-accent hover:underline"
-            >
-              Update
-            </button>
+          ) : (
+            <div className="space-y-1.5">
+              <MiniSlider 
+                value={beforeValue} 
+                onChange={setBeforeValue}
+                disabled={isSubmitting}
+              />
+              <MiniConfidence 
+                value={beforeConfidence} 
+                onChange={setBeforeConfidence}
+                disabled={isSubmitting}
+              />
+              <button
+                onClick={handleBeforeSubmit}
+                disabled={isSubmitting}
+                className="w-full py-1.5 text-xs bg-accent text-white rounded-subtle hover:bg-accent-hover transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? 'Saving...' : 'Lock In'}
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Audience Stats for spectators */
+        <div className="space-y-1.5">
+          <AudienceStats debateId={debateId} />
+          <p className="text-caption text-text-tertiary italic pt-2">
+            Sign in to track your own stance
+          </p>
+        </div>
+      )}
+
+      {/* After Stance - only for authenticated users */}
+      {isAuthenticated && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <h3 className="label-text">After</h3>
+            {delta !== null && (
+              <span className={`text-xs font-medium animate-delta ${delta > 0 ? 'text-support' : delta < 0 ? 'text-oppose' : 'text-text-secondary'}`}>
+                Δ {delta > 0 ? '+' : ''}{delta}
+              </span>
+            )}
           </div>
-        ) : (
-          <div className="space-y-2">
-            <MiniSlider 
-              value={afterValue} 
-              onChange={setAfterValue}
-              disabled={isSubmitting}
-            />
-            <MiniConfidence 
-              value={afterConfidence} 
-              onChange={setAfterConfidence}
-              disabled={isSubmitting}
-            />
-            <button
-              onClick={handleAfterSubmit}
-              disabled={isSubmitting}
-              className="w-full py-1.5 text-xs bg-accent text-white rounded-subtle hover:bg-accent-hover transition-colors disabled:opacity-50"
-            >
-              {isSubmitting ? 'Saving...' : 'Record'}
-            </button>
-          </div>
-        )}
-      </div>
+          {!beforeLocked ? (
+            <p className="text-caption italic">Record your Before stance first</p>
+          ) : !afterUnlocked ? (
+            <p className="text-caption italic">Keep reading to unlock</p>
+          ) : userStance?.after !== undefined ? (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-accent transition-all"
+                    style={{ width: `${userStance.after}%` }}
+                  />
+                </div>
+                <span className="text-caption w-8 text-right">{userStance.after}%</span>
+              </div>
+              {/* Allow updating after stance */}
+              <button
+                onClick={() => onAfterStanceSubmit?.({ supportValue: afterValue, confidence: afterConfidence })}
+                className="w-full py-1 text-xs text-accent hover:underline"
+              >
+                Update
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <MiniSlider 
+                value={afterValue} 
+                onChange={setAfterValue}
+                disabled={isSubmitting}
+              />
+              <MiniConfidence 
+                value={afterConfidence} 
+                onChange={setAfterConfidence}
+                disabled={isSubmitting}
+              />
+              <button
+                onClick={handleAfterSubmit}
+                disabled={isSubmitting}
+                className="w-full py-1.5 text-xs bg-accent text-white rounded-subtle hover:bg-accent-hover transition-colors disabled:opacity-50"
+              >
+                {isSubmitting ? 'Saving...' : 'Record'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Reading Progress */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <h3 className="label-text">Progress</h3>
-        <div className="relative h-24 w-1 bg-gray-100 rounded-full mx-auto">
+        <div className="relative h-20 w-1 bg-gray-100 rounded-full mx-auto">
           <div 
             className="absolute bottom-0 left-0 right-0 bg-accent rounded-full transition-all duration-300"
             style={{ height: `${readingProgress}%` }}
@@ -191,7 +208,7 @@ export function RightMarginRail({
       </div>
 
       {/* Debate Status */}
-      <div className="pt-4 border-t border-hairline">
+      <div className="pt-3 border-t border-hairline">
         <span className={`label-text ${debateStatus === 'active' ? 'text-support' : 'text-text-secondary'}`}>
           {debateStatus === 'active' ? '● Live' : '○ Concluded'}
         </span>

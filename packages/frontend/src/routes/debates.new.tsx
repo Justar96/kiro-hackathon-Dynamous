@@ -6,6 +6,7 @@ import { createDebate } from '../lib/mutations';
 import { FormField } from '../components/common/FormField';
 import { useFormValidation, required, maxLength } from '../lib/useFormValidation';
 import { useAuthModal, useToast } from '../components';
+import { DEBATE_TEMPLATES, getRandomTopic } from '../lib/debateTemplates';
 
 export const Route = createFileRoute('/debates/new')({
   component: NewDebatePage,
@@ -26,6 +27,7 @@ function NewDebatePage() {
   
   const [side, setSide] = useState<'support' | 'oppose'>('support');
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Form validation with useFormValidation hook
   const form = useFormValidation({
@@ -158,6 +160,61 @@ function NewDebatePage() {
               helpText="A good resolution is specific, debatable, and takes a clear position."
               ref={form.fieldRefs.resolution}
             />
+            
+            {/* Topic suggestions toggle */}
+            <button
+              type="button"
+              onClick={() => setShowSuggestions(!showSuggestions)}
+              className="mt-2 text-body-small text-accent hover:text-accent-hover transition-colors"
+            >
+              {showSuggestions ? '− Hide suggestions' : '+ Need inspiration? See topic ideas'}
+            </button>
+            
+            {/* Topic suggestions panel */}
+            {showSuggestions && (
+              <div className="mt-3 p-4 bg-page-bg rounded-subtle border border-black/[0.05]">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-label uppercase tracking-wider text-text-secondary">
+                    Topic Ideas
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const topic = getRandomTopic();
+                      resolutionProps.onChange(topic);
+                      setShowSuggestions(false);
+                    }}
+                    className="text-caption text-accent hover:text-accent-hover"
+                  >
+                    🎲 Random topic
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {DEBATE_TEMPLATES.map((category) => (
+                    <div key={category.category}>
+                      <p className="text-caption font-medium text-text-secondary mb-1.5">
+                        {category.category}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {category.topics.slice(0, 2).map((topic) => (
+                          <button
+                            key={topic}
+                            type="button"
+                            onClick={() => {
+                              resolutionProps.onChange(topic);
+                              setShowSuggestions(false);
+                            }}
+                            className="text-caption text-text-primary bg-paper px-2 py-1 rounded border border-black/[0.08] hover:border-accent hover:text-accent transition-colors text-left"
+                          >
+                            {topic.length > 50 ? topic.slice(0, 50) + '...' : topic}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Side Selection */}

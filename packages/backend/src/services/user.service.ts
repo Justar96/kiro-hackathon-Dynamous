@@ -1,5 +1,5 @@
-import { eq, or } from 'drizzle-orm';
-import { db, users } from '../db';
+import { eq, desc, sql } from 'drizzle-orm';
+import { db, users, arguments_ } from '../db';
 import type { User } from '@debate-platform/shared';
 import { 
   SANDBOX_DEBATES_REQUIRED, 
@@ -150,6 +150,56 @@ export class UserService {
       sandboxCompleted: row.sandboxCompleted,
       createdAt: row.createdAt,
     };
+  }
+
+  /**
+   * Get top users by reputation score
+   * Requirements: Index Page Improvement 3B - Top Users Leaderboard
+   * 
+   * @param limit - Maximum number of users to return
+   * @returns Array of top users with their stats and total impact
+   */
+  async getTopUsers(limit: number = 10): Promise<{
+    id: string;
+    username: string;
+    reputationScore: number;
+    predictionAccuracy: number;
+    debatesParticipated: number;
+    sandboxCompleted: boolean;
+    totalImpact: number;
+  }[]> {
+    // Get top users ordered by reputation score
+    const topUsers = await db.query.users.findMany({
+      orderBy: [desc(users.reputationScore)],
+      limit,
+    });
+
+    // Calculate total impact for each user from their arguments
+    const usersWithImpact = await Promise.all(
+      topUsers.map(async (user) => {
+        // Get sum of impact scores for user's arguments
+        const result = await db
+          .select({
+            totalImpact: sql<number>`COALESCE(SUM(${arguments_.impactScore}), 0)`,
+          })
+          .from(arguments_)
+          .where(eq(arguments_.debaterId, user.id));
+
+        const totalImpact = result[0]?.totalImpact ?? 0;
+
+        return {
+          id: user.id,
+          username: user.username,
+          reputationScore: user.reputationScore,
+          predictionAccuracy: user.predictionAccuracy,
+          debatesParticipated: user.debatesParticipated,
+          sandboxCompleted: user.sandboxCompleted,
+          totalImpact,
+        };
+      })
+    );
+
+    return usersWithImpact;
   }
 }
 

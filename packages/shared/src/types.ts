@@ -1,5 +1,50 @@
 // Core data model types for the Debate Platform
 
+// ============================================
+// Round Configuration (Single Source of Truth)
+// ============================================
+
+export const ROUNDS = [
+  { number: 1 as const, type: 'opening' as const, charLimit: 2000 },
+  { number: 2 as const, type: 'rebuttal' as const, charLimit: 1500 },
+  { number: 3 as const, type: 'closing' as const, charLimit: 1000 },
+] as const;
+
+export type RoundNumber = 1 | 2 | 3;
+export type RoundType = 'opening' | 'rebuttal' | 'closing';
+export type Side = 'support' | 'oppose';
+
+export const getRoundConfig = (n: RoundNumber) => ROUNDS[n - 1];
+export const getRoundByType = (type: RoundType) => ROUNDS.find(r => r.type === type)!;
+
+// ============================================
+// Debate Phase (Derived State Helper)
+// ============================================
+
+export type DebatePhase =
+  | { type: 'waiting_opponent' }
+  | { type: 'awaiting_argument'; round: RoundNumber; side: Side }
+  | { type: 'concluded' };
+
+export function getDebatePhase(debate: Debate): DebatePhase {
+  if (!debate.opposeDebaterId) return { type: 'waiting_opponent' };
+  if (debate.status === 'concluded') return { type: 'concluded' };
+  return { type: 'awaiting_argument', round: debate.currentRound, side: debate.currentTurn };
+}
+
+export function getDebatePhaseLabel(phase: DebatePhase): string {
+  switch (phase.type) {
+    case 'waiting_opponent': return 'Waiting for opponent';
+    case 'concluded': return 'Debate concluded';
+    case 'awaiting_argument': 
+      return `Round ${phase.round} · ${phase.side === 'support' ? 'Support' : 'Oppose'}'s turn`;
+  }
+}
+
+// ============================================
+// User Types
+// ============================================
+
 export interface User {
   id: string;
   authUserId?: string | null; // Link to Neon Auth user
@@ -31,8 +76,8 @@ export interface Debate {
   id: string;
   resolution: string;
   status: 'active' | 'concluded';
-  currentRound: 1 | 2 | 3;
-  currentTurn: 'support' | 'oppose';
+  currentRound: RoundNumber;
+  currentTurn: Side;
   supportDebaterId: string;
   opposeDebaterId: string | null;
   createdAt: Date;
@@ -42,8 +87,8 @@ export interface Debate {
 export interface Round {
   id: string;
   debateId: string;
-  roundNumber: 1 | 2 | 3;
-  roundType: 'opening' | 'rebuttal' | 'closing';
+  roundNumber: RoundNumber;
+  roundType: RoundType;
   supportArgumentId: string | null;
   opposeArgumentId: string | null;
   completedAt: Date | null;
@@ -53,7 +98,7 @@ export interface Argument {
   id: string;
   roundId: string;
   debaterId: string;
-  side: 'support' | 'oppose';
+  side: Side;
   content: string;
   impactScore: number;
   createdAt: Date;
@@ -65,15 +110,37 @@ export interface Stance {
   voterId: string;
   type: 'pre' | 'post';
   supportValue: number;
-  confidence: number;
+  confidence: number; // Kept for backward compat, default to 3
   lastArgumentSeen: string | null;
   createdAt: Date;
 }
 
 export interface StanceValue {
   supportValue: number;
-  confidence: number;
+  confidence?: number; // Optional now, defaults to 3
 }
+
+// Simplified 5-point stance scale for Polymarket-style UX
+export type StanceLevel = 'strong_support' | 'lean_support' | 'neutral' | 'lean_oppose' | 'strong_oppose';
+
+export const STANCE_LEVELS: { level: StanceLevel; value: number; label: string; short: string }[] = [
+  { level: 'strong_support', value: 100, label: 'Strongly Support', short: 'Strong Yes' },
+  { level: 'lean_support', value: 75, label: 'Lean Support', short: 'Lean Yes' },
+  { level: 'neutral', value: 50, label: 'Neutral', short: 'Neutral' },
+  { level: 'lean_oppose', value: 25, label: 'Lean Oppose', short: 'Lean No' },
+  { level: 'strong_oppose', value: 0, label: 'Strongly Oppose', short: 'Strong No' },
+];
+
+export const stanceLevelToValue = (level: StanceLevel): number => 
+  STANCE_LEVELS.find(s => s.level === level)?.value ?? 50;
+
+export const valueToStanceLevel = (value: number): StanceLevel => {
+  if (value >= 88) return 'strong_support';
+  if (value >= 63) return 'lean_support';
+  if (value >= 38) return 'neutral';
+  if (value >= 13) return 'lean_oppose';
+  return 'strong_oppose';
+};
 
 export interface Reaction {
   id: string;
@@ -161,7 +228,7 @@ export interface CreateStanceInput {
   voterId: string;
   type: 'pre' | 'post';
   supportValue: number;
-  confidence: number;
+  confidence?: number; // Optional, defaults to 3
   lastArgumentSeen?: string | null;
 }
 
@@ -178,12 +245,42 @@ export interface CreateCommentInput {
   parentId?: string | null;
 }
 
-// Character limits for arguments by round type
+// Character limits for arguments by round type (derived from ROUNDS config)
 export const ARGUMENT_CHAR_LIMITS = {
-  opening: 2000,
-  rebuttal: 1500,
-  closing: 1000,
+  opening: ROUNDS[0].charLimit,
+  rebuttal: ROUNDS[1].charLimit,
+  closing: ROUNDS[2].charLimit,
 } as const;
+
+export const getCharLimit = (roundType: RoundType): number => getRoundByType(roundType).charLimit;
+
+// ============================================
+// Submission Validation Helper
+// ============================================
+
+export type SubmissionCheck = 
+  | { allowed: true; side: Side }
+  | { allowed: false; reason: string };
+
+export function canSubmitArgument(debate: Debate, userId: string): SubmissionCheck {
+  if (debate.status === 'concluded') {
+    return { allowed: false, reason: 'Debate has concluded' };
+  }
+  
+  const side: Side | null = 
+    userId === debate.supportDebaterId ? 'support' :
+    userId === debate.opposeDebaterId ? 'oppose' : null;
+  
+  if (!side) {
+    return { allowed: false, reason: 'Only assigned debaters can submit' };
+  }
+  
+  if (debate.currentTurn !== side) {
+    return { allowed: false, reason: `It is ${debate.currentTurn}'s turn` };
+  }
+  
+  return { allowed: true, side };
+}
 
 // Resolution validation constants
 export const RESOLUTION_MAX_LENGTH = 500;

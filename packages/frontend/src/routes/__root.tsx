@@ -2,7 +2,7 @@ import { createRootRouteWithContext, Outlet, Link } from '@tanstack/react-router
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import type { QueryClient } from '@tanstack/react-query';
-import { useAuthModal, ProfileDropdown } from '../components';
+import { useAuthModal, ProfileDropdown, useNewDebateModal } from '../components';
 import { useSessionWatcher, useSession } from '../lib/useSession';
 import { useCurrentUser } from '../lib/hooks';
 
@@ -91,10 +91,10 @@ function Navigation({ sessionState }: NavigationProps) {
           </Link>
 
           {/* Navigation Links */}
-          <div className="flex items-center gap-3 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link
               to="/"
-              className="min-h-[44px] px-2 text-text-secondary hover:text-text-primary text-body-small font-medium transition-colors hidden sm:inline-flex items-center"
+              className="min-h-[44px] min-w-[44px] px-2 py-1 rounded-small border border-hairline bg-paper hover:bg-page-bg transition-colors hidden sm:inline-flex items-center text-body-small font-medium text-text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               activeProps={{ className: 'text-text-primary' }}
             >
               Index
@@ -102,25 +102,7 @@ function Navigation({ sessionState }: NavigationProps) {
 
             {/* Auth Section - Signed In */}
             {!isLoading && user && (
-              <div className="flex items-center gap-2 sm:gap-4">
-                <Link
-                  to="/debates/new"
-                  className="min-h-[44px] px-2.5 sm:px-3 bg-text-primary text-paper text-body-small font-medium rounded-subtle hover:bg-text-primary/90 transition-colors active:bg-text-primary/80 inline-flex items-center"
-                >
-                  <span className="hidden sm:inline">New Debate</span>
-                  <span className="sm:hidden">+</span>
-                </Link>
-                <ProfileDropdown
-                  user={{
-                    id: user.id,
-                    name: user.name || null,
-                    email: user.email,
-                    image: user.image || null,
-                  }}
-                  platformUser={platformUser}
-                  showName={false}
-                />
-              </div>
+              <NavAuthSection user={user} platformUser={platformUser} />
             )}
 
             {/* Auth Section - Signed Out */}
@@ -156,6 +138,47 @@ function AuthButtons() {
     >
       Sign In
     </button>
+  );
+}
+
+/**
+ * Authenticated user navigation section
+ * Shows New Debate button and Profile dropdown
+ */
+interface NavAuthSectionProps {
+  user: { id: string; email: string; name: string; image?: string | null };
+  platformUser: {
+    id: string;
+    username: string;
+    reputationScore: number;
+    sandboxCompleted: boolean;
+    debatesParticipated: number;
+  } | null;
+}
+
+function NavAuthSection({ user, platformUser }: NavAuthSectionProps) {
+  const { open: openNewDebate } = useNewDebateModal();
+  
+  return (
+    <div className="flex items-center gap-2 sm:gap-4">
+      <button
+        onClick={openNewDebate}
+        className="min-h-[44px] min-w-[44px] px-2 py-1 rounded-small border border-hairline bg-paper hover:bg-page-bg transition-colors inline-flex items-center text-body-small font-medium text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+      >
+        <span className="hidden sm:inline">New Debate</span>
+        <span className="sm:hidden">+</span>
+      </button>
+      <ProfileDropdown
+        user={{
+          id: user.id,
+          name: user.name || null,
+          email: user.email,
+          image: user.image || null,
+        }}
+        platformUser={platformUser}
+        showName={false}
+      />
+    </div>
   );
 }
 

@@ -108,8 +108,8 @@ export function LeftNavRail({
   }, [sections, onActiveSectionChange]);
 
   return (
-    <nav className="space-y-1" aria-label="Table of contents">
-      <h2 className="label-text mb-4 px-3">Contents</h2>
+    <nav className="space-y-0.5" aria-label="Table of contents">
+      <h2 className="label-text mb-3 px-3">Contents</h2>
       <ul className="space-y-0.5">
         {sections.map((section) => {
           const isActive = activeSection === section.id;

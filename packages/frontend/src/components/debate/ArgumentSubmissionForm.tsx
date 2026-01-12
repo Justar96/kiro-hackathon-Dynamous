@@ -30,8 +30,20 @@ export function ArgumentSubmissionForm({
   const canSubmit = !isEmpty && !isOverLimit && !isSubmitting;
   
   const sideConfig = side === 'support' 
-    ? { label: 'For', color: 'text-support', borderColor: 'border-support/30', focusBorder: 'focus:border-support' }
-    : { label: 'Against', color: 'text-oppose', borderColor: 'border-oppose/30', focusBorder: 'focus:border-oppose' };
+    ? { 
+        label: 'For', 
+        color: 'text-support', 
+        borderColor: 'border-support/20',
+        headerBg: 'bg-support/5',
+        focusRing: 'focus:ring-support/30',
+      }
+    : { 
+        label: 'Against', 
+        color: 'text-oppose', 
+        borderColor: 'border-oppose/20',
+        headerBg: 'bg-oppose/5',
+        focusRing: 'focus:ring-oppose/30',
+      };
   
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -49,16 +61,30 @@ export function ArgumentSubmissionForm({
   }, [canSubmit, content, onSubmit]);
   
   return (
-    <form onSubmit={handleSubmit} className="mb-8 last:mb-0">
-      {/* Side label */}
-      <div className="mb-2">
-        <span className={`text-label uppercase tracking-wider ${sideConfig.color}`}>
-          {sideConfig.label}
+    <form 
+      onSubmit={handleSubmit} 
+      className={`rounded-lg border ${sideConfig.borderColor} bg-white overflow-hidden`}
+    >
+      {/* Card Header */}
+      <div className={`px-5 py-3 border-b ${sideConfig.headerBg} ${sideConfig.borderColor} flex items-center justify-between`}>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-semibold uppercase tracking-wider ${sideConfig.color}`}>
+            {sideConfig.label}
+          </span>
+          <span className="text-xs text-text-tertiary">— Your turn</span>
+        </div>
+        
+        {/* Character counter in header */}
+        <span 
+          id="char-counter"
+          className={`text-xs ${isOverLimit ? 'text-red-500 font-medium' : 'text-text-tertiary'}`}
+        >
+          {charCount.toLocaleString()} / {charLimit.toLocaleString()}
         </span>
       </div>
       
-      {/* Textarea container */}
-      <div className="relative">
+      {/* Card Body - Textarea */}
+      <div className="p-4">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -66,48 +92,38 @@ export function ArgumentSubmissionForm({
           placeholder={`Write your ${roundType} argument...`}
           disabled={isSubmitting}
           className={`
-            w-full min-h-[200px] p-4 
+            w-full min-h-[180px] p-3
             text-body text-text-primary leading-relaxed
-            bg-white border rounded-subtle
-            ${sideConfig.borderColor} ${sideConfig.focusBorder}
-            focus:outline-none focus:ring-1 focus:ring-opacity-50
-            disabled:bg-gray-50 disabled:cursor-not-allowed
+            bg-gray-50/50 border border-gray-200 rounded-lg
+            focus:outline-none focus:ring-2 ${sideConfig.focusRing} focus:border-transparent focus:bg-white
+            disabled:bg-gray-100 disabled:cursor-not-allowed
             resize-y
-            transition-colors
+            transition-all
           `}
           aria-label={`${sideConfig.label} argument for ${roundType} round`}
           aria-describedby="char-counter"
         />
-        
-        {/* Character counter */}
-        <div 
-          id="char-counter"
-          className={`
-            absolute bottom-3 right-3 
-            text-caption
-            ${isOverLimit ? 'text-red-500' : 'text-text-tertiary'}
-          `}
-        >
-          {charCount.toLocaleString()} / {charLimit.toLocaleString()}
-        </div>
       </div>
       
-      {/* Footer with submit button */}
-      <div className="flex items-center justify-between mt-3">
-        <p className="text-caption text-text-tertiary">
-          Press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Ctrl</kbd>+<kbd className="px-1 py-0.5 bg-gray-100 rounded text-xs">Enter</kbd> to submit
+      {/* Card Footer - Submit actions */}
+      <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/30 flex items-center justify-between">
+        <p className="text-xs text-text-tertiary hidden sm:block">
+          <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs">⌘</kbd>
+          <span className="mx-1">+</span>
+          <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs">Enter</kbd>
+          <span className="ml-1.5">to submit</span>
         </p>
         
         <button
           type="submit"
           disabled={!canSubmit}
           className={`
-            px-4 py-2 
-            text-body-small font-medium
-            rounded-subtle
-            transition-colors
+            px-5 py-2 
+            text-sm font-medium
+            rounded-lg
+            transition-all
             ${canSubmit 
-              ? 'bg-accent text-white hover:bg-accent/90' 
+              ? 'bg-accent text-white hover:bg-accent/90 shadow-sm' 
               : 'bg-gray-100 text-text-tertiary cursor-not-allowed'
             }
           `}

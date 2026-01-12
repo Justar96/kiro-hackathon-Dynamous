@@ -150,6 +150,7 @@ export function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps)
 /**
  * Inline error display for smaller components
  * Supports retry functionality
+ * Retry button has 44px minimum touch target for accessibility (Requirement 8.4)
  */
 export function InlineError({ 
   message, 
@@ -164,7 +165,7 @@ export function InlineError({
       {onRetry && (
         <button
           onClick={onRetry}
-          className="text-body-small text-accent hover:text-accent-hover transition-colors focus:outline-none focus:underline"
+          className="min-h-[44px] px-2 text-body-small text-accent hover:text-accent-hover transition-colors focus:outline-none focus:underline inline-flex items-center -ml-2"
         >
           Try again
         </button>

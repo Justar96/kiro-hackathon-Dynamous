@@ -53,19 +53,19 @@ export function SpectatorComments({
   return (
     <section 
       id="comments" 
-      className="mt-12 pt-8 border-t border-gray-200 scroll-mt-8"
+      className="mt-8 pt-6 border-t border-gray-200 scroll-mt-8"
       aria-labelledby="comments-heading"
     >
       {/* Section header - visually distinct from debate rounds */}
-      <header className="mb-6">
+      <header className="mb-3">
         <h2 
           id="comments-heading"
           className="font-heading text-heading-2 text-text-primary"
         >
           Spectator Discussion
         </h2>
-        <p className="text-body-small text-text-secondary mt-1">
-          Share your thoughts on this debate. This section is separate from the main arguments.
+        <p className="text-body-small text-text-secondary mt-0.5">
+          Share your thoughts on this debate.
         </p>
       </header>
 
@@ -81,7 +81,7 @@ export function SpectatorComments({
       )}
 
       {/* Comments list */}
-      <div className="mt-6 space-y-4">
+      <div className="mt-4 space-y-3">
         {threadedComments.length === 0 ? (
           <EmptyComments isAuthenticated={!!currentUserId} />
         ) : (
@@ -308,16 +308,16 @@ function CommentThread({
  */
 function EmptyComments({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
-    <div className="py-8 text-center">
+    <div className="py-6 text-center">
       <p className="text-body text-text-secondary">
         No comments yet.
       </p>
       {isAuthenticated ? (
-        <p className="text-body-small text-text-tertiary mt-1">
+        <p className="text-body-small text-text-tertiary mt-0.5">
           Be the first to share your thoughts.
         </p>
       ) : (
-        <p className="text-body-small text-text-tertiary mt-1">
+        <p className="text-body-small text-text-tertiary mt-0.5">
           Sign in to join the discussion.
         </p>
       )}

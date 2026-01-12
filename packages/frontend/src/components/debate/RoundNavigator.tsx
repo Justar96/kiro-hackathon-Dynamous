@@ -73,7 +73,7 @@ export function RoundNavigator({
 
   return (
     <nav 
-      className="flex items-center border-b border-gray-200"
+      className="flex items-center bg-white"
       role="tablist"
       aria-label="Debate rounds"
       onTouchStart={handleTouchStart}
@@ -129,59 +129,42 @@ function RoundTab({
         disabled={!isNavigable}
         onClick={onClick}
         className={`
-          flex-1 flex items-center justify-center gap-1.5 sm:gap-2 
-          py-2.5 sm:py-3 px-2 sm:px-4
-          text-body font-medium transition-colors relative
+          flex-1 flex items-center justify-center gap-2
+          py-3 px-3 text-sm font-medium relative
+          transition-all duration-150
           focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset
-          min-h-[44px]
           ${styles.button}
         `}
       >
         {/* State indicator dot */}
         <span 
-          className={`w-2 h-2 rounded-full flex-shrink-0 ${styles.dot}`}
+          className={`w-2 h-2 rounded-full flex-shrink-0 transition-all ${styles.dot}`}
           aria-hidden="true"
         />
         
-        {/* Round label - abbreviated on mobile */}
-        <span className={`${styles.label} hidden sm:inline`}>
+        {/* Round label */}
+        <span className={`transition-colors ${styles.label}`}>
           {step.label}
-        </span>
-        {/* Mobile abbreviated label */}
-        <span className={`${styles.label} sm:hidden text-sm`}>
-          {getMobileLabel(step.label)}
         </span>
         
         {/* Selected indicator bar */}
         {isSelected && (
           <span 
-            className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
+            className="absolute bottom-0 left-2 right-2 h-0.5 bg-accent rounded-full"
             aria-hidden="true"
           />
         )}
       </button>
       
-      {/* Connector line between tabs - hidden on mobile for cleaner look */}
+      {/* Connector line between tabs - subtle on desktop */}
       {showConnector && (
         <div 
-          className={`hidden sm:block w-8 h-0.5 flex-shrink-0 ${styles.connector}`}
+          className={`hidden sm:block w-4 h-px flex-shrink-0 ${styles.connector}`}
           aria-hidden="true"
         />
       )}
     </div>
   );
-}
-
-/**
- * Gets abbreviated label for mobile display.
- */
-function getMobileLabel(label: string): string {
-  const mobileLabels: Record<string, string> = {
-    'Opening': 'Open',
-    'Rebuttal': 'Rebut',
-    'Closing': 'Close',
-  };
-  return mobileLabels[label] || label;
 }
 
 /**
@@ -195,22 +178,22 @@ function getTabStyles(
   // Base styles for disabled/unavailable tabs
   if (!isNavigable) {
     return {
-      button: 'cursor-not-allowed opacity-50',
-      dot: 'bg-gray-300',
-      label: 'text-text-tertiary',
-      connector: 'bg-gray-200',
+      button: 'cursor-not-allowed',
+      dot: 'bg-gray-200',
+      label: 'text-text-tertiary/50',
+      connector: 'bg-gray-100',
     };
   }
 
   // Selected tab styles
   if (isSelected) {
     return {
-      button: 'cursor-pointer hover:bg-gray-50',
+      button: 'cursor-pointer bg-white',
       dot: state === 'completed' ? 'bg-green-500' : 
-           state === 'active' ? 'bg-blue-500' : 
+           state === 'active' ? 'bg-accent' : 
            state === 'viewing-history' ? 'bg-amber-500' : 'bg-gray-400',
-      label: 'text-blue-600',
-      connector: state === 'completed' ? 'bg-green-300' : 'bg-gray-200',
+      label: 'text-text-primary',
+      connector: state === 'completed' ? 'bg-green-200' : 'bg-gray-100',
     };
   }
 
@@ -218,32 +201,32 @@ function getTabStyles(
   switch (state) {
     case 'completed':
       return {
-        button: 'cursor-pointer hover:bg-gray-50',
-        dot: 'bg-green-500',
-        label: 'text-green-600',
-        connector: 'bg-green-300',
+        button: 'cursor-pointer hover:bg-gray-50/50',
+        dot: 'bg-green-400',
+        label: 'text-text-secondary',
+        connector: 'bg-green-200',
       };
     case 'active':
       return {
-        button: 'cursor-pointer hover:bg-gray-50',
-        dot: 'bg-blue-500 ring-2 ring-blue-200',
-        label: 'text-text-primary',
-        connector: 'bg-gray-200',
+        button: 'cursor-pointer hover:bg-gray-50/50',
+        dot: 'bg-accent ring-2 ring-accent/20',
+        label: 'text-text-secondary',
+        connector: 'bg-gray-100',
       };
     case 'viewing-history':
       return {
-        button: 'cursor-pointer hover:bg-gray-50',
-        dot: 'bg-amber-500',
-        label: 'text-amber-600',
-        connector: 'bg-amber-300',
+        button: 'cursor-pointer hover:bg-gray-50/50',
+        dot: 'bg-amber-400',
+        label: 'text-text-secondary',
+        connector: 'bg-amber-200',
       };
     case 'pending':
     default:
       return {
-        button: 'cursor-pointer hover:bg-gray-50',
-        dot: 'bg-gray-300',
+        button: 'cursor-pointer hover:bg-gray-50/50',
+        dot: 'bg-gray-200',
         label: 'text-text-tertiary',
-        connector: 'bg-gray-200',
+        connector: 'bg-gray-100',
       };
   }
 }

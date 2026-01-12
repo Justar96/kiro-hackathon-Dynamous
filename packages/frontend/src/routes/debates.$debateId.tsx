@@ -235,6 +235,7 @@ function DebateView() {
             onAfterStanceSubmit={token ? handleAfterStanceSubmit : undefined}
             afterUnlocked={afterUnlocked}
             isSubmitting={isStancePending}
+            isAuthenticated={!!token}
           />
           {/* Source card displayed in margin on citation hover */}
           {hoveredSource && (
@@ -383,26 +384,25 @@ function OutcomeSection({ debate }: OutcomeSectionProps) {
   const isActive = debate.status === 'active';
 
   return (
-    <section id="outcome" className="mt-12 pt-8 border-t border-gray-100 scroll-mt-8">
-      <h2 className="font-heading text-heading-2 text-text-primary mb-4">
+    <section id="outcome" className="mt-8 pt-6 border-t border-gray-100 scroll-mt-8">
+      <h2 className="font-heading text-heading-2 text-text-primary mb-3">
         Outcome
       </h2>
       
       {isActive ? (
-        <div className="py-8 px-6 bg-gray-50 rounded-subtle text-center">
+        <div className="py-6 px-4 bg-gray-50 rounded-subtle text-center">
           <p className="text-body text-text-secondary">
             This debate is still in progress.
           </p>
-          <p className="text-body-small text-text-tertiary mt-2">
+          <p className="text-body-small text-text-tertiary mt-1">
             Currently in Round {debate.currentRound} · {debate.currentTurn === 'support' ? 'Support' : 'Oppose'}'s turn
           </p>
         </div>
       ) : (
-        <div className="py-8 px-6 bg-gray-50 rounded-subtle">
+        <div className="py-6 px-4 bg-gray-50 rounded-subtle">
           <p className="text-body text-text-primary text-center">
             Debate concluded on {formatDate(debate.concludedAt)}
           </p>
-          {/* Final results would be displayed here */}
         </div>
       )}
     </section>
@@ -442,12 +442,11 @@ function DebateNotFound() {
 function DebateViewPending() {
   return (
     <div className="min-h-screen bg-page-bg">
-      <div className="hidden lg:flex justify-center min-h-screen">
+      <div className="hidden lg:flex justify-center min-h-screen pt-6">
         {/* Left Rail Skeleton - TOC navigation */}
-        <aside className="w-rail flex-shrink-0 sticky top-0 h-screen py-8 pr-6">
+        <aside className="w-rail flex-shrink-0 sticky top-6 h-[calc(100vh-1.5rem)] pr-6 pt-6">
           <div className="space-y-2">
-            <SkeletonText lines={1} width="5rem" className="mb-4" />
-            {/* Unified TOC structure: Resolution, Debate Rounds, Outcome, Discussion */}
+            <SkeletonText lines={1} width="5rem" className="mb-3" />
             {[1, 2, 3, 4].map((i) => (
               <Skeleton key={i} className="h-8 w-full" />
             ))}
@@ -455,79 +454,67 @@ function DebateViewPending() {
         </aside>
 
         {/* Center Paper Skeleton - Main content */}
-        <main className="w-full max-w-paper flex-shrink-0 py-8">
-          <div className="paper-surface min-h-full px-12 py-10">
+        <main className="w-full max-w-paper flex-shrink-0 pb-6">
+          <div className="paper-surface min-h-full px-10 py-6">
             {/* Header skeleton - Resolution */}
-            <div className="mb-8 pb-6 border-b border-gray-100">
-              <SkeletonText lines={1} width="6rem" className="mb-3" />
-              <SkeletonHeading className="mb-3" width="75%" />
+            <div className="mb-4 pb-4 border-b border-gray-100">
+              <SkeletonText lines={1} width="6rem" className="mb-2" />
+              <SkeletonHeading className="mb-2" width="75%" />
               <SkeletonText lines={1} width="12rem" />
             </div>
 
             {/* Unified Round Section skeleton */}
-            <div className="mb-12 space-y-4">
-              {/* Progress indicator skeleton */}
+            <div className="mb-8 space-y-3">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-6 w-32" />
                 <Skeleton className="h-6 w-24" />
               </div>
               
-              {/* Round navigator skeleton - three tabs */}
               <div className="flex gap-2 border-b border-gray-100 pb-2">
                 {[1, 2, 3].map((i) => (
                   <Skeleton key={i} className="h-10 w-24 rounded-subtle" />
                 ))}
               </div>
               
-              {/* Active round content skeleton */}
-              <div className="pt-4">
-                {/* Round header */}
-                <div className="mb-6 pb-3 border-b border-gray-100">
+              <div className="pt-3">
+                <div className="mb-4 pb-2 border-b border-gray-100">
                   <SkeletonHeading className="mb-2" width="12rem" height={28} />
                   <SkeletonText lines={1} width="16rem" />
                 </div>
                 
-                {/* Arguments - Support and Oppose */}
-                <div className="space-y-8">
-                  {/* Support argument */}
+                <div className="space-y-4">
                   <SkeletonArgumentBlock />
-                  
-                  {/* Oppose argument */}
                   <SkeletonArgumentBlock />
                 </div>
               </div>
             </div>
 
             {/* Outcome section skeleton */}
-            <div className="mb-8 pt-8 border-t border-gray-100">
-              <SkeletonHeading className="mb-4" width="8rem" height={24} />
-              <Skeleton className="h-24 w-full rounded-subtle" />
+            <div className="mb-6 pt-6 border-t border-gray-100">
+              <SkeletonHeading className="mb-3" width="8rem" height={24} />
+              <Skeleton className="h-20 w-full rounded-subtle" />
             </div>
           </div>
         </main>
 
         {/* Right Margin Skeleton - Market data */}
-        <aside className="w-margin flex-shrink-0 sticky top-0 h-screen py-8 pl-6">
+        <aside className="w-margin flex-shrink-0 sticky top-6 h-[calc(100vh-1.5rem)] pl-6 pt-6">
           <SkeletonMarketData />
         </aside>
       </div>
 
       {/* Mobile skeleton */}
-      <div className="lg:hidden pt-14 pb-20 px-4 py-6">
-        <div className="paper-surface px-4 py-6">
-          <SkeletonHeading className="mb-4" width="75%" />
-          {/* Unified round section - single skeleton instead of three */}
-          <div className="space-y-4">
-            {/* Progress indicator */}
+      <div className="lg:hidden pt-14 pb-20 px-4 py-4">
+        <div className="paper-surface px-4 py-4">
+          <SkeletonHeading className="mb-3" width="75%" />
+          <div className="space-y-3">
             <Skeleton className="h-6 w-32" />
-            {/* Navigator tabs */}
             <div className="flex gap-2">
               {[1, 2, 3].map((i) => (
                 <Skeleton key={i} className="h-8 w-20 rounded-subtle" />
               ))}
             </div>
-            {/* Single round content */}
-            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-40 w-full" />
           </div>
         </div>
       </div>

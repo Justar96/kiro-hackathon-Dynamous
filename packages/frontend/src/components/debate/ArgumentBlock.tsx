@@ -52,48 +52,50 @@ export function ArgumentBlock({
   );
   
   return (
-    <article className="mb-8 last:mb-0">
-      {/* Side label - tiny caps */}
-      <div className="mb-2">
-        <span className={`text-label uppercase tracking-wider ${sideConfig.color}`}>
-          {sideConfig.label}
-        </span>
-      </div>
-      
-      {/* Author + reputation (small text) */}
-      {author && (
-        <div className="flex items-center gap-2 mb-3 text-body-small text-text-secondary">
-          <span className="font-medium">{author.username}</span>
-          <span className="text-text-tertiary">·</span>
-          <span className="text-text-tertiary">
-            Rep: {author.reputationScore.toFixed(0)}
+    <article className={`rounded-lg border ${sideConfig.borderColor} bg-white overflow-hidden`}>
+      {/* Card Header - Side label with accent bar */}
+      <div className={`px-5 py-3 border-b ${sideConfig.headerBg} ${sideConfig.borderColor} flex items-center justify-between`}>
+        <div className="flex items-center gap-3">
+          <span className={`text-xs font-semibold uppercase tracking-wider ${sideConfig.color}`}>
+            {sideConfig.label}
           </span>
+          {/* Author + reputation */}
+          {author && (
+            <>
+              <span className="text-gray-300">·</span>
+              <span className="text-sm text-text-secondary">
+                {author.username}
+              </span>
+              <span className="text-xs text-text-tertiary bg-gray-100 px-1.5 py-0.5 rounded">
+                Rep {author.reputationScore.toFixed(0)}
+              </span>
+            </>
+          )}
         </div>
-      )}
-      
-      {/* Main text as readable paragraph */}
-      <div className="text-body text-text-primary leading-relaxed mb-4">
-        {contentWithCitations}
-      </div>
-      
-      {/* Footer: Impact badge and attribution button */}
-      <div className="flex items-center justify-between">
-        {/* Impact badge - muted but conceptually significant */}
+        
+        {/* Impact badge in header */}
         {hasImpact && (
           <ImpactBadge score={argument.impactScore} />
         )}
-        
-        {/* Spacer when no impact badge */}
-        {!hasImpact && <div />}
-        
-        {/* "This changed my mind" button - for impact attribution */}
-        {(onAttributeImpact || onMindChanged) && (
+      </div>
+      
+      {/* Card Body - Main content */}
+      <div className="px-5 py-4">
+        {/* Main text as readable paragraph */}
+        <div className="text-body text-text-primary leading-relaxed">
+          {contentWithCitations}
+        </div>
+      </div>
+      
+      {/* Card Footer - Attribution button */}
+      {(onAttributeImpact || onMindChanged) && (
+        <div className="px-5 py-3 border-t border-gray-50 bg-gray-50/30">
           <MindChangedButton 
             onClick={onMindChanged || onAttributeImpact}
             attributed={attributed}
           />
-        )}
-      </div>
+        </div>
+      )}
     </article>
   );
 }
@@ -153,11 +155,26 @@ export function MindChangedButton({ onClick, attributed = false }: MindChangedBu
   );
 }
 
-function getSideConfig(side: 'support' | 'oppose'): { label: string; color: string } {
+function getSideConfig(side: 'support' | 'oppose'): { 
+  label: string; 
+  color: string; 
+  borderColor: string;
+  headerBg: string;
+} {
   if (side === 'support') {
-    return { label: 'For', color: 'text-support' };
+    return { 
+      label: 'For', 
+      color: 'text-support',
+      borderColor: 'border-support/20',
+      headerBg: 'bg-support/5',
+    };
   }
-  return { label: 'Against', color: 'text-oppose' };
+  return { 
+    label: 'Against', 
+    color: 'text-oppose',
+    borderColor: 'border-oppose/20',
+    headerBg: 'bg-oppose/5',
+  };
 }
 
 /**

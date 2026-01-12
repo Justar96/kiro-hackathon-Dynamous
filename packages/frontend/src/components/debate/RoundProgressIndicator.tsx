@@ -38,23 +38,27 @@ export function RoundProgressIndicator({
   );
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 py-2.5 sm:py-3 px-3 sm:px-4 bg-gray-50 rounded-subtle border border-gray-100">
+    <div className="flex items-center justify-between px-5 py-3 bg-gray-50/50">
       {/* Progress text */}
       <div className="flex items-center gap-2 min-w-0">
-        <span className="text-sm sm:text-body font-medium text-text-primary truncate">
+        <span className="text-sm font-medium text-text-primary">
           {progressText}
         </span>
         {isViewingHistory && (
-          <span className="text-xs sm:text-label text-text-tertiary bg-gray-100 px-1.5 sm:px-2 py-0.5 rounded flex-shrink-0">
-            History
+          <span className="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
+            Viewing history
           </span>
         )}
       </div>
       
-      {/* Round step indicators */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        {roundSteps.map((step) => (
-          <RoundStepIndicator key={step.roundNumber} step={step} />
+      {/* Round step indicators - minimal dots */}
+      <div className="flex items-center gap-3">
+        {roundSteps.map((step, index) => (
+          <RoundStepIndicator 
+            key={step.roundNumber} 
+            step={step} 
+            showLabel={index === roundSteps.findIndex(s => s.state === 'active' || s.state === 'viewing-history')}
+          />
         ))}
       </div>
     </div>
@@ -63,45 +67,34 @@ export function RoundProgressIndicator({
 
 interface RoundStepIndicatorProps {
   step: RoundStep;
+  showLabel?: boolean;
 }
 
 /**
  * Individual step indicator showing the state of a single round.
  * Compact on mobile with abbreviated labels.
  */
-function RoundStepIndicator({ step }: RoundStepIndicatorProps) {
+function RoundStepIndicator({ step, showLabel = false }: RoundStepIndicatorProps) {
   const stateStyles = getStepStateStyles(step.state);
   
   return (
     <div 
-      className="flex items-center gap-1 sm:gap-1.5"
+      className="flex items-center gap-1.5"
       title={`${step.label}: ${getStateLabel(step.state)}`}
     >
       {/* Step dot/icon */}
       <div 
-        className={`w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full transition-colors ${stateStyles.dot}`}
+        className={`w-2.5 h-2.5 rounded-full transition-all ${stateStyles.dot}`}
         aria-hidden="true"
       />
-      {/* Step label (abbreviated on mobile, hidden on very small screens) */}
-      <span className={`text-xs sm:text-label hidden xs:inline ${stateStyles.label}`}>
-        {getMobileStepLabel(step.label)}
-      </span>
+      {/* Step label - only show for active step */}
+      {showLabel && (
+        <span className={`text-xs font-medium ${stateStyles.label}`}>
+          {step.label}
+        </span>
+      )}
     </div>
   );
-}
-
-/**
- * Gets abbreviated step label for mobile display.
- */
-function getMobileStepLabel(label: string): string {
-  // On small screens, use first letter only
-  // This is handled by CSS, but we provide abbreviated versions
-  const abbreviated: Record<string, string> = {
-    'Opening': 'O',
-    'Rebuttal': 'R',
-    'Closing': 'C',
-  };
-  return abbreviated[label] || label.charAt(0);
 }
 
 /**

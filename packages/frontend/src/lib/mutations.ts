@@ -125,7 +125,7 @@ export async function submitArgument(
 
 interface RecordStanceInput {
   supportValue: number;
-  confidence: number;
+  confidence?: number;
   lastArgumentSeen?: string | null;
 }
 
@@ -165,6 +165,32 @@ export async function recordPostStance(
 ): Promise<RecordPostStanceResponse> {
   return await mutateApi<RecordPostStanceResponse>(
     `/api/debates/${debateId}/stance/post`,
+    'POST',
+    input,
+    token
+  );
+}
+
+interface QuickStanceInput {
+  side: 'support' | 'oppose';
+}
+
+interface QuickStanceResponse {
+  stance: Stance;
+  delta?: PersuasionDelta;
+  type: 'pre' | 'post';
+}
+
+/**
+ * Quick stance from index page - simplified support/oppose
+ */
+export async function recordQuickStance(
+  debateId: string,
+  input: QuickStanceInput,
+  token: string
+): Promise<QuickStanceResponse> {
+  return await mutateApi<QuickStanceResponse>(
+    `/api/debates/${debateId}/stance/quick`,
     'POST',
     input,
     token

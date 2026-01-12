@@ -102,19 +102,22 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement, Form
     const showError = error && touched;
     
     // Base input styles following paper-clean aesthetic
+    // Using only border for focus state (single line, no ring)
     const baseInputStyles = `
-      w-full px-3 sm:px-4 py-3
-      border rounded-subtle
-      text-body-small sm:text-body text-text-primary
+      w-full px-4 py-3
+      bg-paper border-2 border-black/[0.08] rounded-small
+      text-body text-text-primary
       placeholder:text-text-tertiary
-      focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent
-      disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50
-      transition-colors
+      focus:outline-none focus:border-accent focus:bg-white
+      focus:ring-0 focus-visible:ring-0
+      hover:border-black/[0.15]
+      disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-page-bg
+      transition-all duration-150
     `;
     
     const errorStyles = showError
-      ? 'border-oppose focus:ring-oppose/20 focus:border-oppose'
-      : 'border-black/[0.08]';
+      ? 'border-oppose focus:border-oppose hover:border-oppose/80'
+      : '';
 
     const inputProps = {
       id,
@@ -140,10 +143,10 @@ export const FormField = forwardRef<HTMLInputElement | HTMLTextAreaElement, Form
         {/* Label */}
         <label
           htmlFor={id}
-          className="block text-label uppercase tracking-wider text-text-secondary mb-2"
+          className="block text-body-small font-medium text-text-primary mb-2"
         >
           {label}
-          {required && <span className="text-oppose ml-1" aria-hidden="true">*</span>}
+          {required && <span className="text-oppose/70 ml-0.5" aria-hidden="true">*</span>}
         </label>
 
         {/* Input or Textarea */}

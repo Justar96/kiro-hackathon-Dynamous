@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
-import { AuthProvider, AuthModalProvider, ToastProvider, ErrorBoundary } from './components';
+import { AuthProvider, AuthModalProvider, ToastProvider, ErrorBoundary, NewDebateModalProvider } from './components';
 import { routeTree } from './routeTree.gen';
 import type { RouterContext } from './routes/__root';
 import './index.css';
@@ -44,7 +44,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
             <AuthModalProvider>
-              <RouterProvider router={router} />
+              <NewDebateModalProvider>
+                <RouterProvider router={router} />
+              </NewDebateModalProvider>
             </AuthModalProvider>
           </ToastProvider>
         </QueryClientProvider>

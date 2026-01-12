@@ -1,52 +1,397 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
+import { useState, useMemo, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { debatesWithMarketQueryOptions } from '../lib/queries';
-import { DebateIndexList, SkeletonDebateRow, SkeletonHeading, SkeletonText } from '../components';
+import { recordQuickStance } from '../lib/mutations';
+import { useSession } from '../lib/useSession';
+import { 
+  DebateIndexList, 
+  SkeletonDebateRow, 
+  SkeletonHeading, 
+  SkeletonText, 
+  MindChangeLeaderboard,
+  DebateTabs,
+  getPersistedTab,
+  TrendingDebatesCard,
+  SeekingOpponentsSection,
+  IndexThreeColumnLayout,
+  useToast,
+  useAuthModal,
+  useNewDebateModal,
+} from '../components';
+import type { DebateTabType } from '../components';
 
 export const Route = createFileRoute('/')({
   loader: async ({ context }) => {
-    // Prefetch debates WITH market data in a single request (eliminates N+1)
-    // Errors will be caught by errorComponent
     const debatesWithMarket = await context.queryClient.ensureQueryData(
       debatesWithMarketQueryOptions
     );
     return { debatesWithMarket };
   },
   pendingComponent: HomePagePending,
-  pendingMs: 200, // Minimum loading duration as per Requirements 4.6
+  pendingMs: 200,
   component: HomePage,
   errorComponent: HomePageError,
 });
 
 function HomePage() {
   const { debatesWithMarket } = Route.useLoaderData();
+  const { user } = useSession();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const { openSignIn } = useAuthModal();
+  const isAuthenticated = !!user;
+  
+  // Tab state with persistence
+  const [activeTab, setActiveTab] = useState<DebateTabType>(() => {
+    const persisted = getPersistedTab();
+    // Reset to 'all' if user is not authenticated and tab requires auth
+    if (persisted === 'my-debates' && !isAuthenticated) return 'all';
+    return persisted;
+  });
+
+  // Track user stances locally for optimistic UI
+  const [userStances, setUserStances] = useState<Record<string, number>>({});
+
+  // Quick stance mutation
+  const quickStanceMutation = useMutation({
+    mutationFn: async ({ debateId, side }: { debateId: string; side: 'support' | 'oppose' }) => {
+      if (!user) throw new Error('Not authenticated');
+      return recordQuickStance(debateId, { side }, user.id);
+    },
+    onSuccess: (_data, { debateId, side }) => {
+      // Update local state
+      setUserStances(prev => ({ ...prev, [debateId]: side === 'support' ? 75 : 25 }));
+      // Invalidate queries to refresh market data
+      queryClient.invalidateQueries({ queryKey: ['debates'] });
+      showToast({ type: 'success', message: 'Position recorded!' });
+    },
+    onError: (error: Error) => {
+      showToast({ type: 'error', message: error.message });
+    },
+  });
+
+  // Handle quick stance from index
+  const handleQuickStance = useCallback((debateId: string, side: 'support' | 'oppose') => {
+    if (!isAuthenticated) {
+      openSignIn();
+      return;
+    }
+    quickStanceMutation.mutate({ debateId, side });
+  }, [isAuthenticated, openSignIn, quickStanceMutation]);
+
+  // Filter debates based on active tab
+  const filteredDebates = useMemo(() => {
+    if (activeTab === 'my-debates' && user) {
+      return debatesWithMarket.filter(d => 
+        d.debate.supportDebaterId === user.id || 
+        d.debate.opposeDebaterId === user.id
+      );
+    }
+    return debatesWithMarket;
+  }, [activeTab, debatesWithMarket, user]);
+
+  // Count user's debates for tab badge
+  const myDebatesCount = useMemo(() => {
+    if (!user) return 0;
+    return debatesWithMarket.filter(d => 
+      d.debate.supportDebaterId === user.id || 
+      d.debate.opposeDebaterId === user.id
+    ).length;
+  }, [debatesWithMarket, user]);
+
+  // Mock sandbox data (would come from user profile in real app)
+  const sandboxData = {
+    debatesParticipated: myDebatesCount,
+    sandboxCompleted: myDebatesCount >= 5,
+  };
 
   return (
-    <div className="min-h-screen bg-page-bg">
-      <div className="max-w-paper mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* Header - library catalog style */}
-        <header className="mb-8 sm:mb-10">
-          <h1 className="font-heading text-2xl sm:text-heading-1 text-text-primary">
-            Debate Index
-          </h1>
-          <p className="mt-2 text-body-small sm:text-body text-text-secondary">
-            Structured debates where minds change through reason
-          </p>
-        </header>
+    <IndexThreeColumnLayout
+      leftRail={
+        <IndexLeftRail
+          isAuthenticated={isAuthenticated}
+          sandboxData={sandboxData}
+          debates={debatesWithMarket}
+          currentUserId={user?.id}
+        />
+      }
+      centerContent={
+        <IndexCenterContent
+          debatesWithMarket={debatesWithMarket}
+          filteredDebates={filteredDebates}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          myDebatesCount={myDebatesCount}
+          isAuthenticated={isAuthenticated}
+          userStances={userStances}
+          onQuickStance={handleQuickStance}
+        />
+      }
+      rightRail={
+        <IndexRightRail debatesWithMarket={debatesWithMarket} />
+      }
+    />
+  );
+}
 
-        {/* Index list */}
-        <section>
-          <DebateIndexList 
-            debates={debatesWithMarket}
-            emptyMessage="No debates yet. Be the first to start a structured discussion."
-          />
-        </section>
+/**
+ * Left Rail - Onboarding, Sandbox Progress, Seeking Opponents
+ */
+interface IndexLeftRailProps {
+  isAuthenticated: boolean;
+  sandboxData: {
+    debatesParticipated: number;
+    sandboxCompleted: boolean;
+  };
+  debates: ReturnType<typeof Route.useLoaderData>['debatesWithMarket'];
+  currentUserId?: string;
+}
 
-        {/* Footer note */}
-        <footer className="mt-6 sm:mt-8 text-center">
-          <p className="text-caption text-text-tertiary">
-            Track your stance before and after reading • See which arguments change minds
-          </p>
-        </footer>
+function IndexLeftRail({ isAuthenticated, sandboxData, debates, currentUserId }: IndexLeftRailProps) {
+  const { open: openNewDebate } = useNewDebateModal();
+  
+  return (
+    <div className="space-y-4">
+      {/* Quick Actions - Primary CTA */}
+      <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden shadow-sm">
+        <div className="px-4 py-3 bg-gradient-to-r from-accent/5 to-transparent border-b border-gray-100">
+          <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+            <span className="text-accent">+</span>
+            Quick Actions
+          </h2>
+        </div>
+        <div className="p-3 space-y-2">
+          <button 
+            onClick={openNewDebate}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-hover transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Start a Debate
+          </button>
+          <Link 
+            to="/"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Leaderboard
+          </Link>
+        </div>
+      </div>
+
+      {/* How It Works - Compact version */}
+      <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
+        <div className="px-4 py-3 bg-gradient-to-r from-blue-50/50 to-transparent border-b border-gray-100">
+          <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+            <span className="text-blue-500">?</span>
+            How It Works
+          </h2>
+        </div>
+        <div className="p-3 space-y-2">
+          <div className="flex items-center gap-2.5 text-xs text-gray-600">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-accent/10 text-accent font-bold flex items-center justify-center text-[10px]">1</span>
+            <span>Record your stance before reading</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-gray-600">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-accent/10 text-accent font-bold flex items-center justify-center text-[10px]">2</span>
+            <span>Read structured arguments</span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-gray-600">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-accent/10 text-accent font-bold flex items-center justify-center text-[10px]">3</span>
+            <span>See if your mind changed</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Seeking Opponents */}
+      <SeekingOpponentsSection 
+        debates={debates}
+        currentUserId={currentUserId}
+        maxCount={3}
+      />
+
+      {/* Sandbox progress for new users - compact */}
+      {isAuthenticated && !sandboxData.sandboxCompleted && (
+        <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
+          <div className="px-4 py-3 bg-gradient-to-r from-green-50/50 to-transparent border-b border-gray-100">
+            <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+              <span className="text-green-500">◈</span>
+              Your Progress
+            </h2>
+          </div>
+          <div className="p-3">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="text-gray-600">Debates joined</span>
+              <span className="font-semibold text-gray-800">{sandboxData.debatesParticipated}/5</span>
+            </div>
+            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all"
+                style={{ width: `${Math.min(100, (sandboxData.debatesParticipated / 5) * 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-2">Complete 5 debates to unlock full features</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Center Content - Header, Trending, Tabs, Debate List
+ */
+interface IndexCenterContentProps {
+  debatesWithMarket: ReturnType<typeof Route.useLoaderData>['debatesWithMarket'];
+  filteredDebates: ReturnType<typeof Route.useLoaderData>['debatesWithMarket'];
+  activeTab: DebateTabType;
+  onTabChange: (tab: DebateTabType) => void;
+  myDebatesCount: number;
+  isAuthenticated: boolean;
+  userStances?: Record<string, number>;
+  onQuickStance?: (debateId: string, side: 'support' | 'oppose') => void;
+}
+
+function IndexCenterContent({
+  debatesWithMarket,
+  filteredDebates,
+  activeTab,
+  onTabChange,
+  myDebatesCount,
+  isAuthenticated,
+  userStances = {},
+  onQuickStance,
+}: IndexCenterContentProps) {
+  const { open: openNewDebate } = useNewDebateModal();
+  
+  return (
+    <div>
+      {/* Header */}
+      <header className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gray-900">
+              Debate Index
+            </h1>
+            <p className="mt-1.5 text-sm text-gray-500">
+              Take a position • See what others think • Track mind changes
+            </p>
+          </div>
+          <button
+            onClick={openNewDebate}
+            className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-hover transition-colors shadow-sm"
+          >
+            <span>+</span>
+            <span>New Debate</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Trending Debates */}
+      <TrendingDebatesCard debates={debatesWithMarket} maxCount={3} />
+
+      {/* Tabs */}
+      <DebateTabs
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+        myDebatesCount={myDebatesCount}
+        isAuthenticated={isAuthenticated}
+      />
+
+      {/* Debate List with Quick Stance */}
+      <DebateIndexList 
+        debates={filteredDebates}
+        userStances={userStances}
+        onQuickStance={onQuickStance}
+        isAuthenticated={isAuthenticated}
+        emptyMessage={
+          activeTab === 'my-debates' 
+            ? "You haven't participated in any debates yet. Join one or start your own!"
+            : "No debates yet. Be the first to start a structured discussion."
+        }
+      />
+
+      {/* Mobile: New Debate CTA */}
+      <div className="sm:hidden mt-4">
+        <button
+          onClick={openNewDebate}
+          className="block w-full text-center px-4 py-3 bg-accent text-white text-body font-medium rounded-lg hover:bg-accent-hover transition-colors"
+        >
+          + Start a New Debate
+        </button>
+      </div>
+
+      {/* Footer note */}
+      <footer className="mt-10 pt-6 border-t border-gray-100 text-center">
+        <p className="text-xs text-gray-400">
+          Track your stance before and after reading • See which arguments change minds
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+/**
+ * Right Rail - Most Persuasive, Platform Stats
+ */
+interface IndexRightRailProps {
+  debatesWithMarket: Array<{ debate: { status: string }; marketPrice: { mindChangeCount: number } | null }>;
+}
+
+function IndexRightRail({ debatesWithMarket }: IndexRightRailProps) {
+  return (
+    <div className="space-y-4">
+      {/* Most Persuasive */}
+      <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
+        <div className="px-4 py-3 bg-gradient-to-r from-purple-50/50 to-transparent border-b border-gray-100">
+          <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+            <span className="text-purple-500">★</span>
+            Most Persuasive
+          </h2>
+        </div>
+        <div className="p-3">
+          <MindChangeLeaderboard limit={5} compact />
+          <Link 
+            to="/" 
+            className="block mt-3 text-center text-xs text-accent hover:text-accent-hover font-medium"
+          >
+            View all rankings →
+          </Link>
+        </div>
+      </div>
+
+      {/* Platform stats */}
+      <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
+        <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-transparent border-b border-gray-100">
+          <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+            <span className="text-gray-500">◈</span>
+            Platform Stats
+          </h2>
+        </div>
+        <div className="p-4 space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Active debates</span>
+            <span className="text-sm font-semibold text-gray-800">
+              {debatesWithMarket.filter((d) => d.debate.status === 'active').length}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-500">Total debates</span>
+            <span className="text-sm font-semibold text-gray-800">
+              {debatesWithMarket.length}
+            </span>
+          </div>
+          <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+            <span className="text-sm text-gray-500">Minds changed</span>
+            <span className="text-sm font-bold text-accent">
+              {debatesWithMarket.reduce((sum: number, d) => sum + (d.marketPrice?.mindChangeCount ?? 0), 0)}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -56,15 +401,12 @@ function HomePagePending() {
   return (
     <div className="min-h-screen bg-page-bg">
       <div className="max-w-paper mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* Header skeleton - using enhanced skeleton components */}
         <header className="mb-8 sm:mb-10">
           <SkeletonHeading className="mb-3" width="12rem" />
           <SkeletonText lines={1} className="max-w-xs" />
         </header>
 
-        {/* List skeleton */}
         <div className="bg-paper rounded-small border border-gray-100 shadow-paper">
-          {/* Header row skeleton - hidden on mobile */}
           <div className="hidden sm:flex items-center gap-4 py-3 px-2 border-b border-gray-200 bg-page-bg/30">
             <div className="flex-1">
               <SkeletonText lines={1} width="5rem" height={12} />
@@ -80,7 +422,6 @@ function HomePagePending() {
             </div>
           </div>
 
-          {/* Row skeletons - matching exact dimensions of content */}
           {[1, 2, 3, 4, 5].map((i) => (
             <SkeletonDebateRow key={i} />
           ))}
@@ -90,10 +431,6 @@ function HomePagePending() {
   );
 }
 
-/**
- * Error component for the home page.
- * Displays user-friendly error message with retry option.
- */
 function HomePageError() {
   const router = useRouter();
 

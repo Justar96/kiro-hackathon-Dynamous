@@ -7,11 +7,14 @@ import type {
   Argument, 
   CreateDebateInput, 
   CreateArgumentInput,
-  DebateResult 
+  DebateResult,
+  RoundType,
 } from '@debate-platform/shared';
 import { 
-  ARGUMENT_CHAR_LIMITS, 
-  RESOLUTION_MAX_LENGTH 
+  ROUNDS,
+  RESOLUTION_MAX_LENGTH,
+  getCharLimit,
+  canSubmitArgument,
 } from '@debate-platform/shared';
 
 /**
@@ -68,12 +71,11 @@ export class DebateService {
     }).returning();
 
     // Create 3 rounds (Requirement 2.1)
-    const roundTypes: Array<'opening' | 'rebuttal' | 'closing'> = ['opening', 'rebuttal', 'closing'];
-    const roundsData = roundTypes.map((roundType, index) => ({
+    const roundsData = ROUNDS.map((r: typeof ROUNDS[number]) => ({
       id: nanoid(),
       debateId: debateId,
-      roundNumber: index + 1,
-      roundType: roundType,
+      roundNumber: r.number,
+      roundType: r.type,
       supportArgumentId: null,
       opposeArgumentId: null,
       completedAt: null,
@@ -94,13 +96,8 @@ export class DebateService {
    * - Validates current turn matches submitter's side
    * - Enforces character limits per round type
    * - Rejects out-of-turn submissions
-   * 
-   * @param input - The argument submission input
-   * @returns Created argument
-   * @throws Error if submission is invalid
    */
   async submitArgument(input: CreateArgumentInput): Promise<Argument> {
-    // Get the debate
     const debate = await db.query.debates.findFirst({
       where: eq(debates.id, input.debateId),
     });
@@ -109,26 +106,12 @@ export class DebateService {
       throw new Error('Debate not found');
     }
 
-    if (debate.status === 'concluded') {
-      throw new Error('Debate has already concluded');
+    // Use centralized validation helper
+    const check = canSubmitArgument(this.mapToDebate(debate), input.debaterId);
+    if (!check.allowed) {
+      throw new Error(check.reason);
     }
-
-    // Determine which side the submitter is on
-    let submitterSide: 'support' | 'oppose' | null = null;
-    if (debate.supportDebaterId === input.debaterId) {
-      submitterSide = 'support';
-    } else if (debate.opposeDebaterId === input.debaterId) {
-      submitterSide = 'oppose';
-    }
-
-    if (!submitterSide) {
-      throw new Error('Only assigned debaters can submit arguments');
-    }
-
-    // Check turn enforcement (Requirements 2.2, 2.6)
-    if (debate.currentTurn !== submitterSide) {
-      throw new Error('It is not your turn to submit');
-    }
+    const submitterSide = check.side;
 
     // Get current round
     const currentRound = await db.query.rounds.findFirst({
@@ -151,8 +134,8 @@ export class DebateService {
       throw new Error('This round is already complete');
     }
 
-    // Enforce character limits (Requirement 2.3)
-    const charLimit = ARGUMENT_CHAR_LIMITS[currentRound.roundType];
+    // Enforce character limits using centralized helper
+    const charLimit = getCharLimit(currentRound.roundType as RoundType);
     if (input.content.length > charLimit) {
       throw new Error(`Argument exceeds ${charLimit} character limit for ${currentRound.roundType}`);
     }
@@ -170,15 +153,13 @@ export class DebateService {
     }).returning();
 
     // Update round with the argument
-    if (submitterSide === 'support') {
-      await db.update(rounds)
-        .set({ supportArgumentId: argumentId })
-        .where(eq(rounds.id, currentRound.id));
-    } else {
-      await db.update(rounds)
-        .set({ opposeArgumentId: argumentId })
-        .where(eq(rounds.id, currentRound.id));
-    }
+    const updateField = submitterSide === 'support' 
+      ? { supportArgumentId: argumentId }
+      : { opposeArgumentId: argumentId };
+    
+    await db.update(rounds)
+      .set(updateField)
+      .where(eq(rounds.id, currentRound.id));
 
     // Switch turn to the other side
     const nextTurn = submitterSide === 'support' ? 'oppose' : 'support';
