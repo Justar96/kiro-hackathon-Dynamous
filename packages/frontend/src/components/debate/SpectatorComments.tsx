@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { Comment, User } from '@debate-platform/shared';
+import { HorizontalDivider } from '../ui/HorizontalDivider';
 
 interface SpectatorCommentsProps {
   debateId: string;
@@ -53,9 +54,12 @@ export function SpectatorComments({
   return (
     <section 
       id="comments" 
-      className="mt-8 pt-6 border-t border-gray-200 scroll-mt-8"
+      className="mt-8 scroll-mt-8"
       aria-labelledby="comments-heading"
     >
+      {/* Horizontal divider before comments section - Requirements: 3.1, 3.2, 3.5 */}
+      <HorizontalDivider spacing="lg" />
+      
       {/* Section header - visually distinct from debate rounds */}
       <header className="mb-3">
         <h2 

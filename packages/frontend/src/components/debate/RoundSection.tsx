@@ -2,7 +2,7 @@
  * RoundSection is the main container component that orchestrates round display and navigation.
  * It composes RoundProgressIndicator, RoundNavigator, RoundHistory, and ActiveRoundView.
  * 
- * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.6, 5.4, 5.5, 7.5
+ * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.6, 5.4, 5.5, 7.1, 7.2, 7.3, 7.4, 7.5
  */
 
 import { useCallback, useMemo, useEffect, useRef, useReducer } from 'react';
@@ -12,6 +12,8 @@ import { RoundProgressIndicator } from './RoundProgressIndicator';
 import { RoundNavigator } from './RoundNavigator';
 import { RoundHistory } from './RoundHistory';
 import { ActiveRoundView } from './ActiveRoundView';
+import { HorizontalDivider } from '../ui/HorizontalDivider';
+import { getEnhancedRoundConfig } from './RoundSection.utils';
 
 export interface RoundSectionProps {
   debate: Debate;
@@ -180,6 +182,10 @@ export function RoundSection({
     return <div className="p-4 text-text-tertiary text-center">Round data not available</div>;
   }
 
+  // Get enhanced round configuration for paper-polish styling
+  const roundConfig = getEnhancedRoundConfig(currentRoundData.roundType, viewedRound);
+  const isRoundComplete = currentRoundData.completedAt !== null;
+
   return (
     <section 
       id="debate-rounds"
@@ -203,8 +209,41 @@ export function RoundSection({
         />
       </div>
 
+      {/* Round Header - Paper-polish typography (Requirements: 7.1, 7.2, 7.3, 7.4, 7.5) */}
+      <header className="px-5 pt-5 pb-0">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-heading text-heading-2 text-text-primary">
+            {roundConfig.fullTitle}
+          </h2>
+          {/* Subtle completion indicator (Requirement 7.4) */}
+          {isRoundComplete && (
+            <span className="small-caps text-xs text-text-tertiary flex items-center gap-1.5">
+              <svg 
+                className="w-3.5 h-3.5 text-green-500" 
+                fill="currentColor" 
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path 
+                  fillRule="evenodd" 
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" 
+                  clipRule="evenodd" 
+                />
+              </svg>
+              Complete
+            </span>
+          )}
+        </div>
+        {/* Muted description text (Requirement 7.2) */}
+        <p className="text-body-small text-text-secondary mt-1">
+          {roundConfig.description}
+        </p>
+        {/* Subtle divider below header (Requirement 7.3) */}
+        <HorizontalDivider spacing="md" />
+      </header>
+
       {/* Card Body - Round Content */}
-      <div className="p-5">
+      <div className="px-5 pb-5">
         {viewedRound === debate.currentRound && completedRounds.length > 0 && (
           <div className="mb-4">
             <RoundHistory

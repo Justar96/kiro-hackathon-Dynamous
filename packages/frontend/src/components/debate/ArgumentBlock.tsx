@@ -30,6 +30,7 @@ interface ArgumentBlockProps {
  * Includes "This changed my mind" button for impact attribution.
  * 
  * Requirements: 10.3, 13.1, 13.2, 13.3
+ * Paper Polish Requirements: 5.1, 5.2, 5.3, 5.4, 5.5
  */
 export function ArgumentBlock({ 
   argument, 
@@ -52,44 +53,45 @@ export function ArgumentBlock({
   );
   
   return (
-    <article className={`rounded-lg border ${sideConfig.borderColor} bg-white overflow-hidden`}>
-      {/* Card Header - Side label with accent bar */}
-      <div className={`px-5 py-3 border-b ${sideConfig.headerBg} ${sideConfig.borderColor} flex items-center justify-between`}>
-        <div className="flex items-center gap-3">
-          <span className={`text-xs font-semibold uppercase tracking-wider ${sideConfig.color}`}>
+    <article className="bg-white border border-divider/60 rounded-subtle overflow-hidden">
+      {/* Byline Header - Author attribution in refined style (Req 5.4) */}
+      <div className="px-5 pt-4 pb-2 flex items-baseline justify-between gap-3">
+        <div className="flex items-baseline gap-2">
+          {/* Side label with small-caps styling (Req 5.2) */}
+          <span className={`small-caps text-xs font-medium ${sideConfig.color}`}>
             {sideConfig.label}
           </span>
-          {/* Author + reputation */}
+          {/* Author byline - refined styling (Req 5.4) */}
           {author && (
             <>
-              <span className="text-gray-300">·</span>
-              <span className="text-sm text-text-secondary">
+              <span className="text-divider">—</span>
+              <span className="text-body-small text-text-secondary italic">
                 {author.username}
               </span>
-              <span className="text-xs text-text-tertiary bg-gray-100 px-1.5 py-0.5 rounded">
-                Rep {author.reputationScore.toFixed(0)}
+              <span className="text-caption text-text-tertiary">
+                ({author.reputationScore.toFixed(0)} rep)
               </span>
             </>
           )}
         </div>
         
-        {/* Impact badge in header */}
+        {/* Impact badge - visually muted (Req 5.5) */}
         {hasImpact && (
           <ImpactBadge score={argument.impactScore} />
         )}
       </div>
       
-      {/* Card Body - Main content */}
-      <div className="px-5 py-4">
-        {/* Main text as readable paragraph */}
-        <div className="text-body text-text-primary leading-relaxed">
+      {/* Card Body - Main content with proper paragraph typography (Req 5.3) */}
+      <div className="px-5 pb-4">
+        {/* Main text as readable paragraph with improved line-height */}
+        <div className="text-body text-text-primary leading-[1.7]">
           {contentWithCitations}
         </div>
       </div>
       
       {/* Card Footer - Attribution button */}
       {(onAttributeImpact || onMindChanged) && (
-        <div className="px-5 py-3 border-t border-gray-50 bg-gray-50/30">
+        <div className="px-5 py-3 border-t border-divider/40">
           <MindChangedButton 
             onClick={onMindChanged || onAttributeImpact}
             attributed={attributed}
@@ -158,22 +160,16 @@ export function MindChangedButton({ onClick, attributed = false }: MindChangedBu
 function getSideConfig(side: 'support' | 'oppose'): { 
   label: string; 
   color: string; 
-  borderColor: string;
-  headerBg: string;
 } {
   if (side === 'support') {
     return { 
       label: 'For', 
       color: 'text-support',
-      borderColor: 'border-support/20',
-      headerBg: 'bg-support/5',
     };
   }
   return { 
     label: 'Against', 
     color: 'text-oppose',
-    borderColor: 'border-oppose/20',
-    headerBg: 'bg-oppose/5',
   };
 }
 

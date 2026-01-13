@@ -471,16 +471,17 @@ describe('RoundProgressIndicator Property Tests', () => {
               />
             );
             
-            // Each step has a dot with class "rounded-full"
-            const dots = container.querySelectorAll('.rounded-full');
-            expect(dots.length).toBe(3);
+            // Each step has a dot with specific size classes (w-2.5 h-2.5)
+            // Filter to only count the step indicator dots, not other rounded elements like badges
+            const stepDots = container.querySelectorAll('.w-2\\.5.h-2\\.5.rounded-full');
+            expect(stepDots.length).toBe(3);
           }
         ),
         { numRuns: 100 }
       );
     });
 
-    it('Property 2.R5: Progress indicator shows "History" badge when viewing historical round', () => {
+    it('Property 2.R5: Progress indicator shows "Viewing history" badge when viewing historical round', () => {
       fc.assert(
         fc.property(roundNumberArb, sideArb, roundsArb,
           (currentRound, currentTurn, rounds) => {
@@ -503,8 +504,7 @@ describe('RoundProgressIndicator Property Tests', () => {
               />
             );
             
-            // Should show "History" badge and "Viewing history" text
-            expect(container.textContent).toContain('History');
+            // Should show "Viewing history" text (the badge text)
             expect(container.textContent).toContain('Viewing history');
           }
         ),

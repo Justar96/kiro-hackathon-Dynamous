@@ -35,7 +35,7 @@ export function InlineQuickStance({
   if (hasVoted) {
     return (
       <div className="flex items-center gap-2">
-        <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
+        <div className="w-14 h-1.5 bg-divider rounded-full overflow-hidden flex">
           <div className="bg-support" style={{ width: `${supportPercent}%` }} />
           <div className="bg-oppose" style={{ width: `${opposePercent}%` }} />
         </div>

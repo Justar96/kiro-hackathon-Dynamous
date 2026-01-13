@@ -82,8 +82,8 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    // Draw background grid
-    ctx.strokeStyle = '#f3f4f6';
+    // Draw background grid - using divider color for consistency
+    ctx.strokeStyle = '#E5E5E0';
     ctx.lineWidth = 1;
     
     // Horizontal grid lines (at 25%, 50%, 75%)
@@ -96,7 +96,7 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
     });
 
     // Draw 50% reference line (dashed)
-    ctx.strokeStyle = '#d1d5db';
+    ctx.strokeStyle = '#9CA3AF';
     ctx.setLineDash([4, 4]);
     const midY = padding.top + chartHeight * 0.5;
     ctx.beginPath();
@@ -105,8 +105,8 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Y-axis labels
-    ctx.fillStyle = '#9ca3af';
+    // Y-axis labels - using text-tertiary color
+    ctx.fillStyle = '#9CA3AF';
     ctx.font = '11px system-ui';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -123,7 +123,7 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
         data: dp,
       }));
 
-      // Area fill
+      // Area fill - using support color (#2D8A6E)
       ctx.beginPath();
       ctx.moveTo(points[0].x, padding.top + chartHeight);
       points.forEach(p => ctx.lineTo(p.x, p.y));
@@ -131,16 +131,16 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
       ctx.closePath();
       
       const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
-      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
-      gradient.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+      gradient.addColorStop(0, 'rgba(45, 138, 110, 0.2)');
+      gradient.addColorStop(1, 'rgba(45, 138, 110, 0.02)');
       ctx.fillStyle = gradient;
       ctx.fill();
 
-      // Line
+      // Line - using support color (#2D8A6E)
       ctx.beginPath();
       ctx.moveTo(points[0].x, points[0].y);
       points.forEach(p => ctx.lineTo(p.x, p.y));
-      ctx.strokeStyle = '#10b981';
+      ctx.strokeStyle = '#2D8A6E';
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -149,7 +149,7 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
         const lastPoint = points[points.length - 1];
         ctx.beginPath();
         ctx.arc(lastPoint.x, lastPoint.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = '#10b981';
+        ctx.fillStyle = '#2D8A6E';
         ctx.fill();
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
@@ -161,7 +161,7 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
       ctx.beginPath();
       ctx.moveTo(padding.left, y);
       ctx.lineTo(width - padding.right, y);
-      ctx.strokeStyle = '#10b981';
+      ctx.strokeStyle = '#2D8A6E';
       ctx.lineWidth = 2;
       ctx.stroke();
     }
@@ -189,10 +189,10 @@ export function MarketChart({ debateId, dataPoints, spikes, currentPrice = 50 }:
         
         const y = padding.top + chartHeight * (1 - closestPoint.supportPrice / 100);
         
-        // Spike marker
+        // Spike marker - using support (#2D8A6E) and oppose (#C75B5B) colors
         ctx.beginPath();
         ctx.arc(x, y, 6, 0, Math.PI * 2);
-        ctx.fillStyle = spike.direction === 'support' ? '#10b981' : '#f43f5e';
+        ctx.fillStyle = spike.direction === 'support' ? '#2D8A6E' : '#C75B5B';
         ctx.fill();
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;

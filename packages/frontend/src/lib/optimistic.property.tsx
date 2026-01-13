@@ -166,7 +166,7 @@ describe('Optimistic Update Property Tests', () => {
               // Verify optimistic update appears in cache
               await waitFor(() => {
                 const cached = queryClient.getQueryData<{ stances: { pre: Stance | null; post: Stance | null } }>(
-                  ['debate', debateId, 'stance']
+                  ['stances', debateId]
                 );
                 expect(cached).toBeDefined();
                 const stance = stanceType === 'pre' ? cached?.stances.pre : cached?.stances.post;
@@ -209,7 +209,7 @@ describe('Optimistic Update Property Tests', () => {
             
             // Verify optimistic update appears in cache
             await waitFor(() => {
-              const cached = queryClient.getQueryData<Comment[]>(['debate', debateId, 'comments']);
+              const cached = queryClient.getQueryData<Comment[]>(['comments', debateId]);
               expect(cached?.length).toBe(1);
               expect(cached?.[0].content).toBe(content);
               expect(cached?.[0].id).toMatch(/^optimistic-/);
@@ -250,7 +250,7 @@ describe('Optimistic Update Property Tests', () => {
             // Verify optimistic update creates data when none exists
             await waitFor(() => {
               const cached = queryClient.getQueryData<{ counts: { agree: number; strongReasoning: number } }>(
-                ['argument', argumentId, 'reactions']
+                ['arguments', argumentId, 'reactions']
               );
               expect(cached).toBeDefined();
               const expectedAgree = reactionType === 'agree' ? 1 : 0;

@@ -1,6 +1,9 @@
 import { useState, useCallback } from 'react';
 import type { MarketDataPoint, StanceSpike, StanceValue } from '@debate-platform/shared';
 import { AudienceStats } from '../debate/AudienceStats';
+import { SectionAnchorNav, DEFAULT_DEBATE_ANCHORS } from './SectionAnchorNav';
+import type { SectionAnchor } from './SectionAnchorNav';
+import { HorizontalDivider } from '../ui/HorizontalDivider';
 
 interface RightMarginRailProps {
   debateId: string;
@@ -17,6 +20,12 @@ interface RightMarginRailProps {
   isSubmitting?: boolean;
   /** Whether user is logged in - shows AudienceStats for spectators */
   isAuthenticated?: boolean;
+  /** Section anchors for navigation - defaults to debate page anchors */
+  sectionAnchors?: SectionAnchor[];
+  /** Currently active section for anchor highlighting */
+  activeSection?: string;
+  /** Callback when active section changes via scroll */
+  onActiveSectionChange?: (sectionId: string) => void;
 }
 
 export function RightMarginRail({
@@ -32,6 +41,9 @@ export function RightMarginRail({
   afterUnlocked = false,
   isSubmitting = false,
   isAuthenticated = false,
+  sectionAnchors = DEFAULT_DEBATE_ANCHORS,
+  activeSection,
+  onActiveSectionChange,
 }: RightMarginRailProps) {
   const [beforeValue, setBeforeValue] = useState(userStance?.before ?? 50);
   const [afterValue, setAfterValue] = useState(userStance?.after ?? 50);
@@ -53,6 +65,16 @@ export function RightMarginRail({
 
   return (
     <div className="space-y-4">
+      {/* Section Anchor Navigation - Requirements: 6.1, 6.2 */}
+      <SectionAnchorNav
+        anchors={sectionAnchors}
+        activeSection={activeSection}
+        onActiveSectionChange={onActiveSectionChange}
+      />
+      
+      {/* Divider between navigation and market data */}
+      <HorizontalDivider spacing="sm" />
+      
       {/* Support/Oppose Meter */}
       <div className="space-y-1.5">
         <h3 className="label-text">Market Position</h3>
@@ -61,7 +83,7 @@ export function RightMarginRail({
             <span className="text-support font-medium">{supportPrice}%</span>
             <span className="text-oppose font-medium">{opposePrice}%</span>
           </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex">
+          <div className="h-2 bg-divider rounded-full overflow-hidden flex">
             <div 
               className="h-full bg-support transition-all duration-300"
               style={{ width: `${supportPrice}%` }}
@@ -97,7 +119,7 @@ export function RightMarginRail({
           </div>
           {beforeLocked ? (
             <div className="flex items-center gap-2 animate-lock rounded-sm p-1 -m-1">
-              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+              <div className="flex-1 h-1.5 bg-divider rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-text-secondary transition-all"
                   style={{ width: `${userStance?.before}%` }}
@@ -155,7 +177,7 @@ export function RightMarginRail({
           ) : userStance?.after !== undefined ? (
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="flex-1 h-1.5 bg-divider rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-accent transition-all"
                     style={{ width: `${userStance.after}%` }}
@@ -198,7 +220,7 @@ export function RightMarginRail({
       {/* Reading Progress */}
       <div className="space-y-1.5">
         <h3 className="label-text">Progress</h3>
-        <div className="relative h-20 w-1 bg-gray-100 rounded-full mx-auto">
+        <div className="relative h-20 w-1 bg-divider rounded-full mx-auto">
           <div 
             className="absolute bottom-0 left-0 right-0 bg-accent rounded-full transition-all duration-300"
             style={{ height: `${readingProgress}%` }}
@@ -236,12 +258,13 @@ function MiniSparkline({ dataPoints }: { dataPoints: MarketDataPoint[] }) {
     return `${x},${y}`;
   }).join(' ');
 
+  // Use muted teal (#2D8A6E) from the paper-polish color palette
   return (
     <svg width={width} height={height} className="w-full">
       <polyline
         points={points}
         fill="none"
-        stroke="#059669"
+        stroke="#2D8A6E"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -262,7 +285,7 @@ function MiniSlider({
 }) {
   return (
     <div className="relative">
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-divider rounded-full overflow-hidden">
         <div 
           className="h-full bg-accent transition-all"
           style={{ width: `${value}%` }}
@@ -305,7 +328,7 @@ function MiniConfidence({
           className={`w-5 h-5 rounded-full text-xs transition-colors ${
             value === level 
               ? 'bg-accent text-white' 
-              : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+              : 'bg-divider text-text-secondary hover:bg-divider/80'
           } disabled:opacity-50`}
           title={`Confidence: ${level}`}
         >

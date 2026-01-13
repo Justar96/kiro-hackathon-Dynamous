@@ -1,15 +1,17 @@
 /**
  * ActiveRoundView displays the currently viewed round's full content.
- * Shows round header, ArgumentBlock components for both sides, and
+ * Shows ArgumentBlock components for both sides, and
  * ArgumentSubmissionForm when appropriate.
  * 
+ * Note: Round header is rendered by parent RoundSection component.
+ * 
  * Requirements: 1.1, 7.1, 7.4
+ * Paper Polish Requirements: 5.1 (minimize visual chrome), 7.1, 7.2
  */
 
 import type { Round, Argument, User } from '@debate-platform/shared';
 import { ArgumentBlock, type Citation } from './ArgumentBlock';
 import { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
-import { getRoundConfig } from './RoundSection.utils';
 
 export interface ActiveRoundViewProps {
   round: Round;
@@ -39,6 +41,9 @@ export interface ActiveRoundViewProps {
 
 /**
  * Placeholder shown when an argument hasn't been submitted yet.
+ * Styled to match the paper aesthetic with minimal visual chrome.
+ * 
+ * Paper Polish Requirements: 5.1 (minimize visual chrome)
  */
 function ArgumentPlaceholder({ 
   side, 
@@ -51,43 +56,51 @@ function ArgumentPlaceholder({
     ? { 
         label: 'For', 
         color: 'text-support', 
-        borderColor: 'border-support/20',
-        headerBg: 'bg-support/5',
       }
     : { 
         label: 'Against', 
         color: 'text-oppose', 
-        borderColor: 'border-oppose/20',
-        headerBg: 'bg-oppose/5',
       };
   
   return (
-    <div className={`rounded-lg border border-dashed ${sideConfig.borderColor} bg-white overflow-hidden`}>
-      {/* Card Header */}
-      <div className={`px-5 py-3 border-b border-dashed ${sideConfig.headerBg} ${sideConfig.borderColor}`}>
-        <span className={`text-xs font-semibold uppercase tracking-wider ${sideConfig.color}`}>
+    <article className="bg-white border border-dashed border-divider rounded-subtle overflow-hidden">
+      {/* Byline Header - Matches ArgumentBlock structure (Req 5.2, 5.4) */}
+      <div className="px-5 pt-4 pb-2 flex items-baseline gap-2">
+        {/* Side label with small-caps styling */}
+        <span className={`small-caps text-xs font-medium ${sideConfig.color}`}>
           {sideConfig.label}
+        </span>
+        <span className="text-divider">—</span>
+        <span className="text-body-small text-text-tertiary italic">
+          Awaiting submission
         </span>
       </div>
       
-      {/* Card Body - Placeholder content */}
-      <div className="px-5 py-10 text-center">
-        <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mb-3">
+      {/* Card Body - Placeholder content with paper aesthetic */}
+      <div className="px-5 pb-5 pt-2">
+        <div className="flex items-center gap-3 text-text-tertiary">
           {isWaiting ? (
-            <svg className="w-5 h-5 text-text-tertiary animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <>
+              <svg className="w-4 h-4 animate-pulse flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-body-small leading-relaxed">
+                Waiting for argument to be submitted...
+              </p>
+            </>
           ) : (
-            <svg className="w-5 h-5 text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+            <>
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <p className="text-body-small leading-relaxed">
+                No argument has been submitted for this position.
+              </p>
+            </>
           )}
         </div>
-        <p className="text-sm text-text-tertiary">
-          {isWaiting ? 'Waiting for argument...' : 'No argument submitted'}
-        </p>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -110,7 +123,6 @@ export function ActiveRoundView({
   onMindChanged,
   onArgumentSubmit,
 }: ActiveRoundViewProps) {
-  const roundConfig = getRoundConfig(round.roundType);
   const sectionId = `active-round-${roundNumber}`;
   const isComplete = round.completedAt !== null;
   const hasArguments = supportArgument || opposeArgument;
@@ -136,20 +148,7 @@ export function ActiveRoundView({
       className="scroll-mt-8"
       aria-labelledby={`${sectionId}-heading`}
     >
-      {/* Section header - minimal */}
-      <header className="mb-5">
-        <h2 
-          id={`${sectionId}-heading`}
-          className="text-lg font-semibold text-text-primary"
-        >
-          {roundConfig.title}
-        </h2>
-        <p className="text-sm text-text-secondary mt-0.5">
-          {roundConfig.description}
-        </p>
-      </header>
-      
-      {/* Arguments container */}
+      {/* Arguments container - header is now in parent RoundSection */}
       <div className="space-y-5">
         {/* Support (FOR) argument or form */}
         {supportArgument ? (

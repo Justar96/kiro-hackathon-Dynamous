@@ -111,7 +111,7 @@ function TrendingDebateCard({ item, rank }: TrendingDebateCardInnerProps) {
         <div className="space-y-2">
           {/* Support/Oppose bar */}
           <div className="relative">
-            <div className="flex h-2 rounded-full overflow-hidden bg-gray-100">
+            <div className="flex h-2 rounded-full overflow-hidden bg-divider">
               <div 
                 className="bg-support transition-all duration-500 ease-out"
                 style={{ width: `${supportPercent}%` }}

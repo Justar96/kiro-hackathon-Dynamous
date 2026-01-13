@@ -33,6 +33,8 @@ import {
   ConnectionStatus,
   useToast,
   createUnifiedTocSections,
+  DEFAULT_DEBATE_ANCHORS,
+  HorizontalDivider,
 } from '../components';
 import type { NavSection, Citation } from '../components';
 import type { StanceValue, User, Argument } from '@debate-platform/shared';
@@ -236,6 +238,9 @@ function DebateView() {
             afterUnlocked={afterUnlocked}
             isSubmitting={isStancePending}
             isAuthenticated={!!token}
+            sectionAnchors={DEFAULT_DEBATE_ANCHORS}
+            activeSection={activeSection}
+            onActiveSectionChange={handleActiveSectionChange}
           />
           {/* Source card displayed in margin on citation hover */}
           {hoveredSource && (
@@ -384,7 +389,10 @@ function OutcomeSection({ debate }: OutcomeSectionProps) {
   const isActive = debate.status === 'active';
 
   return (
-    <section id="outcome" className="mt-8 pt-6 border-t border-gray-100 scroll-mt-8">
+    <section id="outcome" className="mt-8 scroll-mt-8">
+      {/* Horizontal divider before outcome section - Requirements: 3.1, 3.2 */}
+      <HorizontalDivider spacing="lg" />
+      
       <h2 className="font-heading text-heading-2 text-text-primary mb-3">
         Outcome
       </h2>

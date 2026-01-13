@@ -8,22 +8,25 @@ export default {
     extend: {
       colors: {
         // Background layers
-        'page-bg': '#F7F6F2',
+        'page-bg': '#F9F9F6',
         'paper': '#FFFFFF',
         'paper-shadow': 'rgba(0,0,0,0.04)',
         
+        // Divider
+        'divider': '#E5E5E0',
+        
         // Text hierarchy
-        'text-primary': '#111111',
-        'text-secondary': '#6B7280',
+        'text-primary': '#1A1A1A',
+        'text-secondary': '#6B6B6B',
         'text-tertiary': '#9CA3AF',
         
-        // Accent - vibrant paper blue
-        'accent': '#0751CF',
-        'accent-hover': '#0641B0',
+        // Accent - refined paper blue
+        'accent': '#4A6FA5',
+        'accent-hover': '#3D5D8A',
         
-        // Semantic
-        'support': '#059669',
-        'oppose': '#DC2626',
+        // Semantic - muted tones for paper aesthetic
+        'support': '#2D8A6E',
+        'oppose': '#C75B5B',
       },
       fontFamily: {
         'heading': ['"Source Serif 4"', 'Literata', 'Georgia', 'serif'],
@@ -63,19 +66,46 @@ export default {
         'toast': '600',
       },
       fontSize: {
-        // Headings - Serif
-        'heading-1': ['2rem', { lineHeight: '1.3', fontWeight: '600' }],
-        'heading-2': ['1.5rem', { lineHeight: '1.4', fontWeight: '600' }],
-        'heading-3': ['1.25rem', { lineHeight: '1.4', fontWeight: '500' }],
-        // Body - Sans-serif
+        // Headings - Serif (refined line-heights for paper aesthetic)
+        // Requirements: 1.3, 1.5 - Clear typographic hierarchy
+        'heading-1': ['2rem', { lineHeight: '1.25', fontWeight: '600' }],
+        'heading-2': ['1.5rem', { lineHeight: '1.3', fontWeight: '600' }],
+        'heading-3': ['1.25rem', { lineHeight: '1.35', fontWeight: '500' }],
+        // Body - Sans-serif (line-height 1.7 for optimal readability)
+        // Requirements: 1.3 - Body text line-height 1.6-1.8
         'body-large': ['1.125rem', { lineHeight: '1.7' }],
-        'body': ['1rem', { lineHeight: '1.6' }],
-        'body-small': ['0.875rem', { lineHeight: '1.5' }],
+        'body': ['1rem', { lineHeight: '1.7' }],
+        'body-small': ['0.875rem', { lineHeight: '1.6' }],
         // UI elements
         'label': ['0.75rem', { lineHeight: '1.4', letterSpacing: '0.05em' }],
         'caption': ['0.75rem', { lineHeight: '1.4' }],
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function({ addUtilities }) {
+      addUtilities({
+        // Horizontal rule utility for paper dividers
+        '.horizontal-rule': {
+          'height': '1px',
+          'background-color': '#E5E5E0',
+          'border': 'none',
+          'width': '100%',
+        },
+        // Small-caps utility for metadata labels
+        '.small-caps': {
+          'font-variant': 'small-caps',
+          'text-transform': 'lowercase',
+          'letter-spacing': '0.05em',
+        },
+        // Monospace label utility for metadata
+        '.monospace-label': {
+          'font-family': 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+          'font-size': '0.75rem',
+          'letter-spacing': '0.05em',
+          'text-transform': 'uppercase',
+        },
+      })
+    }
+  ],
 }

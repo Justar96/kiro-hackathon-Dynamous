@@ -30,8 +30,9 @@ export function ResolutionCard({
 }
 
 /**
- * CompactResolutionCard - Index row style with calm typography and generous spacing.
- * Requirements: 12.2
+ * CompactResolutionCard - Index row style with paper-aesthetic typography.
+ * Features serif resolution title, small-caps status, and muted market colors.
+ * Requirements: 1.1, 4.1, 8.4, 8.5, 12.2
  */
 function CompactResolutionCard({ 
   debate, 
@@ -52,23 +53,23 @@ function CompactResolutionCard({
       params={{ debateId: debate.id }}
       className="group block"
     >
-      <article className="flex items-center gap-6 py-5 px-4 border-b border-gray-100 hover:bg-page-bg/50 transition-colors">
-        {/* Resolution title - main content with generous spacing */}
+      <article className="flex items-center gap-6 py-5 px-4 border-b border-divider hover:bg-page-bg/50 transition-colors">
+        {/* Resolution title - serif font for paper aesthetic */}
         <div className="flex-1 min-w-0">
           <h3 className="font-heading text-text-primary text-body-large leading-relaxed truncate group-hover:text-accent transition-colors">
             {debate.resolution}
           </h3>
-          {/* Muted status tag */}
+          {/* Small-caps status label for refined metadata styling */}
           <div className="mt-1.5">
-            <span className="text-caption text-text-tertiary">
+            <span className="small-caps text-caption text-text-tertiary">
               {statusLabel}
             </span>
           </div>
         </div>
 
-        {/* Compact support/oppose indicator */}
+        {/* Compact support/oppose indicator with muted colors */}
         <div className="w-20 flex-shrink-0">
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex">
+          <div className="h-2 bg-divider rounded-full overflow-hidden flex">
             <div 
               className="bg-support transition-all duration-300"
               style={{ width: `${supportPercent}%` }}
@@ -79,8 +80,8 @@ function CompactResolutionCard({
             />
           </div>
           <div className="flex justify-between mt-1">
-            <span className="text-[11px] text-support font-medium">{supportPercent.toFixed(0)}%</span>
-            <span className="text-[11px] text-oppose font-medium">{opposePercent.toFixed(0)}%</span>
+            <span className="text-[11px] text-support font-medium tabular-nums">{supportPercent.toFixed(0)}%</span>
+            <span className="text-[11px] text-oppose font-medium tabular-nums">{opposePercent.toFixed(0)}%</span>
           </div>
         </div>
 
@@ -102,8 +103,9 @@ function CompactResolutionCard({
 }
 
 /**
- * FullResolutionCard - Original card style with full details.
- * Requirements: 9.2
+ * FullResolutionCard - Full card style with paper-aesthetic typography and refined colors.
+ * Features serif resolution title, small-caps status badge, and muted market colors.
+ * Requirements: 1.1, 4.1, 8.4, 8.5, 9.2
  */
 function FullResolutionCard({ 
   debate, 
@@ -121,8 +123,8 @@ function FullResolutionCard({
 
   const statusLabel = debate.status === 'concluded' ? 'Concluded' : `Round ${debate.currentRound}`;
   const statusColor = debate.status === 'concluded' 
-    ? 'bg-gray-100 text-gray-600' 
-    : 'bg-blue-50 text-blue-600';
+    ? 'bg-page-bg text-text-secondary' 
+    : 'bg-accent/10 text-accent';
 
   return (
     <Link
@@ -130,41 +132,41 @@ function FullResolutionCard({
       params={{ debateId: debate.id }}
       className="block"
     >
-      <article className="bg-white rounded-lg border border-gray-200 p-6 hover:border-gray-300 hover:shadow-sm transition-all">
+      <article className="bg-paper rounded-subtle border border-divider p-6 hover:border-text-tertiary hover:shadow-paper transition-all">
         {/* Header with status badge */}
         <div className="flex items-start justify-between gap-4 mb-4">
-          <h3 className="text-lg font-medium text-gray-900 leading-snug flex-1">
+          <h3 className="font-heading text-heading-3 text-text-primary leading-snug flex-1">
             {debate.resolution}
           </h3>
-          <span className={`px-2.5 py-1 text-xs font-medium rounded-full whitespace-nowrap ${statusColor}`}>
+          <span className={`small-caps px-2.5 py-1 text-label rounded-subtle whitespace-nowrap ${statusColor}`}>
             {statusLabel}
           </span>
         </div>
 
-        {/* Support/Oppose Bar */}
+        {/* Support/Oppose Bar with muted colors */}
         <div className="mb-4">
-          <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-emerald-600 font-medium">
+          <div className="flex justify-between text-body-small mb-1.5">
+            <span className="text-support font-medium">
               Support {supportPercent.toFixed(0)}%
             </span>
-            <span className="text-rose-600 font-medium">
+            <span className="text-oppose font-medium">
               Oppose {opposePercent.toFixed(0)}%
             </span>
           </div>
-          <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden flex">
+          <div className="h-2.5 bg-divider rounded-full overflow-hidden flex">
             <div 
-              className="bg-emerald-500 transition-all duration-300"
+              className="bg-support transition-all duration-300"
               style={{ width: `${supportPercent}%` }}
             />
             <div 
-              className="bg-rose-500 transition-all duration-300"
+              className="bg-oppose transition-all duration-300"
               style={{ width: `${opposePercent}%` }}
             />
           </div>
         </div>
 
         {/* Stats row */}
-        <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+        <div className="flex items-center gap-4 text-body-small text-text-secondary mb-4">
           <div className="flex items-center gap-1.5">
             <MindChangeIcon className="w-4 h-4" />
             <span>{mindChangeCount} mind{mindChangeCount !== 1 ? 's' : ''} changed</span>
@@ -177,17 +179,17 @@ function FullResolutionCard({
 
         {/* Most impactful argument preview */}
         {topImpactArgument && (
-          <div className="pt-4 border-t border-gray-100">
+          <div className="pt-4 border-t border-divider">
             <div className="flex items-center gap-2 mb-2">
-              <ImpactIcon className="w-4 h-4 text-amber-500" />
-              <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">
+              <ImpactIcon className="w-4 h-4 text-accent" />
+              <span className="small-caps text-label text-accent">
                 Most Impactful
               </span>
             </div>
-            <p className="text-sm text-gray-600 line-clamp-2">
+            <p className="text-body-small text-text-secondary line-clamp-2">
               {topImpactArgument.content}
             </p>
-            <div className="mt-2 text-xs text-gray-400">
+            <div className="mt-2 text-caption text-text-tertiary">
               Shifted {topImpactArgument.impactScore.toFixed(0)} mind{topImpactArgument.impactScore !== 1 ? 's' : ''}
             </div>
           </div>

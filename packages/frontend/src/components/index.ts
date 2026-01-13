@@ -182,5 +182,21 @@ export {
   generateDebateRoundsLabel,
   createUnifiedTocSections,
   RightMarginRail,
+  SectionAnchorNav,
+  useActiveSectionTracking,
+  DEFAULT_DEBATE_ANCHORS,
+  MOBILE_BREAKPOINT,
 } from './layout';
-export type { NavSection } from './layout';
+export type { NavSection, SectionAnchor, SectionAnchorNavProps } from './layout';
+
+// ============================================
+// UI Components
+// ============================================
+export {
+  HorizontalDivider,
+  SPACING_VALUES,
+} from './ui';
+export type {
+  HorizontalDividerProps,
+  DividerSpacing,
+} from './ui';

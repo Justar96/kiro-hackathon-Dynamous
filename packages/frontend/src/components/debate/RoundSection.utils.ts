@@ -108,6 +108,21 @@ export function generateExcerpt(content: string, maxLength: number = 100): strin
 }
 
 /**
+ * Converts a round number to Roman numeral.
+ * 
+ * @param num - The round number (1, 2, or 3)
+ * @returns Roman numeral string
+ */
+export function toRomanNumeral(num: 1 | 2 | 3): string {
+  const numerals: Record<1 | 2 | 3, string> = {
+    1: 'I',
+    2: 'II',
+    3: 'III',
+  };
+  return numerals[num];
+}
+
+/**
  * Gets the round configuration (title and description) for a round type.
  * 
  * @param roundType - The type of round
@@ -139,6 +154,34 @@ export function getRoundConfig(roundType: Round['roundType']): {
         description: '',
       };
   }
+}
+
+/**
+ * Gets enhanced round configuration with Roman numeral and refined styling info.
+ * 
+ * Requirements: 7.1, 7.2, 7.5
+ * 
+ * @param roundType - The type of round
+ * @param roundNumber - The round number (1, 2, or 3)
+ * @returns Object with title, description, roman numeral, and full title
+ */
+export function getEnhancedRoundConfig(
+  roundType: Round['roundType'],
+  roundNumber: 1 | 2 | 3
+): { 
+  title: string; 
+  description: string;
+  romanNumeral: string;
+  fullTitle: string;
+} {
+  const baseConfig = getRoundConfig(roundType);
+  const romanNumeral = toRomanNumeral(roundNumber);
+  
+  return {
+    ...baseConfig,
+    romanNumeral,
+    fullTitle: `Round ${romanNumeral} — ${baseConfig.title}`,
+  };
 }
 
 /**

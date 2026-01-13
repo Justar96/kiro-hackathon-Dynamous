@@ -39,16 +39,16 @@ export function DebateIndexList({
 
   return (
     <div className="bg-paper rounded-small border border-gray-100 shadow-paper overflow-hidden">
-      {/* Header row */}
-      <div className="hidden sm:flex items-center gap-3 py-2.5 px-3 border-b border-gray-200 bg-page-bg/50">
+      {/* Header row - refined paper aesthetic */}
+      <div className="hidden sm:flex items-center gap-3 py-2.5 px-3 border-b border-divider bg-page-bg/50">
         <div className="w-10 flex-shrink-0 text-center">
-          <span className="text-[10px] text-text-tertiary uppercase tracking-wide">%</span>
+          <span className="small-caps text-[10px] text-text-tertiary">%</span>
         </div>
         <div className="flex-1 min-w-0">
-          <span className="text-[10px] text-text-tertiary uppercase tracking-wide">Resolution</span>
+          <span className="small-caps text-[10px] text-text-tertiary">Resolution</span>
         </div>
         <div className="w-20 flex-shrink-0 text-center">
-          <span className="text-[10px] text-text-tertiary uppercase tracking-wide">Position</span>
+          <span className="small-caps text-[10px] text-text-tertiary">Position</span>
         </div>
         <div className="w-6 flex-shrink-0" />
       </div>

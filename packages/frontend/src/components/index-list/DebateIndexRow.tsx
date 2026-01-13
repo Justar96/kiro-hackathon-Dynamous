@@ -28,12 +28,12 @@ export function DebateIndexRow({
   
   const prefetchProps = useDebateLinkPrefetch(debate.id);
 
-  // Status badge
+  // Status badge - refined small-caps styling for paper aesthetic
   const statusBadge = needsOpponent 
     ? { text: 'Open', class: 'text-accent bg-accent/10' }
     : debate.status === 'concluded'
       ? { text: 'Resolved', class: 'text-text-tertiary bg-page-bg' }
-      : { text: `R${debate.currentRound}`, class: 'text-text-secondary bg-page-bg' };
+      : { text: `Round ${debate.currentRound}`, class: 'text-text-secondary bg-page-bg' };
 
   return (
     <Link
@@ -42,21 +42,21 @@ export function DebateIndexRow({
       className="group block"
       {...prefetchProps}
     >
-      <article className="flex items-center gap-3 py-3.5 px-3 border-b border-gray-100 hover:bg-page-bg/50 transition-colors">
-        {/* Market sentiment indicator */}
-        <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-page-bg flex items-center justify-center">
-          <span className={`text-sm font-semibold ${supportPercent > 55 ? 'text-support' : supportPercent < 45 ? 'text-oppose' : 'text-text-secondary'}`}>
+      <article className="flex items-center gap-3 py-3.5 px-3 border-b border-divider hover:bg-page-bg/50 transition-colors">
+        {/* Market sentiment indicator - refined paper aesthetic */}
+        <div className="w-10 h-10 flex-shrink-0 rounded-lg bg-page-bg flex items-center justify-center border border-divider/50">
+          <span className={`text-sm font-semibold tabular-nums ${supportPercent > 55 ? 'text-support' : supportPercent < 45 ? 'text-oppose' : 'text-text-secondary'}`}>
             {supportPercent.toFixed(0)}
           </span>
         </div>
 
-        {/* Resolution */}
+        {/* Resolution - serif typography for paper aesthetic */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-body text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors">
+          <h3 className="font-heading text-body text-text-primary leading-snug line-clamp-2 group-hover:text-accent transition-colors">
             {debate.resolution}
           </h3>
           <div className="flex items-center gap-2 mt-1">
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${statusBadge.class}`}>
+            <span className={`small-caps text-[11px] font-medium px-1.5 py-0.5 rounded ${statusBadge.class}`}>
               {statusBadge.text}
             </span>
             {mindChangeCount > 0 && (
@@ -72,13 +72,13 @@ export function DebateIndexRow({
           <MiniSparkline supportPercent={supportPercent} />
         </div>
 
-        {/* Market bar + Quick stance */}
+        {/* Market bar + Quick stance - refined colors */}
         <div className="flex-shrink-0 flex flex-col items-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-          {/* Market bar - always visible */}
+          {/* Market bar - muted support/oppose colors */}
           <div className="w-16">
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
-              <div className="bg-support" style={{ width: `${supportPercent}%` }} />
-              <div className="bg-oppose" style={{ width: `${100 - supportPercent}%` }} />
+            <div className="h-1.5 bg-divider rounded-full overflow-hidden flex">
+              <div className="bg-support/80" style={{ width: `${supportPercent}%` }} />
+              <div className="bg-oppose/80" style={{ width: `${100 - supportPercent}%` }} />
             </div>
           </div>
           
@@ -104,6 +104,7 @@ export default DebateIndexRow;
 
 /**
  * MiniSparkline - A tiny sparkline visualization for the index row.
+ * Uses refined muted teal/coral colors for paper aesthetic.
  */
 function MiniSparkline({ supportPercent }: { supportPercent: number }) {
   const height = 24;
@@ -114,6 +115,9 @@ function MiniSparkline({ supportPercent }: { supportPercent: number }) {
   const midY = height / 2;
   
   const path = `M ${padding} ${midY} Q ${width / 3} ${midY + 4} ${width / 2} ${midY} T ${width - padding} ${y}`;
+  
+  // Muted teal (#2D8A6E) for support, muted coral (#C75B5B) for oppose
+  const lineColor = supportPercent >= 50 ? '#2D8A6E' : '#C75B5B';
   
   return (
     <svg 
@@ -126,14 +130,14 @@ function MiniSparkline({ supportPercent }: { supportPercent: number }) {
         y1={midY} 
         x2={width - padding} 
         y2={midY} 
-        stroke="#E5E7EB" 
+        stroke="#E5E5E0" 
         strokeWidth="1"
         strokeDasharray="2 2"
       />
       <path 
         d={path} 
         fill="none" 
-        stroke={supportPercent >= 50 ? '#059669' : '#DC2626'} 
+        stroke={lineColor} 
         strokeWidth="1.5"
         strokeLinecap="round"
       />
@@ -141,7 +145,7 @@ function MiniSparkline({ supportPercent }: { supportPercent: number }) {
         cx={width - padding} 
         cy={y} 
         r="2" 
-        fill={supportPercent >= 50 ? '#059669' : '#DC2626'}
+        fill={lineColor}
       />
     </svg>
   );

@@ -18,6 +18,7 @@ import {
   useToast,
   useAuthModal,
   useNewDebateModal,
+  HorizontalDivider,
 } from '../components';
 import type { DebateTabType } from '../components';
 
@@ -154,9 +155,9 @@ function IndexLeftRail({ isAuthenticated, sandboxData, debates, currentUserId }:
   return (
     <div className="space-y-4">
       {/* Quick Actions - Primary CTA */}
-      <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden shadow-sm">
-        <div className="px-4 py-3 bg-gradient-to-r from-accent/5 to-transparent border-b border-gray-100">
-          <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+      <div className="bg-paper rounded-small border border-divider overflow-hidden shadow-paper">
+        <div className="px-4 py-3 border-b border-divider">
+          <h2 className="small-caps text-label text-text-secondary flex items-center gap-2">
             <span className="text-accent">+</span>
             Quick Actions
           </h2>
@@ -164,7 +165,7 @@ function IndexLeftRail({ isAuthenticated, sandboxData, debates, currentUserId }:
         <div className="p-3 space-y-2">
           <button 
             onClick={openNewDebate}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-hover transition-colors shadow-sm"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded-small hover:bg-accent-hover transition-colors shadow-paper"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -173,7 +174,7 @@ function IndexLeftRail({ isAuthenticated, sandboxData, debates, currentUserId }:
           </button>
           <Link 
             to="/"
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-accent hover:bg-gray-50 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:text-accent hover:bg-page-bg rounded-small transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -184,23 +185,23 @@ function IndexLeftRail({ isAuthenticated, sandboxData, debates, currentUserId }:
       </div>
 
       {/* How It Works - Compact version */}
-      <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
-        <div className="px-4 py-3 bg-gradient-to-r from-blue-50/50 to-transparent border-b border-gray-100">
-          <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-            <span className="text-blue-500">?</span>
+      <div className="bg-paper rounded-small border border-divider overflow-hidden shadow-paper">
+        <div className="px-4 py-3 border-b border-divider">
+          <h2 className="small-caps text-label text-text-secondary flex items-center gap-2">
+            <span className="text-accent">?</span>
             How It Works
           </h2>
         </div>
         <div className="p-3 space-y-2">
-          <div className="flex items-center gap-2.5 text-xs text-gray-600">
+          <div className="flex items-center gap-2.5 text-xs text-text-secondary">
             <span className="flex-shrink-0 w-5 h-5 rounded-full bg-accent/10 text-accent font-bold flex items-center justify-center text-[10px]">1</span>
             <span>Record your stance before reading</span>
           </div>
-          <div className="flex items-center gap-2.5 text-xs text-gray-600">
+          <div className="flex items-center gap-2.5 text-xs text-text-secondary">
             <span className="flex-shrink-0 w-5 h-5 rounded-full bg-accent/10 text-accent font-bold flex items-center justify-center text-[10px]">2</span>
             <span>Read structured arguments</span>
           </div>
-          <div className="flex items-center gap-2.5 text-xs text-gray-600">
+          <div className="flex items-center gap-2.5 text-xs text-text-secondary">
             <span className="flex-shrink-0 w-5 h-5 rounded-full bg-accent/10 text-accent font-bold flex items-center justify-center text-[10px]">3</span>
             <span>See if your mind changed</span>
           </div>
@@ -216,25 +217,25 @@ function IndexLeftRail({ isAuthenticated, sandboxData, debates, currentUserId }:
 
       {/* Sandbox progress for new users - compact */}
       {isAuthenticated && !sandboxData.sandboxCompleted && (
-        <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
-          <div className="px-4 py-3 bg-gradient-to-r from-green-50/50 to-transparent border-b border-gray-100">
-            <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-              <span className="text-green-500">◈</span>
+        <div className="bg-paper rounded-small border border-divider overflow-hidden shadow-paper">
+          <div className="px-4 py-3 border-b border-divider">
+            <h2 className="small-caps text-label text-text-secondary flex items-center gap-2">
+              <span className="text-support">◈</span>
               Your Progress
             </h2>
           </div>
           <div className="p-3">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="text-gray-600">Debates joined</span>
-              <span className="font-semibold text-gray-800">{sandboxData.debatesParticipated}/5</span>
+              <span className="text-text-secondary">Debates joined</span>
+              <span className="font-semibold text-text-primary">{sandboxData.debatesParticipated}/5</span>
             </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-page-bg rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all"
+                className="h-full bg-gradient-to-r from-support/80 to-support rounded-full transition-all"
                 style={{ width: `${Math.min(100, (sandboxData.debatesParticipated / 5) * 100)}%` }}
               />
             </div>
-            <p className="text-xs text-gray-400 mt-2">Complete 5 debates to unlock full features</p>
+            <p className="text-xs text-text-tertiary mt-2">Complete 5 debates to unlock full features</p>
           </div>
         </div>
       )}
@@ -270,15 +271,15 @@ function IndexCenterContent({
   
   return (
     <div>
-      {/* Header */}
-      <header className="mb-6">
+      {/* Header - Paper aesthetic with serif typography */}
+      <header className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold text-gray-900">
+            <h1 className="font-heading text-heading-1 sm:text-[2.25rem] sm:leading-[1.3] font-semibold text-text-primary tracking-tight">
               Debate Index
             </h1>
-            <p className="mt-1.5 text-sm text-gray-500">
-              Take a position • See what others think • Track mind changes
+            <p className="mt-3 text-body-small text-text-secondary" style={{ letterSpacing: '0.02em' }}>
+              Take a position&nbsp;&nbsp;•&nbsp;&nbsp;See what others think&nbsp;&nbsp;•&nbsp;&nbsp;Track mind changes
             </p>
           </div>
           <button
@@ -289,6 +290,8 @@ function IndexCenterContent({
             <span>New Debate</span>
           </button>
         </div>
+        {/* Subtle horizontal divider below header */}
+        <HorizontalDivider spacing="lg" className="mt-8" />
       </header>
 
       {/* Trending Debates */}
@@ -346,10 +349,10 @@ function IndexRightRail({ debatesWithMarket }: IndexRightRailProps) {
   return (
     <div className="space-y-4">
       {/* Most Persuasive */}
-      <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
-        <div className="px-4 py-3 bg-gradient-to-r from-purple-50/50 to-transparent border-b border-gray-100">
-          <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-            <span className="text-purple-500">★</span>
+      <div className="bg-paper rounded-small border border-divider overflow-hidden shadow-paper">
+        <div className="px-4 py-3 border-b border-divider">
+          <h2 className="small-caps text-label text-text-secondary flex items-center gap-2">
+            <span className="text-accent">★</span>
             Most Persuasive
           </h2>
         </div>
@@ -365,28 +368,28 @@ function IndexRightRail({ debatesWithMarket }: IndexRightRailProps) {
       </div>
 
       {/* Platform stats */}
-      <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden">
-        <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-transparent border-b border-gray-100">
-          <h2 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-            <span className="text-gray-500">◈</span>
+      <div className="bg-paper rounded-small border border-divider overflow-hidden shadow-paper">
+        <div className="px-4 py-3 border-b border-divider">
+          <h2 className="small-caps text-label text-text-secondary flex items-center gap-2">
+            <span className="text-text-tertiary">◈</span>
             Platform Stats
           </h2>
         </div>
         <div className="p-4 space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-500">Active debates</span>
-            <span className="text-sm font-semibold text-gray-800">
+            <span className="text-sm text-text-secondary">Active debates</span>
+            <span className="text-sm font-semibold text-text-primary">
               {debatesWithMarket.filter((d) => d.debate.status === 'active').length}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-500">Total debates</span>
-            <span className="text-sm font-semibold text-gray-800">
+            <span className="text-sm text-text-secondary">Total debates</span>
+            <span className="text-sm font-semibold text-text-primary">
               {debatesWithMarket.length}
             </span>
           </div>
-          <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-            <span className="text-sm text-gray-500">Minds changed</span>
+          <div className="flex justify-between items-center pt-2 border-t border-divider">
+            <span className="text-sm text-text-secondary">Minds changed</span>
             <span className="text-sm font-bold text-accent">
               {debatesWithMarket.reduce((sum: number, d) => sum + (d.marketPrice?.mindChangeCount ?? 0), 0)}
             </span>

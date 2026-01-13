@@ -388,6 +388,32 @@
 
   body {
     @apply font-body text-text-primary antialiased;
+    /* Base body text line-height for optimal readability
+       Requirements: 1.3 - Body text line-height 1.6-1.8 */
+    line-height: 1.7;
+  }
+  
+  /* Base heading styles with refined line-heights
+     Requirements: 1.3, 1.5 - Clear typographic hierarchy */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-text-primary;
+  }
+  
+  h1 {
+    line-height: 1.25;
+  }
+  
+  h2 {
+    line-height: 1.3;
+  }
+  
+  h3, h4, h5, h6 {
+    line-height: 1.35;
+  }
+  
+  /* Paragraph text with proper line-height */
+  p {
+    line-height: 1.7;
   }
 
   /* Webkit scrollbar styling (Chrome, Safari, Edge) */
@@ -496,6 +522,39 @@
   /* Hairline border */
   .border-hairline {
     @apply border border-black/[0.08];
+  }
+  
+  /* ============================================
+     Paper Polish CSS Classes
+     Requirements: 3.3, 4.1, 4.5
+     ============================================ */
+  
+  /* Paper divider - subtle horizontal rule for section separation
+     Requirements: 3.3 - Horizontal rule styling */
+  .paper-divider {
+    height: 1px;
+    background-color: #E5E5E0;
+    border: none;
+    width: 100%;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Small-caps - academic/editorial style for status labels and metadata
+     Requirements: 4.1 - Status label styling */
+  .small-caps {
+    font-variant: small-caps;
+    text-transform: lowercase;
+    letter-spacing: 0.05em;
+  }
+  
+  /* Monospace label - refined metadata display
+     Requirements: 4.5 - Metadata label letter-spacing */
+  .monospace-label {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 }
 
