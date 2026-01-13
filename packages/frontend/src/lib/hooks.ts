@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useQueries, useInfiniteQuery } from '@tanstack/react-query';
 import { useSession } from './useSession';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
@@ -10,11 +10,14 @@ import {
   marketQueryOptions,
   userStanceQueryOptions,
   commentsQueryOptions,
+  commentsInfiniteQueryOptions,
   reactionsQueryOptions,
   currentUserQueryOptions,
   userQueryOptions,
   userStatsQueryOptions,
   healthCheckQueryOptions,
+  steelmanStatusQueryOptions,
+  pendingSteelmansQueryOptions,
 } from './queries';
 import {
   createDebate,
@@ -22,11 +25,17 @@ import {
   submitArgument,
   recordPreStance,
   recordPostStance,
+  recordQuickStance,
   addReaction,
   removeReaction,
   addComment,
   attributeImpact,
+  markMindChanged,
+  submitSteelman,
+  reviewSteelman,
+  deleteSteelman,
 } from './mutations';
+import { mutationKeys } from './cacheStrategies';
 
 // ============================================================================
 // Auth Hook
@@ -182,12 +191,14 @@ export function useDebateFull(debateId: string) {
 
 /**
  * Create a new debate
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
  */
 export function useCreateDebate() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: mutationKeys.debates.create(),
     mutationFn: (input: { resolution: string; creatorSide?: 'support' | 'oppose' }) => {
       if (!token) throw new Error('Authentication required');
       return createDebate(input, token);
@@ -200,12 +211,14 @@ export function useCreateDebate() {
 
 /**
  * Join a debate as oppose debater
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
  */
 export function useJoinDebate() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: ['mutations', 'debates', 'join'] as const,
     mutationFn: (debateId: string) => {
       if (!token) throw new Error('Authentication required');
       return joinDebate(debateId, token);
@@ -219,12 +232,14 @@ export function useJoinDebate() {
 
 /**
  * Submit an argument in a debate
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
  */
 export function useSubmitArgument() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: ['mutations', 'arguments', 'submit'] as const,
     mutationFn: ({ debateId, content }: { debateId: string; content: string }) => {
       if (!token) throw new Error('Authentication required');
       return submitArgument(debateId, { content }, token);
@@ -262,12 +277,14 @@ export function useUserStance(debateId: string) {
 
 /**
  * Record pre-read stance
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
  */
 export function useRecordPreStance() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: ['mutations', 'stances', 'pre'] as const,
     mutationFn: ({
       debateId,
       supportValue,
@@ -289,12 +306,14 @@ export function useRecordPreStance() {
 
 /**
  * Record post-read stance
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
  */
 export function useRecordPostStance() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: ['mutations', 'stances', 'post'] as const,
     mutationFn: ({
       debateId,
       supportValue,
@@ -316,6 +335,36 @@ export function useRecordPostStance() {
   });
 }
 
+/**
+ * Quick stance from index page - simplified support/oppose binary choice.
+ * This is a reusable hook replacing inline mutation in index.tsx.
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
+ */
+export function useQuickStance() {
+  const queryClient = useQueryClient();
+  const token = useAuthToken();
+
+  return useMutation({
+    mutationKey: mutationKeys.stances.quick(''),
+    mutationFn: ({
+      debateId,
+      side,
+    }: {
+      debateId: string;
+      side: 'support' | 'oppose';
+    }) => {
+      if (!token) throw new Error('Authentication required');
+      return recordQuickStance(debateId, { side }, token);
+    },
+    onSuccess: (_, { debateId }) => {
+      // Invalidate relevant queries to refresh stance and market data
+      queryClient.invalidateQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.market.byDebate(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.all });
+    },
+  });
+}
+
 // ============================================================================
 // Comment Hooks
 // ============================================================================
@@ -328,13 +377,32 @@ export function useComments(debateId: string) {
 }
 
 /**
+ * Fetch paginated comments for a debate with infinite loading.
+ * TanStack Query v5 Best Practice: Use useInfiniteQuery for paginated data.
+ * 
+ * Provides:
+ * - data.pages: Array of comment pages
+ * - fetchNextPage: Load more comments
+ * - hasNextPage: Whether more pages exist
+ * - isFetchingNextPage: Loading state for next page
+ * 
+ * @param debateId - The debate ID to fetch comments for
+ * @param pageSize - Number of comments per page (default: 20)
+ */
+export function useInfiniteComments(debateId: string, pageSize: number = 20) {
+  return useInfiniteQuery(commentsInfiniteQueryOptions(debateId, pageSize));
+}
+
+/**
  * Add a comment to a debate
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
  */
 export function useAddComment() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: ['mutations', 'comments', 'add'] as const,
     mutationFn: ({
       debateId,
       content,
@@ -366,13 +434,75 @@ export function useReactions(argumentId: string) {
 }
 
 /**
+ * Batch fetch reactions for multiple arguments using useQueries with combine.
+ * TanStack Query v5 Best Practice: Use combine to merge results from parallel queries.
+ * 
+ * This is useful when displaying a list of arguments (e.g., in a debate round)
+ * where each argument needs its reaction counts.
+ * 
+ * @param argumentIds - Array of argument IDs to fetch reactions for
+ * @returns Combined result with reactions keyed by argument ID
+ */
+export function useBatchReactions(argumentIds: string[]) {
+  const token = useAuthToken();
+
+  return useQueries({
+    queries: argumentIds.map((argumentId) => ({
+      ...reactionsQueryOptions(argumentId, token),
+      // Ensure disabled for empty IDs
+      enabled: !!argumentId,
+    })),
+    combine: (results) => {
+      // Create a map of argumentId -> reactions data
+      const reactionsMap: Record<string, {
+        counts: { agree: number; strongReasoning: number };
+        userReactions: { agree: boolean; strongReasoning: boolean } | null;
+      }> = {};
+
+      // Track overall loading/error state
+      let isPending = false;
+      let isError = false;
+      const errors: Error[] = [];
+
+      results.forEach((result, index) => {
+        const argumentId = argumentIds[index];
+        
+        if (result.isPending) {
+          isPending = true;
+        }
+        
+        if (result.isError) {
+          isError = true;
+          errors.push(result.error as Error);
+        }
+        
+        if (result.data) {
+          reactionsMap[argumentId] = result.data;
+        }
+      });
+
+      return {
+        data: reactionsMap,
+        isPending,
+        isError,
+        errors,
+        // Helper to get reactions for a specific argument
+        getReactions: (argumentId: string) => reactionsMap[argumentId] ?? null,
+      };
+    },
+  });
+}
+
+/**
  * Add a reaction to an argument
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
  */
 export function useAddReaction() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: ['mutations', 'reactions', 'add'] as const,
     mutationFn: ({
       argumentId,
       type
@@ -391,12 +521,14 @@ export function useAddReaction() {
 
 /**
  * Remove a reaction from an argument
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
  */
 export function useRemoveReaction() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: ['mutations', 'reactions', 'remove'] as const,
     mutationFn: ({
       argumentId,
       type
@@ -421,12 +553,14 @@ export function useRemoveReaction() {
  * Attribute mind-change impact to a specific argument.
  * This is the "This changed my mind" interaction.
  * Requirements: 13.1
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
  */
 export function useAttributeImpact() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: ['mutations', 'impact', 'attribute'] as const,
     mutationFn: ({
       debateId,
       argumentId
@@ -445,6 +579,31 @@ export function useAttributeImpact() {
       // Invalidate debate detail to refresh argument impact scores
       queryClient.invalidateQueries({ queryKey: queryKeys.debates.detail(debateId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.debates.full(debateId) });
+    },
+  });
+}
+
+/**
+ * Mark that a specific argument changed your mind.
+ * Per original vision: "This changed my mind" button for explicit impact attribution.
+ * Updates impact score and creates spike if significant.
+ * TanStack Query v5: Added mutationKey for tracking via useMutationState
+ */
+export function useMindChanged() {
+  const queryClient = useQueryClient();
+  const token = useAuthToken();
+
+  return useMutation({
+    mutationKey: ['mutations', 'arguments', 'mindChanged'] as const,
+    mutationFn: (argumentId: string) => {
+      if (!token) throw new Error('Authentication required');
+      return markMindChanged(argumentId, token);
+    },
+    onSuccess: () => {
+      // Invalidate all relevant queries to refresh impact scores
+      queryClient.invalidateQueries({ queryKey: ['debates'] });
+      queryClient.invalidateQueries({ queryKey: ['market'] });
+      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
     },
   });
 }
@@ -484,4 +643,89 @@ export function useUserStats(userId: string) {
  */
 export function useHealthCheck() {
   return useQuery(healthCheckQueryOptions);
+}
+
+// ============================================================================
+// Steelman Gate Hooks
+// ============================================================================
+
+/**
+ * Check steelman gate status for a round.
+ * Returns whether user can submit argument and steelman status.
+ */
+export function useSteelmanStatus(debateId: string, roundNumber: number) {
+  const token = useAuthToken();
+  return useQuery(steelmanStatusQueryOptions(debateId, roundNumber, token));
+}
+
+/**
+ * Get pending steelmans that need review.
+ */
+export function usePendingSteelmans(debateId: string) {
+  const token = useAuthToken();
+  return useQuery(pendingSteelmansQueryOptions(debateId, token));
+}
+
+/**
+ * Submit a steelman of opponent's argument.
+ */
+export function useSubmitSteelman() {
+  const queryClient = useQueryClient();
+  const token = useAuthToken();
+
+  return useMutation({
+    mutationFn: ({ debateId, roundNumber, targetArgumentId, content }: {
+      debateId: string;
+      roundNumber: 1 | 2 | 3;
+      targetArgumentId: string;
+      content: string;
+    }) => {
+      if (!token) throw new Error('Authentication required');
+      return submitSteelman(debateId, { roundNumber, targetArgumentId, content }, token);
+    },
+    onSuccess: (_, { debateId, roundNumber }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.steelman.status(debateId, roundNumber) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.steelman.pending(debateId) });
+    },
+  });
+}
+
+/**
+ * Review (approve/reject) a steelman.
+ */
+export function useReviewSteelman() {
+  const queryClient = useQueryClient();
+  const token = useAuthToken();
+
+  return useMutation({
+    mutationFn: ({ steelmanId, approved, rejectionReason }: {
+      steelmanId: string;
+      approved: boolean;
+      rejectionReason?: string;
+    }) => {
+      if (!token) throw new Error('Authentication required');
+      return reviewSteelman(steelmanId, { approved, rejectionReason }, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['steelman'] });
+    },
+  });
+}
+
+/**
+ * Delete a rejected steelman to resubmit.
+ */
+export function useDeleteSteelman() {
+  const queryClient = useQueryClient();
+  const token = useAuthToken();
+
+  return useMutation({
+    mutationFn: (steelmanId: string) => {
+      if (!token) throw new Error('Authentication required');
+      return deleteSteelman(steelmanId, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['steelman'] });
+    },
+  });
 }

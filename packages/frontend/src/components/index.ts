@@ -121,6 +121,10 @@ export {
   AudienceStats,
   // Comments
   SpectatorComments,
+  // Steelman Gate
+  SteelmanForm,
+  SteelmanReview,
+  SteelmanGateBadge,
   // New Debate Modal
   NewDebateModalProvider,
   useNewDebateModal,
@@ -138,6 +142,8 @@ export type {
   EvidenceSource,
   RoundSectionProps,
   ActiveRoundViewProps,
+  SteelmanData,
+  PendingReview,
   ArgumentSubmissionFormProps,
   RoundProgressIndicatorProps,
   RoundNavigatorProps,

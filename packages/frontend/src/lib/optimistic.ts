@@ -5,6 +5,11 @@
  * immediate UI feedback before server confirmation with proper rollback
  * on error and reconciliation on success.
  * 
+ * TanStack Query v5 Best Practices:
+ * - All mutations have mutationKey for tracking via useMutationState
+ * - Proper optimistic cache updates with rollback
+ * - Reconciliation with server data via invalidation
+ * 
  * Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6
  */
 
@@ -13,6 +18,7 @@ import { useCallback, useRef } from 'react';
 import { useAuthToken } from './hooks';
 import { useToast } from '../components/common/Toast';
 import { queryKeys } from './queries';
+import { mutationKeys } from './cacheStrategies';
 import {
   recordPreStance,
   recordPostStance,
@@ -84,6 +90,7 @@ export function useOptimisticStance({ debateId, onSuccess, onError }: UseOptimis
   const isPendingRef = useRef(false);
 
   const mutation = useMutation({
+    mutationKey: mutationKeys.stances.record(debateId),
     mutationFn: async (params: RecordStanceParams) => {
       if (!token) throw new Error('Authentication required');
       
@@ -261,6 +268,7 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
   const isPendingRef = useRef(false);
 
   const addMutation = useMutation({
+    mutationKey: mutationKeys.reactions.add(argumentId),
     mutationFn: async (type: ReactionType) => {
       if (!token) throw new Error('Authentication required');
       return addReaction(argumentId, { type }, token);
@@ -333,6 +341,7 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
   });
 
   const removeMutation = useMutation({
+    mutationKey: mutationKeys.reactions.remove(argumentId),
     mutationFn: async (type: ReactionType) => {
       if (!token) throw new Error('Authentication required');
       return removeReaction(argumentId, type, token);
@@ -459,6 +468,7 @@ export function useOptimisticComment({ debateId, userId, onSuccess, onError }: U
   const pendingCommentsRef = useRef<Comment[]>([]);
 
   const mutation = useMutation({
+    mutationKey: mutationKeys.comments.add(debateId),
     mutationFn: async (params: AddCommentParams) => {
       if (!token) throw new Error('Authentication required');
       return addComment(debateId, { content: params.content, parentId: params.parentId }, token);

@@ -118,3 +118,20 @@ export const stanceSpikes = pgTable('stance_spikes', {
   direction: directionEnum('direction').notNull(),
   label: text('label').notNull(),
 });
+
+// Steelman Gate: Anti-strawman forcefield
+// Before rebuttal, debater must write a steelman of opponent's argument
+export const steelmanStatusEnum = pgEnum('steelman_status', ['pending', 'approved', 'rejected']);
+
+export const steelmans = pgTable('steelmans', {
+  id: text('id').primaryKey(),
+  debateId: text('debate_id').notNull().references(() => debates.id),
+  roundNumber: integer('round_number').notNull(), // Which round this steelman is for (2 or 3)
+  authorId: text('author_id').notNull().references(() => users.id), // Who wrote the steelman
+  targetArgumentId: text('target_argument_id').notNull().references(() => arguments_.id), // The argument being steelmanned
+  content: text('content').notNull(), // The steelman text
+  status: steelmanStatusEnum('status').notNull().default('pending'),
+  rejectionReason: text('rejection_reason'), // Why opponent rejected (if rejected)
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  reviewedAt: timestamp('reviewed_at'),
+});

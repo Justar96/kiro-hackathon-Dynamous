@@ -1,5 +1,5 @@
 import { eq, and, sql } from 'drizzle-orm';
-import { db, users, stances, debates, arguments_ } from '../db';
+import { db, users, stances, debates, arguments_, rounds } from '../db';
 import type { User, DebateResult } from '@debate-platform/shared';
 
 // Reputation change constants
@@ -60,6 +60,9 @@ export class ReputationService {
 
     const isCorrect = userPrediction === actualOutcome;
 
+    // Update prediction accuracy
+    await this.updatePredictionAccuracy(userId, isCorrect);
+
     if (isCorrect) {
       return await this.increaseReputation(userId, CORRECT_PREDICTION_BONUS);
     }
@@ -83,6 +86,46 @@ export class ReputationService {
   }
 
   /**
+   * Update reputation for all participants when a debate concludes
+   * Per original vision: Reward correct predictions and high-impact arguments
+   * 
+   * @param debateId - The debate ID
+   * @param debateResult - The final debate result
+   */
+  async updateAllParticipants(debateId: string, debateResult: DebateResult): Promise<void> {
+    // Get all voters who made predictions (have post-stances)
+    const postStances = await db.query.stances.findMany({
+      where: and(
+        eq(stances.debateId, debateId),
+        eq(stances.type, 'post')
+      ),
+    });
+
+    // Update reputation for correct predictions
+    for (const stance of postStances) {
+      await this.updateReputationOnDebateConclusion(
+        stance.voterId,
+        debateId,
+        debateResult
+      );
+    }
+
+    // Update reputation for high-impact arguments
+    const debateArguments = await db.query.arguments_.findMany({
+      where: sql`${arguments_.roundId} IN (
+        SELECT id FROM ${rounds} WHERE ${rounds.debateId} = ${debateId}
+      )`,
+    });
+
+    for (const argument of debateArguments) {
+      await this.updateReputationOnHighImpactArgument(
+        argument.debaterId,
+        argument.id
+      );
+    }
+  }
+
+  /**
    * Update reputation for a debater based on argument impact
    * Per Requirement 7.3: Increase reputation when arguments receive high impact scores
    * 
@@ -103,17 +146,41 @@ export class ReputationService {
       return null;
     }
 
-    // Verify the user is the debater who made this argument
-    if (argument.debaterId !== userId) {
-      return null;
+    // Check if argument has high impact (>= threshold)
+    if (argument.impactScore >= HIGH_IMPACT_THRESHOLD) {
+      return await this.increaseReputation(userId, HIGH_IMPACT_ARGUMENT_BONUS);
     }
 
-    // Check if impact score meets threshold
-    if (argument.impactScore < HIGH_IMPACT_THRESHOLD) {
-      return null;
+    return null;
+  }
+
+  /**
+   * Update prediction accuracy for a user
+   * Tracks ratio of correct predictions over time
+   * 
+   * @param userId - The user's ID
+   * @param wasCorrect - Whether the prediction was correct
+   */
+  async updatePredictionAccuracy(userId: string, wasCorrect: boolean): Promise<void> {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      return;
     }
 
-    return await this.increaseReputation(userId, HIGH_IMPACT_ARGUMENT_BONUS);
+    // Simple accuracy calculation: weighted average with new prediction
+    // This could be enhanced with more sophisticated tracking
+    const currentAccuracy = user.predictionAccuracy;
+    const weight = 0.1; // How much new predictions affect overall accuracy
+    const newAccuracy = wasCorrect 
+      ? currentAccuracy + (100 - currentAccuracy) * weight
+      : currentAccuracy - currentAccuracy * weight;
+
+    await db.update(users)
+      .set({ predictionAccuracy: Math.round(newAccuracy * 100) / 100 })
+      .where(eq(users.id, userId));
   }
 
   /**

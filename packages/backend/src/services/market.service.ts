@@ -253,9 +253,9 @@ export class MarketService {
 
   /**
    * Detect and record significant stance shifts (spikes)
-   * Per Requirement 4.3:
+   * Per Requirement 4.3 + Original Vision:
    * - Detect large deltas and create spike records
-   * - Generate labels for spikes
+   * - Generate labels like "Cited meta-analysis dropped Support from 62 → 48"
    * 
    * @param debateId - The debate ID
    * @param argumentId - The argument that may have caused the spike
@@ -284,8 +284,13 @@ export class MarketService {
       return null;
     }
 
+    // Get current and calculate previous price for label
+    const currentMarket = await this.calculateMarketPrice(debateId);
+    const currentPrice = currentMarket.supportPrice;
+    const previousPrice = delta > 0 ? currentPrice - absDelta : currentPrice + absDelta;
+
     const direction: 'support' | 'oppose' = delta > 0 ? 'support' : 'oppose';
-    const label = this.generateSpikeLabel(argument.content, absDelta, direction);
+    const label = this.generateSpikeLabel(argument.content, previousPrice, currentPrice, direction);
 
     const [spike] = await db.insert(stanceSpikes).values({
       id: nanoid(),
@@ -308,20 +313,28 @@ export class MarketService {
 
   /**
    * Generate a human-readable label for a spike
+   * Per original vision: Labels like "Cited meta-analysis dropped Support from 62 → 48"
    * 
    * @param content - The argument content
-   * @param delta - The delta amount
+   * @param previousPrice - Previous support price
+   * @param currentPrice - Current support price  
    * @param direction - The direction of the shift
-   * @returns Generated label
+   * @returns Generated label with argument preview
    */
-  generateSpikeLabel(content: string, delta: number, direction: 'support' | 'oppose'): string {
-    // Extract first meaningful phrase from content (up to 50 chars)
-    const preview = content.substring(0, 50).trim();
-    const truncated = preview.length < content.length ? `${preview}...` : preview;
+  generateSpikeLabel(
+    content: string, 
+    previousPrice: number,
+    currentPrice: number,
+    direction: 'support' | 'oppose'
+  ): string {
+    // Extract first meaningful phrase (up to 60 chars, break at word boundary)
+    const preview = content.length > 60 
+      ? content.substring(0, 60).replace(/\s+\S*$/, '') + '...'
+      : content;
     
-    const directionText = direction === 'support' ? 'toward support' : 'toward oppose';
+    const verb = direction === 'support' ? 'raised' : 'dropped';
     
-    return `+${delta} ${directionText}: "${truncated}"`;
+    return `"${preview}" ${verb} Support ${Math.round(previousPrice)}% → ${Math.round(currentPrice)}%`;
   }
 
   /**
@@ -436,6 +449,84 @@ export class MarketService {
     }
 
     return results;
+  }
+
+  /**
+   * Record a market data point for historical tracking
+   * Per original vision: Enable chart with price movement over time
+   * 
+   * @param debateId - The debate ID
+   * @param marketPrice - Current market price data
+   */
+  async recordDataPoint(debateId: string, marketPrice: MarketPrice): Promise<void> {
+    await db.insert(marketDataPoints).values({
+      id: nanoid(),
+      debateId,
+      timestamp: new Date(),
+      supportPrice: marketPrice.supportPrice,
+      voteCount: marketPrice.totalVotes,
+    });
+  }
+
+  /**
+   * Get historical chart data for a debate
+   * Returns time-series data for frontend charts
+   * 
+   * @param debateId - The debate ID
+   * @returns Array of market data points over time
+   */
+  async getChartData(debateId: string): Promise<MarketDataPoint[]> {
+    const dataPoints = await db.query.marketDataPoints.findMany({
+      where: eq(marketDataPoints.debateId, debateId),
+      orderBy: asc(marketDataPoints.timestamp),
+    });
+
+    return dataPoints.map(point => ({
+      timestamp: point.timestamp,
+      supportPrice: point.supportPrice,
+      voteCount: point.voteCount,
+    }));
+  }
+
+  /**
+   * Detect and record stance spikes when significant price changes occur
+   * Per original vision: Show labeled spikes like "Cited meta-analysis dropped Support from 62 → 48"
+   * 
+   * @param debateId - The debate ID
+   * @param previousPrice - Previous support price
+   * @param currentPrice - Current support price
+   * @param lastArgumentId - ID of most recent argument (for attribution)
+   */
+  async detectAndRecordSpikes(
+    debateId: string, 
+    previousPrice: number, 
+    currentPrice: number, 
+    lastArgumentId?: string
+  ): Promise<void> {
+    const priceDelta = currentPrice - previousPrice;
+    const SPIKE_THRESHOLD = 5; // Minimum 5% change to be considered a spike
+
+    if (Math.abs(priceDelta) >= SPIKE_THRESHOLD && lastArgumentId) {
+      const direction = priceDelta > 0 ? 'support' : 'oppose';
+      const label = `${direction === 'support' ? 'Raised' : 'Dropped'} Support ${previousPrice}% → ${currentPrice}%`;
+
+      await db.insert(stanceSpikes).values({
+        id: nanoid(),
+        debateId,
+        argumentId: lastArgumentId,
+        timestamp: new Date(),
+        deltaAmount: Math.abs(priceDelta),
+        direction,
+        label,
+      });
+
+      // Update argument impact score
+      await db.update(arguments_)
+        .set({ 
+          impactScore: sql`${arguments_.impactScore} + ${Math.abs(priceDelta)}` 
+        })
+        .where(eq(arguments_.id, lastArgumentId));
+    }
   }
 }
 

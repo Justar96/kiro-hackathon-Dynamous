@@ -8,6 +8,7 @@
 import { useCallback, useMemo, useEffect, useRef, useReducer } from 'react';
 import type { Debate, Round, Argument, User, RoundNumber } from '@debate-platform/shared';
 import type { Citation } from './ArgumentBlock';
+import type { SteelmanData, PendingReview } from './ActiveRoundView';
 import { RoundProgressIndicator } from './RoundProgressIndicator';
 import { RoundNavigator } from './RoundNavigator';
 import { RoundHistory } from './RoundHistory';
@@ -26,6 +27,13 @@ export interface RoundSectionProps {
   onArgumentSubmit?: (content: string) => void;
   isSubmitting?: boolean;
   onRoundComplete?: (completedRound: RoundNumber, nextRound: RoundNumber | null) => void;
+  // Steelman Gate props
+  steelmanData?: SteelmanData;
+  pendingReviews?: PendingReview[];
+  onSteelmanSubmit?: (targetArgumentId: string, content: string) => void;
+  onSteelmanReview?: (steelmanId: string, approved: boolean, reason?: string) => void;
+  onSteelmanDelete?: (steelmanId: string) => void;
+  isSteelmanSubmitting?: boolean;
 }
 
 // ============================================
@@ -100,6 +108,12 @@ export function RoundSection({
   onArgumentSubmit,
   isSubmitting = false,
   onRoundComplete,
+  steelmanData,
+  pendingReviews,
+  onSteelmanSubmit,
+  onSteelmanReview,
+  onSteelmanDelete,
+  isSteelmanSubmitting = false,
 }: RoundSectionProps) {
   const [state, dispatch] = useReducer(roundReducer, debate, getInitialState);
   const { viewedRound, historyExpanded, mindChangedArgs } = state;
@@ -234,9 +248,15 @@ export function RoundSection({
           userSide={userSide}
           isSubmitting={isSubmitting}
           attributedArguments={mindChangedArgs}
+          steelmanData={steelmanData}
+          pendingReviews={pendingReviews}
           onCitationHover={onCitationHover}
           onMindChanged={handleMindChanged}
           onArgumentSubmit={onArgumentSubmit}
+          onSteelmanSubmit={onSteelmanSubmit}
+          onSteelmanReview={onSteelmanReview}
+          onSteelmanDelete={onSteelmanDelete}
+          isSteelmanSubmitting={isSteelmanSubmitting}
         />
       </div>
     </section>

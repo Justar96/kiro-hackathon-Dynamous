@@ -6,9 +6,14 @@ import {
   useAfterStanceUnlock,
   useReadingProgress,
   useAuthToken,
-  useAttributeImpact,
+  useMindChanged,
   useComments,
   useSubmitArgument,
+  useSteelmanStatus,
+  usePendingSteelmans,
+  useSubmitSteelman,
+  useReviewSteelman,
+  useDeleteSteelman,
 } from '../lib/hooks';
 import { 
   useOptimisticStance, 
@@ -34,7 +39,7 @@ import {
   useToast,
   createUnifiedTocSections,
 } from '../components';
-import type { NavSection, Citation } from '../components';
+import type { NavSection, Citation, SteelmanData, PendingReview } from '../components';
 import type { StanceValue, User, Argument } from '@debate-platform/shared';
 
 export const Route = createFileRoute('/debates/$debateId')({
@@ -115,12 +120,20 @@ function DebateView() {
     },
   });
   
-  // Impact attribution mutation
-  const attributeImpact = useAttributeImpact();
+  // Impact attribution mutation - "This changed my mind" button
+  const mindChangedMutation = useMindChanged();
   
   // Argument submission mutation
   // Requirements: 7.1, 7.3 - Argument submission integration
   const submitArgumentMutation = useSubmitArgument();
+
+  // Steelman Gate hooks
+  const currentRound = debateData?.debate?.currentRound ?? 1;
+  const { data: steelmanStatusData } = useSteelmanStatus(debateId, currentRound);
+  const { data: pendingReviewsData } = usePendingSteelmans(debateId);
+  const submitSteelmanMutation = useSubmitSteelman();
+  const reviewSteelmanMutation = useReviewSteelman();
+  const deleteSteelmanMutation = useDeleteSteelman();
   
   // Extract debaters from consolidated response (no separate queries needed)
   const supportDebater = debateData?.debaters?.support ?? null;
@@ -146,10 +159,23 @@ function DebateView() {
     recordStance('post', stance);
   }, [recordStance]);
 
-  // Handle mind changed attribution
+  // Handle mind changed attribution - "This changed my mind" button
   const handleMindChanged = useCallback((argumentId: string) => {
-    attributeImpact.mutate({ debateId, argumentId });
-  }, [debateId, attributeImpact]);
+    mindChangedMutation.mutate(argumentId, {
+      onSuccess: () => {
+        showToast({
+          type: 'success',
+          message: 'Impact attributed! This argument changed minds.',
+        });
+      },
+      onError: (error) => {
+        showToast({
+          type: 'error',
+          message: error.message || 'Failed to attribute impact.',
+        });
+      },
+    });
+  }, [mindChangedMutation, showToast]);
 
   // Handle argument submission
   // Requirements: 7.1, 7.3 - Argument submission within unified round view
@@ -172,6 +198,49 @@ function DebateView() {
       }
     );
   }, [debateId, submitArgumentMutation, showToast]);
+
+  // Steelman Gate handlers
+  const handleSteelmanSubmit = useCallback((targetArgumentId: string, content: string) => {
+    submitSteelmanMutation.mutate(
+      { debateId, roundNumber: currentRound as 2 | 3, targetArgumentId, content },
+      {
+        onSuccess: () => {
+          showToast({ type: 'success', message: 'Steelman submitted! Waiting for opponent review.' });
+        },
+        onError: (error) => {
+          showToast({ type: 'error', message: error.message || 'Failed to submit steelman.' });
+        },
+      }
+    );
+  }, [debateId, currentRound, submitSteelmanMutation, showToast]);
+
+  const handleSteelmanReview = useCallback((steelmanId: string, approved: boolean, reason?: string) => {
+    reviewSteelmanMutation.mutate(
+      { steelmanId, approved, rejectionReason: reason },
+      {
+        onSuccess: () => {
+          showToast({ 
+            type: 'success', 
+            message: approved ? 'Steelman approved!' : 'Steelman rejected. They can revise.' 
+          });
+        },
+        onError: (error) => {
+          showToast({ type: 'error', message: error.message || 'Failed to review steelman.' });
+        },
+      }
+    );
+  }, [reviewSteelmanMutation, showToast]);
+
+  const handleSteelmanDelete = useCallback((steelmanId: string) => {
+    deleteSteelmanMutation.mutate(steelmanId, {
+      onSuccess: () => {
+        showToast({ type: 'success', message: 'Steelman deleted. You can submit a new one.' });
+      },
+      onError: (error) => {
+        showToast({ type: 'error', message: error.message || 'Failed to delete steelman.' });
+      },
+    });
+  }, [deleteSteelmanMutation, showToast]);
 
   if (!debateData?.debate) {
     return <DebateNotFound />;
@@ -218,6 +287,12 @@ function DebateView() {
           onMindChanged={handleMindChanged}
           onArgumentSubmit={handleArgumentSubmit}
           isArgumentSubmitting={submitArgumentMutation.isPending}
+          steelmanData={steelmanStatusData as SteelmanData | undefined}
+          pendingReviews={pendingReviewsData as PendingReview[] | undefined}
+          onSteelmanSubmit={handleSteelmanSubmit}
+          onSteelmanReview={handleSteelmanReview}
+          onSteelmanDelete={handleSteelmanDelete}
+          isSteelmanSubmitting={submitSteelmanMutation.isPending || reviewSteelmanMutation.isPending}
         />
       }
       rightMargin={
@@ -263,6 +338,13 @@ interface DebateDossierContentProps {
   onMindChanged?: (argumentId: string) => void;
   onArgumentSubmit?: (content: string) => void;
   isArgumentSubmitting?: boolean;
+  // Steelman Gate props
+  steelmanData?: SteelmanData;
+  pendingReviews?: PendingReview[];
+  onSteelmanSubmit?: (targetArgumentId: string, content: string) => void;
+  onSteelmanReview?: (steelmanId: string, approved: boolean, reason?: string) => void;
+  onSteelmanDelete?: (steelmanId: string) => void;
+  isSteelmanSubmitting?: boolean;
 }
 
 function DebateDossierContent({
@@ -276,6 +358,12 @@ function DebateDossierContent({
   onMindChanged,
   onArgumentSubmit,
   isArgumentSubmitting,
+  steelmanData,
+  pendingReviews,
+  onSteelmanSubmit,
+  onSteelmanReview,
+  onSteelmanDelete,
+  isSteelmanSubmitting,
 }: DebateDossierContentProps) {
   // Comments data
   const { data: comments = [] } = useComments(debateId);
@@ -355,6 +443,12 @@ function DebateDossierContent({
         onMindChanged={onMindChanged}
         onArgumentSubmit={onArgumentSubmit}
         isSubmitting={isArgumentSubmitting}
+        steelmanData={steelmanData}
+        pendingReviews={pendingReviews}
+        onSteelmanSubmit={onSteelmanSubmit}
+        onSteelmanReview={onSteelmanReview}
+        onSteelmanDelete={onSteelmanDelete}
+        isSteelmanSubmitting={isSteelmanSubmitting}
       />
 
       {/* Outcome Section */}

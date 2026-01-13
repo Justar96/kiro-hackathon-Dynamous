@@ -180,6 +180,37 @@ export interface Comment {
   createdAt: Date;
 }
 
+// Steelman Gate: Anti-strawman forcefield
+export type SteelmanStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Steelman {
+  id: string;
+  debateId: string;
+  roundNumber: RoundNumber;
+  authorId: string;
+  targetArgumentId: string;
+  content: string;
+  status: SteelmanStatus;
+  rejectionReason: string | null;
+  createdAt: Date;
+  reviewedAt: Date | null;
+}
+
+export interface CreateSteelmanInput {
+  debateId: string;
+  roundNumber: RoundNumber;
+  authorId: string;
+  targetArgumentId: string;
+  content: string;
+}
+
+export interface ReviewSteelmanInput {
+  steelmanId: string;
+  reviewerId: string;
+  approved: boolean;
+  rejectionReason?: string;
+}
+
 export interface DebateResult {
   debateId: string;
   finalSupportPrice: number;

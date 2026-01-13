@@ -26,7 +26,7 @@ export { RoundProgressIndicator } from './RoundProgressIndicator';
 export { RoundNavigator } from './RoundNavigator';
 export { RoundHistory } from './RoundHistory';
 export { ActiveRoundView } from './ActiveRoundView';
-export type { ActiveRoundViewProps } from './ActiveRoundView';
+export type { ActiveRoundViewProps, SteelmanData, PendingReview } from './ActiveRoundView';
 export { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
 export type { ArgumentSubmissionFormProps } from './ArgumentSubmissionForm';
 
@@ -65,3 +65,6 @@ export { SpectatorComments } from './SpectatorComments';
 
 // New Debate Modal
 export { NewDebateModalProvider, useNewDebateModal } from './NewDebateModal';
+
+// Steelman Gate
+export { SteelmanForm, SteelmanReview, SteelmanGateBadge } from './SteelmanGate';

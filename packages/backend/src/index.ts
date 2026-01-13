@@ -12,6 +12,7 @@ import {
   reactionService,
   commentService,
   userService,
+  steelmanService,
 } from './services';
 
 import type { 
@@ -19,7 +20,9 @@ import type {
   CreateArgumentInput,
   CreateStanceInput,
   CreateReactionInput,
-  CreateCommentInput 
+  CreateCommentInput,
+  CreateSteelmanInput,
+  ReviewSteelmanInput,
 } from '@debate-platform/shared';
 
 // Types for context variables
@@ -429,15 +432,88 @@ app.post('/api/debates/:id/stance/post', authMiddleware, async (c) => {
   return c.json({ stance: result.stance, delta: result.delta }, 201);
 });
 
+// POST /api/arguments/:id/mind-changed - Attribute mind change to specific argument
+// Per original vision: "This changed my mind" button for explicit impact attribution
+app.post('/api/arguments/:id/mind-changed', authMiddleware, async (c) => {
+  const argumentId = c.req.param('id');
+  const userId = c.get('userId');
+  
+  // Get the argument to find its debate
+  const argument = await debateService.getArgumentById(argumentId);
+  if (!argument) {
+    throw new HTTPException(404, { message: 'Argument not found' });
+  }
+  
+  // Get the round to find debate ID
+  const { db } = await import('./db');
+  const { rounds } = await import('./db/schema');
+  const { eq } = await import('drizzle-orm');
+  
+  const round = await db.query.rounds.findFirst({
+    where: eq(rounds.id, argument.roundId),
+  });
+  
+  if (!round) {
+    throw new HTTPException(404, { message: 'Round not found' });
+  }
+  
+  const debateId = round.debateId;
+  
+  // Check if user has a post-stance (they must have voted)
+  const userStances = await votingService.getUserStances(debateId, userId!);
+  if (!userStances.post) {
+    throw new HTTPException(400, { message: 'Record your post-read stance first' });
+  }
+  
+  // Update the post-stance to attribute to this argument
+  const { stances } = await import('./db/schema');
+  await db.update(stances)
+    .set({ lastArgumentSeen: argumentId })
+    .where(eq(stances.id, userStances.post.id));
+  
+  // Recalculate impact score for this argument
+  const newImpactScore = await marketService.updateArgumentImpactScore(argumentId);
+  
+  // Detect spike if significant
+  const delta = userStances.post.supportValue - (userStances.pre?.supportValue ?? 50);
+  if (Math.abs(delta) >= 10) {
+    await marketService.detectAndRecordSpike(debateId, argumentId, delta, 10);
+  }
+  
+  return c.json({ 
+    success: true, 
+    argumentId,
+    newImpactScore,
+    message: 'Mind change attributed to argument'
+  });
+});
+
 // GET /api/debates/:id/market - Get current market price
-// Market is now visible to everyone (removed blind voting requirement)
+// Enforces blind voting: must record pre-stance before seeing market
 app.get('/api/debates/:id/market', optionalAuthMiddleware, async (c) => {
   const debateId = c.req.param('id');
+  const userId = c.get('userId');
   
   // Check if debate exists
   const debate = await debateService.getDebateById(debateId);
   if (!debate) {
     throw new HTTPException(404, { message: 'Debate not found' });
+  }
+  
+  // Enforce blind voting for authenticated users (must record pre-stance first)
+  // Debaters are exempt from blind voting requirement
+  if (userId) {
+    const isDebater = debate.supportDebaterId === userId || debate.opposeDebaterId === userId;
+    if (!isDebater) {
+      const access = await votingService.canAccessMarketPrice(debateId, userId);
+      if (!access.canAccess) {
+        return c.json({ 
+          blindVoting: true, 
+          message: access.reason,
+          requiresPreStance: true 
+        }, 403);
+      }
+    }
   }
   
   const marketPrice = await marketService.calculateMarketPrice(debateId);
@@ -463,6 +539,75 @@ app.get('/api/debates/:id/stance-stats', async (c) => {
   const debateId = c.req.param('id');
   const stats = await votingService.getDebateStanceStats(debateId);
   return c.json(stats);
+});
+
+// ============================================================================
+// Steelman Gate API Routes
+// ============================================================================
+
+// POST /api/debates/:id/steelman - Submit a steelman of opponent's argument
+app.post('/api/debates/:id/steelman', authMiddleware, async (c) => {
+  const debateId = c.req.param('id');
+  const userId = c.get('userId');
+  const body = await c.req.json();
+  
+  const input: CreateSteelmanInput = {
+    debateId,
+    roundNumber: body.roundNumber,
+    authorId: userId!,
+    targetArgumentId: body.targetArgumentId,
+    content: body.content,
+  };
+  
+  const steelman = await steelmanService.submitSteelman(input);
+  return c.json({ steelman }, 201);
+});
+
+// POST /api/steelmans/:id/review - Approve or reject a steelman
+app.post('/api/steelmans/:id/review', authMiddleware, async (c) => {
+  const steelmanId = c.req.param('id');
+  const userId = c.get('userId');
+  const body = await c.req.json();
+  
+  const input: ReviewSteelmanInput = {
+    steelmanId,
+    reviewerId: userId!,
+    approved: body.approved,
+    rejectionReason: body.rejectionReason,
+  };
+  
+  const steelman = await steelmanService.reviewSteelman(input);
+  return c.json({ steelman });
+});
+
+// GET /api/debates/:id/steelman/status - Check if user can submit argument (steelman gate)
+app.get('/api/debates/:id/steelman/status', authMiddleware, async (c) => {
+  const debateId = c.req.param('id');
+  const userId = c.get('userId');
+  const roundNumber = parseInt(c.req.query('round') || '1', 10) as 1 | 2 | 3;
+  
+  const status = await steelmanService.canSubmitArgument(debateId, userId!, roundNumber);
+  const steelman = await steelmanService.getSteelman(debateId, userId!, roundNumber);
+  
+  return c.json({ ...status, steelman });
+});
+
+// GET /api/debates/:id/steelman/pending - Get steelmans pending review
+app.get('/api/debates/:id/steelman/pending', authMiddleware, async (c) => {
+  const debateId = c.req.param('id');
+  const userId = c.get('userId');
+  
+  const pending = await steelmanService.getPendingReviews(debateId, userId!);
+  return c.json({ pending });
+});
+
+// DELETE /api/steelmans/:id - Delete rejected steelman to resubmit
+app.delete('/api/steelmans/:id', authMiddleware, async (c) => {
+  const steelmanId = c.req.param('id');
+  const userId = c.get('userId');
+  
+  await steelmanService.deleteSteelman(steelmanId, userId!);
+  return c.json({ success: true });
 });
 
 // ============================================================================

@@ -164,6 +164,11 @@ export class VotingService {
       stance.lastArgumentSeen
     );
 
+    // Record market data point for historical tracking
+    const { marketService } = await import('./market.service');
+    const currentPrice = await marketService.calculateMarketPrice(input.debateId);
+    await marketService.recordDataPoint(input.debateId, currentPrice);
+
     return {
       stance: this.mapToStance(stance),
       delta,
