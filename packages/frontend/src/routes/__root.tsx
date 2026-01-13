@@ -3,6 +3,7 @@ import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import type { QueryClient } from '@tanstack/react-query';
 import { useAuthModal, ProfileDropdown, useNewDebateModal } from '../components';
+import { NewDebateModalContent } from '../components/debate/NewDebateModal';
 import { useSessionWatcher, useSession } from '../lib/useSession';
 import { useCurrentUser } from '../lib/hooks';
 
@@ -19,6 +20,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
   // Single source of session state - shared with Navigation and SessionWatcher
   const sessionState = useSession();
+  const { isOpen: isNewDebateOpen, close: closeNewDebate } = useNewDebateModal();
 
   // Watch for sign-out events and clear cache automatically
   // Requirements: 2.4 - Clear all user-specific cached data on sign out
@@ -38,6 +40,7 @@ function RootComponent() {
       <main id="main-content" tabIndex={-1} className="outline-none">
         <Outlet />
       </main>
+      <NewDebateModalContent isOpen={isNewDebateOpen} onClose={closeNewDebate} />
       {import.meta.env.DEV && (
         <>
           <TanStackRouterDevtools position="bottom-right" />
