@@ -1,6 +1,6 @@
 /**
  * RoundSection is the main container component that orchestrates round display and navigation.
- * It composes CompactProgressBar, RoundHistory, and ActiveRoundView.
+ * It composes RoundProgressIndicator, RoundNavigator, RoundHistory, and ActiveRoundView.
  * 
  * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4, 5.5, 7.1, 7.2, 7.3, 7.4, 7.5
  */
@@ -8,7 +8,9 @@
 import { useCallback, useMemo, useEffect, useRef, useReducer, useState } from 'react';
 import type { Debate, Round, Argument, User, RoundNumber } from '@debate-platform/shared';
 import type { Citation } from './ArgumentBlock';
-import { CompactProgressBar } from './CompactProgressBar';
+import type { SteelmanData, PendingReview } from './ActiveRoundView';
+import { RoundProgressIndicator } from './RoundProgressIndicator';
+import { RoundNavigator } from './RoundNavigator';
 import { RoundHistory } from './RoundHistory';
 import { ActiveRoundView } from './ActiveRoundView';
 import { HorizontalDivider } from '../ui/HorizontalDivider';
@@ -33,6 +35,13 @@ export interface RoundSectionProps {
   onArgumentSubmit?: (content: string) => void;
   isSubmitting?: boolean;
   onRoundComplete?: (completedRound: RoundNumber, nextRound: RoundNumber | null) => void;
+  // Steelman Gate props
+  steelmanData?: SteelmanData;
+  pendingReviews?: PendingReview[];
+  onSteelmanSubmit?: (targetArgumentId: string, content: string) => void;
+  onSteelmanReview?: (steelmanId: string, approved: boolean, reason?: string) => void;
+  onSteelmanDelete?: (steelmanId: string) => void;
+  isSteelmanSubmitting?: boolean;
 }
 
 // ============================================
@@ -110,6 +119,12 @@ export function RoundSection({
   onArgumentSubmit,
   isSubmitting = false,
   onRoundComplete,
+  steelmanData,
+  pendingReviews,
+  onSteelmanSubmit,
+  onSteelmanReview,
+  onSteelmanDelete,
+  isSteelmanSubmitting = false,
 }: RoundSectionProps) {
   const [state, dispatch] = useReducer(roundReducer, debate, getInitialState);
   const { viewedRound, historyExpanded, mindChangedArgs } = state;
@@ -221,7 +236,7 @@ export function RoundSection({
 
   const isActiveRound = viewedRound === debate.currentRound && debate.status === 'active';
 
-  // Determine if it's the user's turn (for turn highlighting in CompactProgressBar)
+  // Determine if it's the user's turn (for turn highlighting)
   const isUserTurn = useMemo(() => {
     return userSide !== undefined && 
            debate.status === 'active' && 
@@ -295,19 +310,21 @@ export function RoundSection({
         id={`round-${viewedRound}-progress`}
         data-sticky={sticky && isSticky}
       >
-        <CompactProgressBar
-          currentRound={debate.currentRound}
-          currentTurn={debate.currentTurn}
-          debateStatus={debate.status}
-          viewedRound={viewedRound}
-          rounds={rounds}
-          isUserTurn={isUserTurn}
-          canSubmitArgument={!!canSubmitArgument}
-          argumentCounts={argumentCounts}
-          winnerSide={winnerSide}
-          onRoundSelect={handleRoundSelect}
-          onSubmitClick={handleSubmitClick}
-        />
+        <div className="p-4">
+          <RoundProgressIndicator
+            currentRound={debate.currentRound}
+            currentTurn={debate.currentTurn}
+            viewedRound={viewedRound}
+            rounds={rounds}
+            debateStatus={debate.status}
+          />
+          <RoundNavigator
+            currentRound={debate.currentRound}
+            viewedRound={viewedRound}
+            rounds={rounds}
+            onRoundSelect={handleRoundSelect}
+          />
+        </div>
       </div>
 
       {/* Round Header - Positioned directly below progress bar (Requirements: 3.3, 3.4, 4.4, 7.1, 7.2, 7.3, 7.4, 7.5) */}
@@ -380,9 +397,15 @@ export function RoundSection({
           userSide={userSide}
           isSubmitting={isSubmitting}
           attributedArguments={mindChangedArgs}
+          steelmanData={steelmanData}
+          pendingReviews={pendingReviews}
           onCitationHover={onCitationHover}
           onMindChanged={handleMindChanged}
           onArgumentSubmit={onArgumentSubmit}
+          onSteelmanSubmit={onSteelmanSubmit}
+          onSteelmanReview={onSteelmanReview}
+          onSteelmanDelete={onSteelmanDelete}
+          isSteelmanSubmitting={isSteelmanSubmitting}
         />
       </div>
     </section>

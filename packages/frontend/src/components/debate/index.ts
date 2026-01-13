@@ -25,7 +25,7 @@ export type { RoundSectionProps } from './RoundSection';
 // Note: RoundProgressIndicator and RoundNavigator are deprecated - use CompactProgressBar instead
 export { RoundHistory } from './RoundHistory';
 export { ActiveRoundView } from './ActiveRoundView';
-export type { ActiveRoundViewProps } from './ActiveRoundView';
+export type { ActiveRoundViewProps, SteelmanData, PendingReview } from './ActiveRoundView';
 export { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
 export type { ArgumentSubmissionFormProps } from './ArgumentSubmissionForm';
 export { CompactProgressBar, RoundDot, deriveRoundDotState, isRoundNavigable, getCompactProgressText } from './CompactProgressBar';
@@ -64,3 +64,6 @@ export { SpectatorComments } from './SpectatorComments';
 
 // New Debate Modal
 export { NewDebateModalProvider, useNewDebateModal } from './NewDebateModal';
+
+// Steelman Gate
+export { SteelmanForm, SteelmanReview, SteelmanGateBadge } from './SteelmanGate';

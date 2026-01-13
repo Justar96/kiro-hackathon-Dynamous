@@ -225,11 +225,73 @@ export class DebateService {
   }
 
   /**
-   * Conclude a debate and calculate final results
-   * Per Requirement 2.5
+   * Determine the winner of a debate based on NET PERSUASION DELTA
+   * Per original vision: Winner = biggest net persuasion delta (who changed more minds)
    * 
    * @param debateId - The debate ID
-   * @returns Debate result
+   * @returns Winner determination with persuasion metrics
+   */
+  private async determineWinner(debateId: string): Promise<{
+    winnerSide: 'support' | 'oppose' | 'tie';
+    finalSupportPrice: number;
+    finalOpposePrice: number;
+    totalMindChanges: number;
+    netPersuasionDelta: number;
+  }> {
+    // Get final market price for display
+    const { marketService } = await import('./market.service');
+    const { stances } = await import('../db');
+    const marketPrice = await marketService.calculateMarketPrice(debateId);
+    
+    // Get all pre/post stance pairs to calculate persuasion delta
+    const allStances = await db.query.stances.findMany({
+      where: eq(stances.debateId, debateId),
+    });
+
+    // Group by voter to get pre/post pairs
+    const voterStances = new Map<string, { pre?: number; post?: number }>();
+    for (const stance of allStances) {
+      const existing = voterStances.get(stance.voterId) || {};
+      if (stance.type === 'pre') existing.pre = stance.supportValue;
+      if (stance.type === 'post') existing.post = stance.supportValue;
+      voterStances.set(stance.voterId, existing);
+    }
+
+    // Calculate persuasion metrics
+    const completePairs = [...voterStances.values()].filter(v => v.pre !== undefined && v.post !== undefined);
+    const totalMindChanges = completePairs.filter(v => Math.abs(v.post! - v.pre!) >= 10).length;
+    
+    // Net persuasion delta: positive = moved toward support, negative = moved toward oppose
+    const netPersuasionDelta = completePairs.length > 0
+      ? completePairs.reduce((sum, v) => sum + (v.post! - v.pre!), 0) / completePairs.length
+      : 0;
+
+    // WINNER = NET PERSUASION DELTA (not price threshold)
+    // Threshold of 5 points average shift to declare a winner
+    let winnerSide: 'support' | 'oppose' | 'tie';
+    if (netPersuasionDelta >= 5) {
+      winnerSide = 'support'; // Audience moved toward support
+    } else if (netPersuasionDelta <= -5) {
+      winnerSide = 'oppose'; // Audience moved toward oppose
+    } else {
+      winnerSide = 'tie'; // No significant mind change
+    }
+
+    return {
+      winnerSide,
+      finalSupportPrice: marketPrice.supportPrice,
+      finalOpposePrice: marketPrice.opposePrice,
+      totalMindChanges,
+      netPersuasionDelta: Math.round(netPersuasionDelta * 10) / 10,
+    };
+  }
+
+  /**
+   * Conclude a debate and calculate final results
+   * Per Requirement 2.5 + Original Vision: Measure persuasion delta
+   * 
+   * @param debateId - The debate ID
+   * @returns Debate result with persuasion metrics
    */
   async concludeDebate(debateId: string): Promise<DebateResult> {
     const debate = await db.query.debates.findFirst({
@@ -240,6 +302,9 @@ export class DebateService {
       throw new Error('Debate not found');
     }
 
+    // Calculate winner and persuasion metrics
+    const result = await this.determineWinner(debateId);
+
     // Mark debate as concluded
     await db.update(debates)
       .set({ 
@@ -248,18 +313,17 @@ export class DebateService {
       })
       .where(eq(debates.id, debateId));
 
-    // Calculate final results (simplified for now)
-    // In a full implementation, this would aggregate stance data
-    const result: DebateResult = {
+    // Trigger reputation updates for all participants
+    const { reputationService } = await import('./reputation.service');
+    await reputationService.updateAllParticipants(debateId, {
       debateId,
-      finalSupportPrice: 50, // Will be calculated from actual stance data
-      finalOpposePrice: 50,
-      totalMindChanges: 0,
-      netPersuasionDelta: 0,
-      winnerSide: 'tie',
-    };
+      ...result,
+    });
 
-    return result;
+    return {
+      debateId,
+      ...result,
+    };
   }
 
 

@@ -1,8 +1,7 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { useState, useMemo, useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { debatesWithMarketQueryOptions } from '../lib/queries';
-import { recordQuickStance } from '../lib/mutations';
+import { useQuickStance } from '../lib/hooks';
 import { useSession } from '../lib/useSession';
 import { 
   DebateIndexList, 
@@ -38,7 +37,6 @@ export const Route = createFileRoute('/')({
 function HomePage() {
   const { debatesWithMarket } = Route.useLoaderData();
   const { user } = useSession();
-  const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { openSignIn } = useAuthModal();
   const isAuthenticated = !!user;
@@ -54,23 +52,9 @@ function HomePage() {
   // Track user stances locally for optimistic UI
   const [userStances, setUserStances] = useState<Record<string, number>>({});
 
-  // Quick stance mutation
-  const quickStanceMutation = useMutation({
-    mutationFn: async ({ debateId, side }: { debateId: string; side: 'support' | 'oppose' }) => {
-      if (!user) throw new Error('Not authenticated');
-      return recordQuickStance(debateId, { side }, user.id);
-    },
-    onSuccess: (_data, { debateId, side }) => {
-      // Update local state
-      setUserStances(prev => ({ ...prev, [debateId]: side === 'support' ? 75 : 25 }));
-      // Invalidate queries to refresh market data
-      queryClient.invalidateQueries({ queryKey: ['debates'] });
-      showToast({ type: 'success', message: 'Position recorded!' });
-    },
-    onError: (error: Error) => {
-      showToast({ type: 'error', message: error.message });
-    },
-  });
+  // Quick stance mutation using reusable hook from hooks.ts
+  // TanStack Query v5: Replaces inline useMutation with centralized hook
+  const quickStanceMutation = useQuickStance();
 
   // Handle quick stance from index
   const handleQuickStance = useCallback((debateId: string, side: 'support' | 'oppose') => {
@@ -78,8 +62,20 @@ function HomePage() {
       openSignIn();
       return;
     }
-    quickStanceMutation.mutate({ debateId, side });
-  }, [isAuthenticated, openSignIn, quickStanceMutation]);
+    quickStanceMutation.mutate(
+      { debateId, side },
+      {
+        onSuccess: () => {
+          // Update local state for optimistic UI
+          setUserStances(prev => ({ ...prev, [debateId]: side === 'support' ? 75 : 25 }));
+          showToast({ type: 'success', message: 'Position recorded!' });
+        },
+        onError: (error: Error) => {
+          showToast({ type: 'error', message: error.message });
+        },
+      }
+    );
+  }, [isAuthenticated, openSignIn, quickStanceMutation, showToast]);
 
   // Filter debates based on active tab
   const filteredDebates = useMemo(() => {

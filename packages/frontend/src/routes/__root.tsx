@@ -1,7 +1,9 @@
 import { createRootRouteWithContext, Outlet, Link } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/router-devtools';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useAuthModal, ProfileDropdown, useNewDebateModal } from '../components';
 import { NewDebateModalContent } from '../components/debate/NewDebateModal';
 import { useSessionWatcher, useSession } from '../lib/useSession';
@@ -16,6 +18,49 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   notFoundComponent: NotFoundComponent,
   pendingComponent: RootPendingComponent,
 });
+
+/**
+ * Error fallback component for QueryErrorResetBoundary
+ * TanStack Query v5 Best Practice: Provides "Try Again" button that resets failed queries
+ */
+interface QueryErrorFallbackProps {
+  error: Error;
+  resetErrorBoundary: () => void;
+}
+
+function QueryErrorFallback({ error, resetErrorBoundary }: QueryErrorFallbackProps) {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center bg-page-bg">
+      <div className="bg-paper rounded-subtle shadow-sm p-8 text-center max-w-md mx-4">
+        <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+          <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h2 className="font-heading text-heading-2 text-text-primary mb-2">
+          Something went wrong
+        </h2>
+        <p className="text-body text-text-secondary mb-4">
+          {error.message || 'An unexpected error occurred while loading this page.'}
+        </p>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={resetErrorBoundary}
+            className="px-4 py-2 bg-accent text-white rounded-subtle hover:bg-accent-hover transition-colors"
+          >
+            Try Again
+          </button>
+          <Link
+            to="/"
+            className="px-4 py-2 border border-hairline text-text-primary rounded-subtle hover:bg-page-bg transition-colors"
+          >
+            Go Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RootComponent() {
   // Single source of session state - shared with Navigation and SessionWatcher
@@ -38,7 +83,19 @@ function RootComponent() {
       </a>
       <Navigation sessionState={sessionState} />
       <main id="main-content" tabIndex={-1} className="outline-none">
-        <Outlet />
+        {/* TanStack Query v5: QueryErrorResetBoundary + ErrorBoundary for graceful error recovery */}
+        <QueryErrorResetBoundary>
+          {({ reset }) => (
+            <ErrorBoundary
+              onReset={reset}
+              fallbackRender={({ error, resetErrorBoundary }) => (
+                <QueryErrorFallback error={error} resetErrorBoundary={resetErrorBoundary} />
+              )}
+            >
+              <Outlet />
+            </ErrorBoundary>
+          )}
+        </QueryErrorResetBoundary>
       </main>
       <NewDebateModalContent isOpen={isNewDebateOpen} onClose={closeNewDebate} />
       {import.meta.env.DEV && (

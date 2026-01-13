@@ -3,7 +3,7 @@
  * Shows ArgumentBlock components for both sides, and
  * ArgumentSubmissionForm when appropriate.
  * 
- * Note: Round header is rendered by parent RoundSection component.
+ * Includes Steelman Gate for rounds 2 and 3.
  * 
  * Requirements: 1.1, 7.1, 7.4
  * Paper Polish Requirements: 5.1 (minimize visual chrome), 7.1, 7.2
@@ -12,6 +12,25 @@
 import type { Round, Argument, User } from '@debate-platform/shared';
 import { ArgumentBlock, type Citation } from './ArgumentBlock';
 import { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
+import { SteelmanForm, SteelmanReview, SteelmanGateBadge } from './SteelmanGate';
+import { getRoundConfig } from './RoundSection.utils';
+
+export interface SteelmanData {
+  status: 'none' | 'pending' | 'approved' | 'rejected';
+  steelman?: {
+    id: string;
+    content: string;
+    status: 'pending' | 'approved' | 'rejected';
+    rejectionReason: string | null;
+  } | null;
+}
+
+export interface PendingReview {
+  id: string;
+  content: string;
+  roundNumber: number;
+  targetArgumentId: string;
+}
 
 export interface ActiveRoundViewProps {
   round: Round;
@@ -34,9 +53,17 @@ export interface ActiveRoundViewProps {
    * Requirements: 5.5
    */
   attributedArguments?: Set<string>;
+  /** Steelman gate data for current user */
+  steelmanData?: SteelmanData;
+  /** Pending steelman reviews for opponent */
+  pendingReviews?: PendingReview[];
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
   onMindChanged?: (argumentId: string) => void;
   onArgumentSubmit?: (content: string) => void;
+  onSteelmanSubmit?: (targetArgumentId: string, content: string) => void;
+  onSteelmanReview?: (steelmanId: string, approved: boolean, reason?: string) => void;
+  onSteelmanDelete?: (steelmanId: string) => void;
+  isSteelmanSubmitting?: boolean;
 }
 
 /**
@@ -119,27 +146,53 @@ export function ActiveRoundView({
   userSide,
   isSubmitting = false,
   attributedArguments,
+  steelmanData,
+  pendingReviews = [],
   onCitationHover,
   onMindChanged,
   onArgumentSubmit,
+  onSteelmanSubmit,
+  onSteelmanReview,
+  onSteelmanDelete,
+  isSteelmanSubmitting = false,
 }: ActiveRoundViewProps) {
   const sectionId = `active-round-${roundNumber}`;
   const isComplete = round.completedAt !== null;
   const hasArguments = supportArgument || opposeArgument;
   
+  // Get round configuration for header display
+  const roundConfig = getRoundConfig(round.roundType);
+  
+  // Steelman gate: For rounds 2 and 3, check if user needs to submit/has approved steelman
+  const requiresSteelman = roundNumber > 1 && userSide && isActiveRound;
+  const steelmanApproved = steelmanData?.status === 'approved';
+  const canProceedWithArgument = !requiresSteelman || steelmanApproved;
+  
+  // Get opponent's argument to steelman (from previous round)
+  const opponentPrevArgument = userSide === 'support' ? opposeArgument : supportArgument;
+  
   // Determine if we should show the submission form
-  // Form is visible when: user is a debater, it's their turn, viewing active round, and they haven't submitted yet
+  // Form is visible when: user is a debater, it's their turn, viewing active round, 
+  // they haven't submitted yet, AND steelman gate is passed (for rounds 2-3)
   const showSupportForm = canSubmitArgument && 
     isActiveRound && 
     userSide === 'support' && 
     currentTurn === 'support' && 
-    !supportArgument;
+    !supportArgument &&
+    canProceedWithArgument;
     
   const showOpposeForm = canSubmitArgument && 
     isActiveRound && 
     userSide === 'oppose' && 
     currentTurn === 'oppose' && 
-    !opposeArgument;
+    !opposeArgument &&
+    canProceedWithArgument;
+
+  // Show steelman form if user needs to submit one
+  const showSteelmanForm = requiresSteelman && 
+    currentTurn === userSide && 
+    !canProceedWithArgument &&
+    opponentPrevArgument;
   
   return (
     <section 
@@ -148,7 +201,55 @@ export function ActiveRoundView({
       className="scroll-mt-8"
       aria-labelledby={`${sectionId}-heading`}
     >
-      {/* Arguments container - header is now in parent RoundSection */}
+      {/* Section header - minimal */}
+      <header className="mb-5">
+        <div className="flex items-center gap-2">
+          <h2 
+            id={`${sectionId}-heading`}
+            className="text-lg font-semibold text-text-primary"
+          >
+            {roundConfig.title}
+          </h2>
+          {requiresSteelman && steelmanData && (
+            <SteelmanGateBadge status={steelmanData.status} roundNumber={roundNumber} />
+          )}
+        </div>
+        <p className="text-sm text-text-secondary mt-0.5">
+          {roundConfig.description}
+        </p>
+      </header>
+
+      {/* Pending steelman reviews (for opponent to review) */}
+      {pendingReviews.length > 0 && opponentPrevArgument && (
+        <div className="mb-5 space-y-3">
+          {pendingReviews.map((review) => (
+            <SteelmanReview
+              key={review.id}
+              steelman={review}
+              targetArgument={opponentPrevArgument}
+              onApprove={() => onSteelmanReview?.(review.id, true)}
+              onReject={(reason) => onSteelmanReview?.(review.id, false, reason)}
+              isSubmitting={isSteelmanSubmitting}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Steelman form (for user to submit) */}
+      {showSteelmanForm && opponentPrevArgument && (
+        <div className="mb-5">
+          <SteelmanForm
+            targetArgument={opponentPrevArgument}
+            roundNumber={roundNumber as 2 | 3}
+            onSubmit={(content) => onSteelmanSubmit?.(opponentPrevArgument.id, content)}
+            isSubmitting={isSteelmanSubmitting}
+            existingSteelman={steelmanData?.steelman}
+            onDelete={steelmanData?.steelman?.id ? () => onSteelmanDelete?.(steelmanData.steelman!.id) : undefined}
+          />
+        </div>
+      )}
+      
+      {/* Arguments container */}
       <div className="space-y-5">
         {/* Support (FOR) argument or form */}
         {supportArgument ? (

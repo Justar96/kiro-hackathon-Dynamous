@@ -257,6 +257,29 @@ export async function attributeImpact(
   );
 }
 
+interface MindChangedResponse {
+  success: boolean;
+  argumentId: string;
+  newImpactScore: number;
+  message: string;
+}
+
+/**
+ * Mark that a specific argument changed your mind.
+ * Per original vision: "This changed my mind" button for explicit impact attribution.
+ */
+export async function markMindChanged(
+  argumentId: string,
+  token: string
+): Promise<MindChangedResponse> {
+  return await mutateApi<MindChangedResponse>(
+    `/api/arguments/${argumentId}/mind-changed`,
+    'POST',
+    {},
+    token
+  );
+}
+
 interface RemoveReactionResponse {
   success: boolean;
 }
@@ -306,4 +329,86 @@ export async function addComment(
     token
   );
   return response.comment;
+}
+
+
+// ============================================================================
+// Steelman Gate Mutations
+// ============================================================================
+
+interface SubmitSteelmanInput {
+  roundNumber: 1 | 2 | 3;
+  targetArgumentId: string;
+  content: string;
+}
+
+interface SteelmanResponse {
+  steelman: {
+    id: string;
+    debateId: string;
+    roundNumber: 1 | 2 | 3;
+    authorId: string;
+    targetArgumentId: string;
+    content: string;
+    status: 'pending' | 'approved' | 'rejected';
+    rejectionReason: string | null;
+    createdAt: string;
+    reviewedAt: string | null;
+  };
+}
+
+/**
+ * Submit a steelman of opponent's argument.
+ * Required before submitting rebuttal (round 2) or closing (round 3).
+ */
+export async function submitSteelman(
+  debateId: string,
+  input: SubmitSteelmanInput,
+  token: string
+): Promise<SteelmanResponse['steelman']> {
+  const response = await mutateApi<SteelmanResponse>(
+    `/api/debates/${debateId}/steelman`,
+    'POST',
+    input,
+    token
+  );
+  return response.steelman;
+}
+
+interface ReviewSteelmanInput {
+  approved: boolean;
+  rejectionReason?: string;
+}
+
+/**
+ * Approve or reject a steelman as the opponent.
+ */
+export async function reviewSteelman(
+  steelmanId: string,
+  input: ReviewSteelmanInput,
+  token: string
+): Promise<SteelmanResponse['steelman']> {
+  const response = await mutateApi<SteelmanResponse>(
+    `/api/steelmans/${steelmanId}/review`,
+    'POST',
+    input,
+    token
+  );
+  return response.steelman;
+}
+
+/**
+ * Delete a rejected steelman to resubmit.
+ */
+export async function deleteSteelman(
+  steelmanId: string,
+  token: string
+): Promise<boolean> {
+  const response = await mutateApi<{ success: boolean }>(
+    `/api/steelmans/${steelmanId}`,
+    'DELETE',
+    {},
+    token
+  );
+  return response.success;
 }
