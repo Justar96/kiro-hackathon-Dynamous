@@ -108,7 +108,7 @@ export {
   useSourceCardState,
   // Round Components
   RoundSection,
-  // Note: RoundProgressIndicator and RoundNavigator are deprecated - use CompactProgressBar instead
+  RoundProgressIndicator,
   RoundHistory,
   ActiveRoundView,
   ArgumentSubmissionForm,
@@ -144,7 +144,7 @@ export type {
   SteelmanData,
   PendingReview,
   ArgumentSubmissionFormProps,
-  // Note: RoundProgressIndicatorProps and RoundNavigatorProps are deprecated
+  RoundProgressIndicatorProps,
   RoundHistoryProps,
   RoundStepState,
   RoundStep,

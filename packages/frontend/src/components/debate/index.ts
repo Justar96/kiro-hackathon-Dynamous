@@ -22,7 +22,7 @@ export type { EvidenceSource } from './EvidenceFootnote';
 // Round Components
 export { RoundSection } from './RoundSection';
 export type { RoundSectionProps } from './RoundSection';
-// Note: RoundProgressIndicator and RoundNavigator are deprecated - use CompactProgressBar instead
+export { RoundProgressIndicator } from './RoundProgressIndicator';
 export { RoundHistory } from './RoundHistory';
 export { ActiveRoundView } from './ActiveRoundView';
 export type { ActiveRoundViewProps, SteelmanData, PendingReview } from './ActiveRoundView';
@@ -33,6 +33,7 @@ export type { CompactProgressBarProps, RoundDotProps, RoundDotState } from './Co
 
 // Types
 export type { 
+  RoundProgressIndicatorProps, 
   RoundHistoryProps,
   RoundStepState,
   RoundStep,

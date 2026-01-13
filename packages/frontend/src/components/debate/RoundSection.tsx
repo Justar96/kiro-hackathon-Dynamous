@@ -1,6 +1,6 @@
 /**
  * RoundSection is the main container component that orchestrates round display and navigation.
- * It composes RoundProgressIndicator, RoundNavigator, RoundHistory, and ActiveRoundView.
+ * It composes RoundProgressIndicator, RoundHistory, and ActiveRoundView.
  * 
  * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4, 5.5, 7.1, 7.2, 7.3, 7.4, 7.5
  */
@@ -10,7 +10,6 @@ import type { Debate, Round, Argument, User, RoundNumber } from '@debate-platfor
 import type { Citation } from './ArgumentBlock';
 import type { SteelmanData, PendingReview } from './ActiveRoundView';
 import { RoundProgressIndicator } from './RoundProgressIndicator';
-import { RoundNavigator } from './RoundNavigator';
 import { RoundHistory } from './RoundHistory';
 import { ActiveRoundView } from './ActiveRoundView';
 import { HorizontalDivider } from '../ui/HorizontalDivider';
@@ -311,18 +310,14 @@ export function RoundSection({
         id={`round-${viewedRound}-progress`}
         data-sticky={sticky && isSticky}
       >
-        <div className="p-4">
+        <div className="p-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-text-primary">Rounds</h2>
           <RoundProgressIndicator
             currentRound={debate.currentRound}
             currentTurn={debate.currentTurn}
             viewedRound={viewedRound}
             rounds={rounds}
             debateStatus={debate.status}
-          />
-          <RoundNavigator
-            currentRound={debate.currentRound}
-            viewedRound={viewedRound}
-            rounds={rounds}
             onRoundSelect={handleRoundSelect}
           />
         </div>

@@ -48,9 +48,10 @@ export interface RoundSectionState {
 export interface RoundProgressIndicatorProps {
   currentRound: RoundNumber;
   currentTurn: Side;
-  debateStatus: 'active' | 'concluded';
+  debateStatus: 'pending' | 'active' | 'concluded';
   viewedRound: RoundNumber;
   rounds: Round[];
+  onRoundSelect?: (round: RoundNumber) => void;
 }
 
 export interface RoundNavigatorProps {
