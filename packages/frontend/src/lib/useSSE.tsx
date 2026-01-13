@@ -4,18 +4,21 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback, ty
 // Types
 // ============================================================================
 
-export type SSEConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
+export type SSEConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error' | 'circuit-breaker';
 
 export interface SSEContextValue {
   isConnected: boolean;
   connectionStatus: SSEConnectionStatus;
   subscribe: <T>(event: string, handler: (data: T) => void) => () => void;
   debateId: string | null;
+  reconnect: () => void;
+  errorCount: number;
 }
 
 export interface SSEProviderProps {
   children: ReactNode;
   debateId?: string;
+  onReconnect?: () => void;
 }
 
 export interface SSEEvent<T = unknown> {
@@ -30,6 +33,29 @@ export interface SSEEvent<T = unknown> {
 const INITIAL_RECONNECT_DELAY = 1000; // 1 second
 const MAX_RECONNECT_DELAY = 30000; // 30 seconds
 const RECONNECT_BACKOFF_MULTIPLIER = 2;
+const MAX_RECONNECT_ATTEMPTS = 10; // Requirement 8.6
+const CIRCUIT_BREAKER_THRESHOLD = 3; // Requirement 12.3
+const CIRCUIT_BREAKER_RESET_TIME = 60000; // 60 seconds (Requirement 12.3)
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Calculate exponential backoff delay for reconnection attempts.
+ * Formula: min(2^(N-1) * 1000ms, 30000ms) where N is the attempt number
+ * Requirement 8.1
+ * 
+ * @param attemptNumber - The current reconnection attempt (1-indexed)
+ * @returns Delay in milliseconds
+ */
+export function calculateBackoffDelay(attemptNumber: number): number {
+  // Ensure attemptNumber is at least 1
+  const n = Math.max(1, attemptNumber);
+  // Calculate: 2^(n-1) * 1000, capped at MAX_RECONNECT_DELAY
+  const delay = Math.pow(RECONNECT_BACKOFF_MULTIPLIER, n - 1) * INITIAL_RECONNECT_DELAY;
+  return Math.min(delay, MAX_RECONNECT_DELAY);
+}
 
 // ============================================================================
 // Context
@@ -41,13 +67,16 @@ const SSEContext = createContext<SSEContextValue | null>(null);
 // SSEProvider Component
 // ============================================================================
 
-export function SSEProvider({ children, debateId }: SSEProviderProps) {
+export function SSEProvider({ children, debateId, onReconnect }: SSEProviderProps) {
   const [connectionStatus, setConnectionStatus] = useState<SSEConnectionStatus>('disconnected');
+  const [errorCount, setErrorCount] = useState(0);
   const eventSourceRef = useRef<EventSource | null>(null);
   const subscribersRef = useRef<Map<string, Set<(data: unknown) => void>>>(new Map());
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const circuitBreakerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY);
   const reconnectAttemptsRef = useRef(0);
+  const consecutiveErrorsRef = useRef(0);
   const isUnmountedRef = useRef(false);
 
   // Clean up function for EventSource
@@ -55,6 +84,10 @@ export function SSEProvider({ children, debateId }: SSEProviderProps) {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
+    }
+    if (circuitBreakerTimeoutRef.current) {
+      clearTimeout(circuitBreakerTimeoutRef.current);
+      circuitBreakerTimeoutRef.current = null;
     }
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -65,6 +98,17 @@ export function SSEProvider({ children, debateId }: SSEProviderProps) {
   // Connect to SSE endpoint
   const connect = useCallback(() => {
     if (!debateId || isUnmountedRef.current) return;
+
+    // Check if circuit breaker is active (Requirement 12.3)
+    if (connectionStatus === 'circuit-breaker') {
+      return;
+    }
+
+    // Check if max reconnection attempts reached (Requirement 8.6)
+    if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+      setConnectionStatus('error');
+      return;
+    }
 
     cleanup();
     setConnectionStatus('connecting');
@@ -78,6 +122,13 @@ export function SSEProvider({ children, debateId }: SSEProviderProps) {
       setConnectionStatus('connected');
       reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
       reconnectAttemptsRef.current = 0;
+      consecutiveErrorsRef.current = 0;
+      setErrorCount(0);
+      
+      // Fire onReconnect callback if this was a reconnection
+      if (onReconnect) {
+        onReconnect();
+      }
     };
 
     eventSource.onerror = () => {
@@ -85,11 +136,41 @@ export function SSEProvider({ children, debateId }: SSEProviderProps) {
       
       eventSource.close();
       eventSourceRef.current = null;
+      
+      // Increment error counters
+      consecutiveErrorsRef.current += 1;
+      setErrorCount((count) => count + 1);
+      reconnectAttemptsRef.current += 1;
+
+      // Check if circuit breaker should activate (Requirement 12.3)
+      if (consecutiveErrorsRef.current >= CIRCUIT_BREAKER_THRESHOLD) {
+        setConnectionStatus('circuit-breaker');
+        
+        // Schedule circuit breaker reset
+        circuitBreakerTimeoutRef.current = setTimeout(() => {
+          if (!isUnmountedRef.current) {
+            consecutiveErrorsRef.current = 0;
+            reconnectAttemptsRef.current = 0;
+            reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
+            setConnectionStatus('disconnected');
+            // Auto-reconnect after circuit breaker reset
+            connect();
+          }
+        }, CIRCUIT_BREAKER_RESET_TIME);
+        
+        return;
+      }
+
+      // Check if max attempts reached (Requirement 8.6)
+      if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+        setConnectionStatus('error');
+        return;
+      }
+
       setConnectionStatus('error');
 
-      // Schedule reconnection with exponential backoff
-      const delay = Math.min(reconnectDelayRef.current, MAX_RECONNECT_DELAY);
-      reconnectAttemptsRef.current += 1;
+      // Schedule reconnection with exponential backoff (Requirement 8.1)
+      const delay = calculateBackoffDelay(reconnectAttemptsRef.current);
       
       reconnectTimeoutRef.current = setTimeout(() => {
         if (!isUnmountedRef.current) {
@@ -141,6 +222,62 @@ export function SSEProvider({ children, debateId }: SSEProviderProps) {
         }
       } catch (e) {
         console.error('Failed to parse round event:', e);
+      }
+    });
+
+    // Handle argument events
+    eventSource.addEventListener('argument', (event) => {
+      if (isUnmountedRef.current) return;
+      try {
+        const data = JSON.parse(event.data);
+        const handlers = subscribersRef.current.get('argument');
+        if (handlers) {
+          handlers.forEach((handler) => handler(data));
+        }
+      } catch (e) {
+        console.error('Failed to parse argument event:', e);
+      }
+    });
+
+    // Handle reaction events
+    eventSource.addEventListener('reaction', (event) => {
+      if (isUnmountedRef.current) return;
+      try {
+        const data = JSON.parse(event.data);
+        const handlers = subscribersRef.current.get('reaction');
+        if (handlers) {
+          handlers.forEach((handler) => handler(data));
+        }
+      } catch (e) {
+        console.error('Failed to parse reaction event:', e);
+      }
+    });
+
+    // Handle steelman events
+    eventSource.addEventListener('steelman', (event) => {
+      if (isUnmountedRef.current) return;
+      try {
+        const data = JSON.parse(event.data);
+        const handlers = subscribersRef.current.get('steelman');
+        if (handlers) {
+          handlers.forEach((handler) => handler(data));
+        }
+      } catch (e) {
+        console.error('Failed to parse steelman event:', e);
+      }
+    });
+
+    // Handle debate-join events
+    eventSource.addEventListener('debate-join', (event) => {
+      if (isUnmountedRef.current) return;
+      try {
+        const data = JSON.parse(event.data);
+        const handlers = subscribersRef.current.get('debate-join');
+        if (handlers) {
+          handlers.forEach((handler) => handler(data));
+        }
+      } catch (e) {
+        console.error('Failed to parse debate-join event:', e);
       }
     });
 
@@ -201,11 +338,42 @@ export function SSEProvider({ children, debateId }: SSEProviderProps) {
     };
   }, [debateId, connect, cleanup]);
 
+  // Manual reconnect function (Requirement 8.6, 12.3)
+  const reconnect = useCallback(() => {
+    // Reset all counters
+    consecutiveErrorsRef.current = 0;
+    reconnectAttemptsRef.current = 0;
+    reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
+    setErrorCount(0);
+    
+    // Clear any pending timeouts
+    if (circuitBreakerTimeoutRef.current) {
+      clearTimeout(circuitBreakerTimeoutRef.current);
+      circuitBreakerTimeoutRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
+    // Reset status and attempt connection
+    setConnectionStatus('disconnected');
+    
+    // Use setTimeout to ensure state is updated before connecting
+    setTimeout(() => {
+      if (!isUnmountedRef.current && debateId) {
+        connect();
+      }
+    }, 0);
+  }, [debateId, connect]);
+
   const contextValue: SSEContextValue = {
     isConnected: connectionStatus === 'connected',
     connectionStatus,
     subscribe,
     debateId: debateId || null,
+    reconnect,
+    errorCount,
   };
 
   return (
@@ -275,4 +443,7 @@ export const SSE_CONSTANTS = {
   INITIAL_RECONNECT_DELAY,
   MAX_RECONNECT_DELAY,
   RECONNECT_BACKOFF_MULTIPLIER,
+  MAX_RECONNECT_ATTEMPTS,
+  CIRCUIT_BREAKER_THRESHOLD,
+  CIRCUIT_BREAKER_RESET_TIME,
 };

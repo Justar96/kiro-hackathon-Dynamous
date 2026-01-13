@@ -930,6 +930,11 @@ describe('ActiveRoundView Property Tests - Form Visibility', () => {
               opposeArgumentId: side === 'oppose' ? null : round.opposeArgumentId,
             };
             
+            // For rounds 2-3, steelman gate requires approved status
+            const steelmanData = roundNumber > 1 
+              ? { status: 'approved' as const } 
+              : undefined;
+            
             const { container } = render(
               <ActiveRoundView
                 round={roundWithoutArg}
@@ -939,6 +944,7 @@ describe('ActiveRoundView Property Tests - Form Visibility', () => {
                 canSubmitArgument={true}
                 userSide={side}
                 onArgumentSubmit={() => {}}
+                steelmanData={steelmanData}
               />
             );
             

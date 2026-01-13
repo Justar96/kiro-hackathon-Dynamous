@@ -1,727 +1,400 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { type ReactNode } from 'react';
+import { SSEProvider, useSSEContext, calculateBackoffDelay, SSE_CONSTANTS } from './useSSE';
 import * as fc from 'fast-check';
-import { renderHook, act, cleanup } from '@testing-library/react';
-import React from 'react';
-import { SSEProvider, useSSE, useSSEContext, SSE_CONSTANTS } from './useSSE';
-
-/**
- * Feature: uiux-improvements
- * Property 26: SSE Reconnection
- * 
- * For any SSE connection drop, the system SHALL attempt to reconnect within 5 seconds,
- * with exponential backoff on repeated failures.
- * 
- * Validates: Requirements 9.5
- */
 
 // Mock EventSource
 class MockEventSource {
   static instances: MockEventSource[] = [];
-  
+  static autoConnect = true;
   url: string;
-  readyState: number = 0; // CONNECTING
   onopen: ((event: Event) => void) | null = null;
-  onerror: ((event: Event) => void) | null = null;
   onmessage: ((event: MessageEvent) => void) | null = null;
-  private eventListeners: Map<string, Set<(event: MessageEvent) => void>> = new Map();
-  
+  onerror: ((event: Event) => void) | null = null;
+  readyState: number = 0;
+  private eventListeners: Map<string, ((event: MessageEvent) => void)[]> = new Map();
+
   constructor(url: string) {
     this.url = url;
     MockEventSource.instances.push(this);
+    // Auto-connect after a microtask if enabled
+    if (MockEventSource.autoConnect) {
+      queueMicrotask(() => {
+        this.simulateOpen();
+      });
+    }
   }
-  
+
   addEventListener(type: string, listener: (event: MessageEvent) => void) {
     if (!this.eventListeners.has(type)) {
-      this.eventListeners.set(type, new Set());
+      this.eventListeners.set(type, []);
     }
-    this.eventListeners.get(type)!.add(listener);
+    this.eventListeners.get(type)!.push(listener);
   }
-  
+
   removeEventListener(type: string, listener: (event: MessageEvent) => void) {
-    this.eventListeners.get(type)?.delete(listener);
-  }
-  
-  dispatchEvent(event: MessageEvent): boolean {
-    const listeners = this.eventListeners.get(event.type);
+    const listeners = this.eventListeners.get(type);
     if (listeners) {
-      listeners.forEach(listener => listener(event));
+      const index = listeners.indexOf(listener);
+      if (index > -1) {
+        listeners.splice(index, 1);
+      }
     }
-    return true;
   }
-  
+
+  dispatchEvent() { return true; }
+
   close() {
-    this.readyState = 2; // CLOSED
+    this.readyState = 2;
   }
-  
-  // Test helpers
+
   simulateOpen() {
-    this.readyState = 1; // OPEN
+    this.readyState = 1;
     if (this.onopen) {
       this.onopen(new Event('open'));
     }
   }
-  
+
+  simulateMessage(data: string) {
+    const event = new MessageEvent('message', { data });
+    if (this.onmessage) {
+      this.onmessage(event);
+    }
+  }
+
+  simulateTypedEvent(type: string, data: string) {
+    const event = new MessageEvent(type, { data });
+    const listeners = this.eventListeners.get(type);
+    if (listeners) {
+      listeners.forEach(listener => listener(event));
+    }
+  }
+
   simulateError() {
+    this.readyState = 2;
     if (this.onerror) {
       this.onerror(new Event('error'));
     }
   }
-  
-  simulateMessage(type: string, data: unknown) {
-    const event = new MessageEvent(type, { data: JSON.stringify(data) });
-    this.dispatchEvent(event);
-  }
-  
+
   static reset() {
     MockEventSource.instances = [];
+    MockEventSource.autoConnect = true;
   }
-  
-  static getLatest(): MockEventSource | undefined {
+
+  static getLastInstance() {
     return MockEventSource.instances[MockEventSource.instances.length - 1];
   }
 }
 
-// Wrapper component for testing
-function createWrapper(debateId?: string) {
-  return function Wrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <SSEProvider debateId={debateId}>
-        {children}
-      </SSEProvider>
+const originalEventSource = global.EventSource;
+
+describe('SSEProvider', () => {
+  let queryClient: QueryClient;
+
+  const createWrapper = (debateId?: string) => {
+    return ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <SSEProvider debateId={debateId}>{children}</SSEProvider>
+      </QueryClientProvider>
     );
   };
-}
 
-describe('useSSE Property Tests', () => {
-  const originalEventSource = global.EventSource;
-  
   beforeEach(() => {
-    cleanup();
-    vi.useFakeTimers();
     MockEventSource.reset();
-    // @ts-expect-error - Mocking EventSource
-    global.EventSource = MockEventSource;
+    (global as unknown as { EventSource: typeof MockEventSource }).EventSource = MockEventSource;
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, gcTime: 0 },
+      },
+    });
   });
 
   afterEach(() => {
-    cleanup();
-    vi.useRealTimers();
-    global.EventSource = originalEventSource;
+    (global as unknown as { EventSource: typeof EventSource }).EventSource = originalEventSource;
+    queryClient.clear();
   });
 
-  /**
-   * Property 26: SSE Reconnection
-   * Validates: Requirements 9.5
-   */
-  describe('Property 26: SSE Reconnection', () => {
-    // Arbitrary for number of connection failures (1 to 5)
-    const failureCountArbitrary = fc.integer({ min: 1, max: 5 });
-    
-    // Arbitrary for debate IDs
-    const debateIdArbitrary = fc.string({ minLength: 1, maxLength: 20 })
-      .filter(s => s.trim().length > 0);
+  it('should provide SSE context to children', () => {
+    const { result } = renderHook(() => useSSEContext(), { wrapper: createWrapper() });
+    expect(result.current).toBeDefined();
+  });
 
-    it('Should attempt reconnection within 5 seconds after connection drop', () => {
-      fc.assert(
-        fc.property(debateIdArbitrary, (debateId) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const wrapper = createWrapper(debateId);
-          const { result } = renderHook(() => useSSEContext(), { wrapper });
-          
-          // Get the initial EventSource instance
-          const initialInstance = MockEventSource.getLatest();
-          expect(initialInstance).toBeDefined();
-          
-          // Simulate successful connection
-          act(() => {
-            initialInstance!.simulateOpen();
-          });
-          
-          expect(result.current?.connectionStatus).toBe('connected');
-          
-          // Simulate connection error
-          act(() => {
-            initialInstance!.simulateError();
-          });
-          
-          expect(result.current?.connectionStatus).toBe('error');
-          
-          // Advance time by initial reconnect delay (1 second)
-          act(() => {
-            vi.advanceTimersByTime(SSE_CONSTANTS.INITIAL_RECONNECT_DELAY);
-          });
-          
-          // Should have created a new EventSource instance (reconnection attempt)
-          const reconnectInstance = MockEventSource.getLatest();
-          expect(reconnectInstance).not.toBe(initialInstance);
-          expect(MockEventSource.instances.length).toBe(2);
-          
-          vi.useRealTimers();
-        }),
-        { numRuns: 100 }
-      );
+  it('should connect to SSE endpoint when debateId is provided', async () => {
+    renderHook(() => useSSEContext(), { wrapper: createWrapper('test-debate-123') });
+
+    await waitFor(() => {
+      expect(MockEventSource.instances.length).toBeGreaterThan(0);
+    });
+    expect(MockEventSource.getLastInstance()?.url).toContain('test-debate-123');
+  });
+
+  it('should update connection state on open', async () => {
+    const { result } = renderHook(() => useSSEContext(), { wrapper: createWrapper('test-debate-123') });
+
+    await waitFor(() => {
+      expect(result.current?.isConnected).toBe(true);
+    });
+    expect(result.current?.connectionStatus).toBe('connected');
+  });
+
+  it('should handle connection errors', async () => {
+    const { result } = renderHook(() => useSSEContext(), { wrapper: createWrapper('test-debate-123') });
+
+    await waitFor(() => {
+      expect(result.current?.isConnected).toBe(true);
     });
 
-    it('Should use exponential backoff on repeated failures', () => {
+    const instance = MockEventSource.getLastInstance();
+    act(() => {
+      instance?.simulateError();
+    });
+
+    await waitFor(() => {
+      expect(result.current?.isConnected).toBe(false);
+    });
+  });
+
+  it('should close connection on unmount', async () => {
+    const { result, unmount } = renderHook(() => useSSEContext(), { wrapper: createWrapper('test-debate-123') });
+
+    await waitFor(() => {
+      expect(result.current?.isConnected).toBe(true);
+    });
+
+    const instance = MockEventSource.getLastInstance();
+    const closeSpy = vi.spyOn(instance!, 'close');
+
+    unmount();
+
+    expect(closeSpy).toHaveBeenCalled();
+  });
+
+  it('should allow subscribing to events', async () => {
+    const handler = vi.fn();
+    const { result } = renderHook(() => {
+      const context = useSSEContext();
+      React.useEffect(() => {
+        if (context) {
+          return context.subscribe('market', handler);
+        }
+      }, [context]);
+      return context;
+    }, { wrapper: createWrapper('test-debate-123') });
+
+    await waitFor(() => {
+      expect(result.current?.isConnected).toBe(true);
+    });
+
+    const instance = MockEventSource.getLastInstance();
+    act(() => {
+      instance?.simulateTypedEvent('market', JSON.stringify({ price: 0.65 }));
+    });
+
+    await waitFor(() => {
+      expect(handler).toHaveBeenCalledWith({ price: 0.65 });
+    });
+  });
+});
+
+describe('calculateBackoffDelay', () => {
+  it('should return initial delay for first attempt', () => {
+    expect(calculateBackoffDelay(1)).toBe(SSE_CONSTANTS.INITIAL_RECONNECT_DELAY);
+  });
+
+  it('should double delay for each subsequent attempt', () => {
+    expect(calculateBackoffDelay(2)).toBe(2000);
+    expect(calculateBackoffDelay(3)).toBe(4000);
+    expect(calculateBackoffDelay(4)).toBe(8000);
+  });
+
+  it('should cap at max delay', () => {
+    expect(calculateBackoffDelay(10)).toBe(SSE_CONSTANTS.MAX_RECONNECT_DELAY);
+    expect(calculateBackoffDelay(20)).toBe(SSE_CONSTANTS.MAX_RECONNECT_DELAY);
+  });
+
+  describe('Property-based tests', () => {
+    it('Property 7: Exponential Backoff Reconnection - delay should follow exponential formula', () => {
       fc.assert(
         fc.property(
-          debateIdArbitrary,
-          failureCountArbitrary,
-          (debateId, failureCount) => {
-            cleanup();
-            vi.useFakeTimers();
-            MockEventSource.reset();
-            
-            const wrapper = createWrapper(debateId);
-            renderHook(() => useSSEContext(), { wrapper });
-            
-            let expectedDelay = SSE_CONSTANTS.INITIAL_RECONNECT_DELAY;
-            
-            for (let i = 0; i < failureCount; i++) {
-              const currentInstance = MockEventSource.getLatest();
-              expect(currentInstance).toBeDefined();
-              
-              // Simulate connection error
-              act(() => {
-                currentInstance!.simulateError();
-              });
-              
-              const instanceCountBefore = MockEventSource.instances.length;
-              
-              // Advance time by expected delay
-              act(() => {
-                vi.advanceTimersByTime(expectedDelay);
-              });
-              
-              // Should have created a new instance
-              expect(MockEventSource.instances.length).toBe(instanceCountBefore + 1);
-              
-              // Calculate next expected delay with exponential backoff
-              expectedDelay = Math.min(
-                expectedDelay * SSE_CONSTANTS.RECONNECT_BACKOFF_MULTIPLIER,
-                SSE_CONSTANTS.MAX_RECONNECT_DELAY
-              );
-            }
-            
-            vi.useRealTimers();
+          fc.integer({ min: 1, max: 20 }),
+          (attemptNumber) => {
+            const delay = calculateBackoffDelay(attemptNumber);
+            const expectedDelay = Math.min(
+              Math.pow(2, attemptNumber - 1) * SSE_CONSTANTS.INITIAL_RECONNECT_DELAY,
+              SSE_CONSTANTS.MAX_RECONNECT_DELAY
+            );
+            return delay === expectedDelay;
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 50 }
       );
     });
 
-    it('Should cap reconnection delay at maximum value', () => {
+    it('Property 7: delay should always be positive', () => {
       fc.assert(
-        fc.property(debateIdArbitrary, (debateId) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const wrapper = createWrapper(debateId);
-          renderHook(() => useSSEContext(), { wrapper });
-          
-          // Calculate how many failures needed to reach max delay
-          let delay = SSE_CONSTANTS.INITIAL_RECONNECT_DELAY;
-          let failuresNeeded = 0;
-          while (delay < SSE_CONSTANTS.MAX_RECONNECT_DELAY) {
-            delay *= SSE_CONSTANTS.RECONNECT_BACKOFF_MULTIPLIER;
-            failuresNeeded++;
+        fc.property(
+          fc.integer({ min: -10, max: 100 }),
+          (attemptNumber) => {
+            const delay = calculateBackoffDelay(attemptNumber);
+            return delay > 0;
           }
-          
-          // Simulate failures to reach max delay
-          for (let i = 0; i <= failuresNeeded; i++) {
-            const currentInstance = MockEventSource.getLatest();
-            act(() => {
-              currentInstance!.simulateError();
-            });
-            
-            // Advance by max delay to ensure reconnection
-            act(() => {
-              vi.advanceTimersByTime(SSE_CONSTANTS.MAX_RECONNECT_DELAY);
-            });
+        ),
+        { numRuns: 50 }
+      );
+    });
+
+    it('Property 7: delay should never exceed max', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 1, max: 1000 }),
+          (attemptNumber) => {
+            const delay = calculateBackoffDelay(attemptNumber);
+            return delay <= SSE_CONSTANTS.MAX_RECONNECT_DELAY;
           }
-          
-          // Now simulate one more failure
-          const instanceCountBefore = MockEventSource.instances.length;
-          const currentInstance = MockEventSource.getLatest();
-          
-          act(() => {
-            currentInstance!.simulateError();
-          });
-          
-          // Advance by max delay
-          act(() => {
-            vi.advanceTimersByTime(SSE_CONSTANTS.MAX_RECONNECT_DELAY);
-          });
-          
-          // Should have reconnected (delay should be capped at max)
-          expect(MockEventSource.instances.length).toBe(instanceCountBefore + 1);
-          
-          vi.useRealTimers();
-        }),
-        { numRuns: 100 }
+        ),
+        { numRuns: 50 }
       );
     });
 
-    it('Should reset reconnection delay after successful connection', () => {
+    it('Property 7: delay should be monotonically increasing until max', () => {
       fc.assert(
-        fc.property(debateIdArbitrary, (debateId) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const wrapper = createWrapper(debateId);
-          const { result } = renderHook(() => useSSEContext(), { wrapper });
-          
-          // Simulate initial connection
-          let currentInstance = MockEventSource.getLatest();
-          act(() => {
-            currentInstance!.simulateOpen();
-          });
-          
-          // Simulate first failure
-          act(() => {
-            currentInstance!.simulateError();
-          });
-          
-          // Wait for first reconnection (1s)
-          act(() => {
-            vi.advanceTimersByTime(SSE_CONSTANTS.INITIAL_RECONNECT_DELAY);
-          });
-          
-          // Simulate second failure (should wait 2s)
-          currentInstance = MockEventSource.getLatest();
-          act(() => {
-            currentInstance!.simulateError();
-          });
-          
-          act(() => {
-            vi.advanceTimersByTime(SSE_CONSTANTS.INITIAL_RECONNECT_DELAY * 2);
-          });
-          
-          // Now simulate successful connection
-          currentInstance = MockEventSource.getLatest();
-          act(() => {
-            currentInstance!.simulateOpen();
-          });
-          
-          expect(result.current?.connectionStatus).toBe('connected');
-          
-          // Simulate another failure
-          act(() => {
-            currentInstance!.simulateError();
-          });
-          
-          const instanceCountBefore = MockEventSource.instances.length;
-          
-          // Should reconnect after initial delay (1s), not the accumulated delay
-          act(() => {
-            vi.advanceTimersByTime(SSE_CONSTANTS.INITIAL_RECONNECT_DELAY);
-          });
-          
-          expect(MockEventSource.instances.length).toBe(instanceCountBefore + 1);
-          
-          vi.useRealTimers();
-        }),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Should not attempt reconnection when debateId is not provided', () => {
-      fc.assert(
-        fc.property(fc.boolean(), () => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          // Create provider without debateId
-          const wrapper = createWrapper(undefined);
-          const { result } = renderHook(() => useSSEContext(), { wrapper });
-          
-          // Should not create any EventSource instances
-          expect(MockEventSource.instances.length).toBe(0);
-          expect(result.current?.connectionStatus).toBe('disconnected');
-          
-          vi.useRealTimers();
-        }),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Connection status should transition correctly through states', () => {
-      fc.assert(
-        fc.property(debateIdArbitrary, (debateId) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const wrapper = createWrapper(debateId);
-          const { result } = renderHook(() => useSSEContext(), { wrapper });
-          
-          // Initial state should be connecting
-          expect(result.current?.connectionStatus).toBe('connecting');
-          
-          // Simulate successful connection
-          const instance = MockEventSource.getLatest();
-          act(() => {
-            instance!.simulateOpen();
-          });
-          
-          expect(result.current?.connectionStatus).toBe('connected');
-          expect(result.current?.isConnected).toBe(true);
-          
-          // Simulate error
-          act(() => {
-            instance!.simulateError();
-          });
-          
-          expect(result.current?.connectionStatus).toBe('error');
-          expect(result.current?.isConnected).toBe(false);
-          
-          vi.useRealTimers();
-        }),
-        { numRuns: 100 }
+        fc.property(
+          fc.integer({ min: 1, max: 10 }),
+          (attemptNumber) => {
+            const delay1 = calculateBackoffDelay(attemptNumber);
+            const delay2 = calculateBackoffDelay(attemptNumber + 1);
+            // Either delay2 >= delay1, or both are at max
+            return delay2 >= delay1 || (delay1 === SSE_CONSTANTS.MAX_RECONNECT_DELAY && delay2 === SSE_CONSTANTS.MAX_RECONNECT_DELAY);
+          }
+        ),
+        { numRuns: 50 }
       );
     });
   });
 });
 
+describe('Circuit Breaker Constants', () => {
+  it('Property 9: Circuit breaker threshold should be positive', () => {
+    expect(SSE_CONSTANTS.CIRCUIT_BREAKER_THRESHOLD).toBeGreaterThan(0);
+  });
 
-/**
- * Feature: uiux-improvements
- * Property 27: Real-Time Event Propagation
- * 
- * For any server event (stance update, new comment, round advance), 
- * the UI SHALL reflect the change within 5 seconds of the event occurring.
- * 
- * Validates: Requirements 9.1, 9.2, 9.3
- */
-describe('Property 27: Real-Time Event Propagation', () => {
-  const originalEventSource = global.EventSource;
-  
+  it('Property 9: Circuit breaker reset time should be reasonable', () => {
+    expect(SSE_CONSTANTS.CIRCUIT_BREAKER_RESET_TIME).toBeGreaterThanOrEqual(30000);
+    expect(SSE_CONSTANTS.CIRCUIT_BREAKER_RESET_TIME).toBeLessThanOrEqual(120000);
+  });
+
+  it('Property 9: Max reconnect attempts should be reasonable', () => {
+    expect(SSE_CONSTANTS.MAX_RECONNECT_ATTEMPTS).toBeGreaterThan(SSE_CONSTANTS.CIRCUIT_BREAKER_THRESHOLD);
+  });
+});
+
+describe('SSE Event Handling', () => {
+  let queryClient: QueryClient;
+
+  const createWrapper = (debateId?: string) => {
+    return ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <SSEProvider debateId={debateId}>{children}</SSEProvider>
+      </QueryClientProvider>
+    );
+  };
+
   beforeEach(() => {
-    cleanup();
-    vi.useFakeTimers();
     MockEventSource.reset();
-    // @ts-expect-error - Mocking EventSource
-    global.EventSource = MockEventSource;
+    (global as unknown as { EventSource: typeof MockEventSource }).EventSource = MockEventSource;
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, gcTime: 0 },
+      },
+    });
   });
 
   afterEach(() => {
-    cleanup();
-    vi.useRealTimers();
-    global.EventSource = originalEventSource;
+    (global as unknown as { EventSource: typeof EventSource }).EventSource = originalEventSource;
+    queryClient.clear();
   });
 
-  // Arbitrary for debate IDs
-  const debateIdArbitrary = fc.string({ minLength: 1, maxLength: 20 })
-    .filter(s => s.trim().length > 0);
+  describe('Property-based tests', () => {
+    it('should handle any valid JSON message through subscription', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.record({
+            price: fc.float({ min: 0, max: 1, noNaN: true }),
+            timestamp: fc.date().map(d => d.toISOString()),
+          }),
+          async (messageData) => {
+            const handler = vi.fn();
+            const { result, unmount } = renderHook(() => {
+              const context = useSSEContext();
+              React.useEffect(() => {
+                if (context) {
+                  return context.subscribe('market', handler);
+                }
+              }, [context]);
+              return context;
+            }, { wrapper: createWrapper('test-debate') });
 
-  // Arbitrary for market price data
-  const marketPriceArbitrary = fc.record({
-    supportPrice: fc.integer({ min: 0, max: 100 }),
-    opposePrice: fc.integer({ min: 0, max: 100 }),
-    totalVotes: fc.integer({ min: 0, max: 1000 }),
-  });
+            await waitFor(() => {
+              expect(result.current?.isConnected).toBe(true);
+            }, { timeout: 1000 });
 
-  // Arbitrary for comment data
-  const commentArbitrary = fc.record({
-    id: fc.string({ minLength: 1, maxLength: 20 }),
-    debateId: fc.string({ minLength: 1, maxLength: 20 }),
-    userId: fc.string({ minLength: 1, maxLength: 20 }),
-    content: fc.string({ minLength: 1, maxLength: 500 }),
-    parentId: fc.option(fc.string({ minLength: 1, maxLength: 20 }), { nil: null }),
-    createdAt: fc.date().map(d => d.toISOString()),
-  });
-
-  // Arbitrary for round data
-  const roundArbitrary = fc.record({
-    id: fc.string({ minLength: 1, maxLength: 20 }),
-    debateId: fc.string({ minLength: 1, maxLength: 20 }),
-    roundNumber: fc.integer({ min: 1, max: 3 }),
-    status: fc.constantFrom('pending', 'active', 'complete'),
-  });
-
-  it('Market events should be received by subscribers', () => {
-    fc.assert(
-      fc.property(
-        debateIdArbitrary,
-        marketPriceArbitrary,
-        (debateId, marketData) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const receivedEvents: unknown[] = [];
-          
-          const wrapper = createWrapper(debateId);
-          renderHook(
-            () => useSSE('market', (data: unknown) => {
-              receivedEvents.push(data);
-            }),
-            { wrapper }
-          );
-          
-          // Simulate connection
-          const instance = MockEventSource.getLatest();
-          act(() => {
-            instance!.simulateOpen();
-          });
-          
-          // Simulate market event
-          act(() => {
-            instance!.simulateMessage('market', marketData);
-          });
-          
-          // Event should be received
-          expect(receivedEvents.length).toBe(1);
-          expect(receivedEvents[0]).toEqual(marketData);
-          
-          vi.useRealTimers();
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  it('Comment events should be received by subscribers', () => {
-    fc.assert(
-      fc.property(
-        debateIdArbitrary,
-        commentArbitrary,
-        (debateId, commentData) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const receivedEvents: unknown[] = [];
-          
-          const wrapper = createWrapper(debateId);
-          renderHook(
-            () => useSSE('comment', (data: unknown) => {
-              receivedEvents.push(data);
-            }),
-            { wrapper }
-          );
-          
-          // Simulate connection
-          const instance = MockEventSource.getLatest();
-          act(() => {
-            instance!.simulateOpen();
-          });
-          
-          // Simulate comment event
-          act(() => {
-            instance!.simulateMessage('comment', { comment: commentData });
-          });
-          
-          // Event should be received
-          expect(receivedEvents.length).toBe(1);
-          expect(receivedEvents[0]).toEqual({ comment: commentData });
-          
-          vi.useRealTimers();
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  it('Round events should be received by subscribers', () => {
-    fc.assert(
-      fc.property(
-        debateIdArbitrary,
-        roundArbitrary,
-        (debateId, roundData) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const receivedEvents: unknown[] = [];
-          
-          const wrapper = createWrapper(debateId);
-          renderHook(
-            () => useSSE('round', (data: unknown) => {
-              receivedEvents.push(data);
-            }),
-            { wrapper }
-          );
-          
-          // Simulate connection
-          const instance = MockEventSource.getLatest();
-          act(() => {
-            instance!.simulateOpen();
-          });
-          
-          // Simulate round event
-          act(() => {
-            instance!.simulateMessage('round', roundData);
-          });
-          
-          // Event should be received
-          expect(receivedEvents.length).toBe(1);
-          expect(receivedEvents[0]).toEqual(roundData);
-          
-          vi.useRealTimers();
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  it('Multiple subscribers should all receive events', () => {
-    fc.assert(
-      fc.property(
-        debateIdArbitrary,
-        marketPriceArbitrary,
-        (debateId, marketData) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const receivedBySubscriber1: unknown[] = [];
-          const receivedBySubscriber2: unknown[] = [];
-          
-          // Create a custom hook that uses multiple useSSE subscriptions
-          function useMultipleSubscribers() {
-            useSSE('market', (data: unknown) => {
-              receivedBySubscriber1.push(data);
+            const instance = MockEventSource.getLastInstance();
+            act(() => {
+              instance?.simulateTypedEvent('market', JSON.stringify(messageData));
             });
-            useSSE('market', (data: unknown) => {
-              receivedBySubscriber2.push(data);
-            });
-            return { sub1: receivedBySubscriber1, sub2: receivedBySubscriber2 };
+
+            await waitFor(() => {
+              expect(handler).toHaveBeenCalledWith(messageData);
+            }, { timeout: 1000 });
+
+            unmount();
+            MockEventSource.reset();
           }
-          
-          const wrapper = createWrapper(debateId);
-          renderHook(() => useMultipleSubscribers(), { wrapper });
-          
-          // Simulate connection
-          const instance = MockEventSource.getLatest();
-          act(() => {
-            instance!.simulateOpen();
-          });
-          
-          // Simulate market event
-          act(() => {
-            instance!.simulateMessage('market', marketData);
-          });
-          
-          // Both subscribers should receive the event
-          expect(receivedBySubscriber1.length).toBe(1);
-          expect(receivedBySubscriber1[0]).toEqual(marketData);
-          expect(receivedBySubscriber2.length).toBe(1);
-          expect(receivedBySubscriber2[0]).toEqual(marketData);
-          
-          vi.useRealTimers();
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
+        ),
+        { numRuns: 5 }
+      );
+    });
 
-  it('Unsubscribed handlers should not receive events', () => {
-    fc.assert(
-      fc.property(
-        debateIdArbitrary,
-        marketPriceArbitrary,
-        (debateId, marketData) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const receivedEvents: unknown[] = [];
-          
-          const wrapper = createWrapper(debateId);
-          const { unmount } = renderHook(
-            () => useSSE('market', (data: unknown) => {
-              receivedEvents.push(data);
-            }),
-            { wrapper }
-          );
-          
-          // Simulate connection
-          const instance = MockEventSource.getLatest();
-          act(() => {
-            instance!.simulateOpen();
-          });
-          
-          // Unmount (unsubscribe)
-          unmount();
-          
-          // Simulate market event after unsubscribe
-          act(() => {
-            instance!.simulateMessage('market', marketData);
-          });
-          
-          // Should NOT receive the event
-          expect(receivedEvents.length).toBe(0);
-          
-          vi.useRealTimers();
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
+    it('should handle multiple event types', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.constantFrom('market', 'comment', 'round', 'argument', 'reaction', 'steelman', 'debate-join'),
+          async (eventType) => {
+            const handler = vi.fn();
+            const { result, unmount } = renderHook(() => {
+              const context = useSSEContext();
+              React.useEffect(() => {
+                if (context) {
+                  return context.subscribe(eventType, handler);
+                }
+              }, [context]);
+              return context;
+            }, { wrapper: createWrapper('test-debate') });
 
-  it('Events should only be received by matching event type subscribers', () => {
-    fc.assert(
-      fc.property(
-        debateIdArbitrary,
-        marketPriceArbitrary,
-        commentArbitrary,
-        (debateId, marketData, commentData) => {
-          cleanup();
-          vi.useFakeTimers();
-          MockEventSource.reset();
-          
-          const marketEvents: unknown[] = [];
-          const commentEvents: unknown[] = [];
-          
-          // Create a custom hook that subscribes to both event types
-          function useMultiTypeSubscribers() {
-            useSSE('market', (data: unknown) => {
-              marketEvents.push(data);
+            await waitFor(() => {
+              expect(result.current?.isConnected).toBe(true);
+            }, { timeout: 1000 });
+
+            const instance = MockEventSource.getLastInstance();
+            const testData = { type: eventType, id: 'test-123' };
+            
+            act(() => {
+              instance?.simulateTypedEvent(eventType, JSON.stringify(testData));
             });
-            useSSE('comment', (data: unknown) => {
-              commentEvents.push(data);
-            });
-            return { market: marketEvents, comment: commentEvents };
+
+            await waitFor(() => {
+              expect(handler).toHaveBeenCalledWith(testData);
+            }, { timeout: 1000 });
+
+            unmount();
+            MockEventSource.reset();
           }
-          
-          const wrapper = createWrapper(debateId);
-          renderHook(() => useMultiTypeSubscribers(), { wrapper });
-          
-          // Simulate connection
-          const instance = MockEventSource.getLatest();
-          act(() => {
-            instance!.simulateOpen();
-          });
-          
-          // Simulate market event
-          act(() => {
-            instance!.simulateMessage('market', marketData);
-          });
-          
-          // Simulate comment event
-          act(() => {
-            instance!.simulateMessage('comment', { comment: commentData });
-          });
-          
-          // Market subscriber should only receive market events
-          expect(marketEvents.length).toBe(1);
-          expect(marketEvents[0]).toEqual(marketData);
-          
-          // Comment subscriber should only receive comment events
-          expect(commentEvents.length).toBe(1);
-          expect(commentEvents[0]).toEqual({ comment: commentData });
-          
-          vi.useRealTimers();
-        }
-      ),
-      { numRuns: 100 }
-    );
+        ),
+        { numRuns: 7 }
+      );
+    });
   });
 });

@@ -14,6 +14,8 @@ interface ArgumentBlockProps {
   side: 'support' | 'oppose';
   author?: User | null;
   citations?: Citation[];
+  /** Whether to highlight this argument (for real-time SSE updates) */
+  highlight?: boolean;
   onAttributeImpact?: () => void;
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
   /** Callback when user clicks "This changed my mind" button */
@@ -37,6 +39,7 @@ export function ArgumentBlock({
   side, 
   author,
   citations = [],
+  highlight = false,
   onAttributeImpact,
   onCitationHover,
   onMindChanged,
@@ -53,7 +56,11 @@ export function ArgumentBlock({
   );
   
   return (
-    <article className="bg-white border border-divider/60 rounded-subtle overflow-hidden">
+    <article 
+      className={`bg-white border border-divider/60 rounded-subtle overflow-hidden transition-all duration-500 ${
+        highlight ? 'ring-2 ring-accent/50 shadow-md animate-pulse-once' : ''
+      }`}
+    >
       {/* Byline Header - Author attribution in refined style (Req 5.4) */}
       <div className="px-5 pt-4 pb-2 flex items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-2">

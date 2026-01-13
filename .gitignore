@@ -1,55 +1,167 @@
+# =============================================================================
 # Dependencies
+# =============================================================================
 node_modules/
+.pnp/
+.pnp.js
 
+# =============================================================================
 # Build outputs
+# =============================================================================
 dist/
 out/
+build/
 *.tgz
+*.tar.gz
 
+# =============================================================================
 # Bun
+# =============================================================================
 # Keep bun.lock (text-based lockfile, default since v1.2)
 # Ignore legacy binary lockfile if migrating
 bun.lockb
 
-# Code coverage
+# =============================================================================
+# TypeScript
+# =============================================================================
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# =============================================================================
+# Testing & Coverage
+# =============================================================================
 coverage/
 *.lcov
+.nyc_output/
+test-results/
+playwright-report/
+.vitest/
 
-# Logs
+# =============================================================================
+# Logs & Debug
+# =============================================================================
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+# =============================================================================
 # Environment variables
+# =============================================================================
 .env
 .env.local
 .env.*.local
+.env.development
+.env.test
+.env.production
+!.env.example
+!packages/*/.env.example
 
-# TypeScript
-*.tsbuildinfo
-
+# =============================================================================
 # Caches
+# =============================================================================
 .cache/
 .eslintcache
 .turbo/
+.parcel-cache/
+.vite/
+*.cache
 
-# IDE
-.idea/
-*.swp
-*.swo
+# =============================================================================
+# IDE & Editors
+# =============================================================================
+# VSCode - keep shared settings
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!.vscode/*.code-snippets
 
-# OS
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim/Neovim
+*.swp
+*.swo
+*.swn
+*~
+.netrwhist
+
+# Emacs
+\#*\#
+.#*
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# =============================================================================
+# OS generated files
+# =============================================================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
 
-# Database (local dev)
+# =============================================================================
+# Database (local development)
+# =============================================================================
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
 
-# TanStack Router generated files (optional - can be committed)
+# =============================================================================
+# TanStack Router (generated files - can optionally commit)
+# =============================================================================
+# Uncomment to ignore generated route tree
+# packages/frontend/src/routeTree.gen.ts
 # packages/frontend/.tanstack/
+
+# =============================================================================
+# Drizzle
+# =============================================================================
+# Keep migrations in git, ignore generated meta if needed
+# packages/backend/drizzle/meta/_journal.json
+
+# =============================================================================
+# Temporary files
+# =============================================================================
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# =============================================================================
+# Secrets & Credentials (never commit these)
+# =============================================================================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+.secrets
+
+# =============================================================================
+# Kiro (keep specs and steering, ignore generated)
+# =============================================================================
+.kiro/sessions/
+.kiro/cache/

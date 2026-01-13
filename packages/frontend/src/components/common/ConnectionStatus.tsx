@@ -5,8 +5,9 @@ import { useSSEContext } from '../../lib';
  * 
  * Shows a subtle indicator when the SSE connection is disconnected or in error state.
  * Hidden when connected to avoid visual noise.
+ * Includes retry button for circuit-breaker state.
  * 
- * Requirements: 9.6
+ * Requirements: 8.2, 9.6, 12.4
  */
 export function ConnectionStatus() {
   const sseContext = useSSEContext();
@@ -16,14 +17,21 @@ export function ConnectionStatus() {
     return null;
   }
   
-  const { connectionStatus } = sseContext;
+  const { connectionStatus, reconnect, errorCount } = sseContext;
   
   // Only show indicator for disconnected or error states
   if (connectionStatus === 'connected') {
     return null;
   }
   
-  const statusConfig = {
+  const statusConfig: Record<string, {
+    text: string;
+    bgColor: string;
+    textColor: string;
+    borderColor: string;
+    icon: React.ReactNode;
+    showRetry?: boolean;
+  }> = {
     connecting: {
       text: 'Connecting...',
       bgColor: 'bg-amber-50',
@@ -59,7 +67,7 @@ export function ConnectionStatus() {
       ),
     },
     error: {
-      text: 'Connection lost. Reconnecting...',
+      text: `Connection lost${errorCount > 1 ? ` (${errorCount} errors)` : ''}. Reconnecting...`,
       bgColor: 'bg-red-50',
       textColor: 'text-red-700',
       borderColor: 'border-red-200',
@@ -69,9 +77,21 @@ export function ConnectionStatus() {
         </svg>
       ),
     },
+    'circuit-breaker': {
+      text: 'Connection paused due to repeated errors',
+      bgColor: 'bg-orange-50',
+      textColor: 'text-orange-700',
+      borderColor: 'border-orange-200',
+      showRetry: true,
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+    },
   };
   
-  const config = statusConfig[connectionStatus];
+  const config = statusConfig[connectionStatus] || statusConfig.error;
   
   return (
     <div 
@@ -89,6 +109,15 @@ export function ConnectionStatus() {
     >
       {config.icon}
       <span>{config.text}</span>
+      {config.showRetry && (
+        <button
+          onClick={reconnect}
+          className="ml-2 px-2 py-1 bg-orange-100 hover:bg-orange-200 rounded text-xs font-semibold transition-colors"
+          aria-label="Retry connection"
+        >
+          Retry
+        </button>
+      )}
     </div>
   );
 }

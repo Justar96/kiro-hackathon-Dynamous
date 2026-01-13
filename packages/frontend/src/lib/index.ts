@@ -55,6 +55,7 @@ export {
   useSSE, 
   useSSEContext,
   SSE_CONSTANTS,
+  calculateBackoffDelay,
 } from './useSSE';
 export type { 
   SSEConnectionStatus, 
@@ -63,8 +64,35 @@ export type {
   SSEEvent,
 } from './useSSE';
 
+// SSE Query Sync hook
+export {
+  useSSEQuerySync,
+  createShallowMergeUpdater,
+  createDeepMergeUpdater,
+  hasDataChanged,
+} from './useSSEQuerySync';
+export type {
+  UseSSEQuerySyncOptions,
+  UseSSEQuerySyncResult,
+} from './useSSEQuerySync';
+
 // SSE Comment updates hook
 export { useSSEComments } from './useSSEComments';
+
+// SSE Market updates hook
+export { useSSEMarket } from './useSSEMarket';
+
+// SSE Arguments updates hook
+export { useSSEArguments } from './useSSEArguments';
+
+// SSE Reactions updates hook
+export { useSSEReactions } from './useSSEReactions';
+
+// SSE Round updates hook
+export { useSSERound } from './useSSERound';
+
+// SSE Steelman updates hook
+export { useSSESteelman } from './useSSESteelman';
 
 // Scroll restoration hooks
 export { 
@@ -100,3 +128,13 @@ export {
   useModalUrlState,
 } from './useModalUrlSync';
 export type { UseModalUrlSyncOptions } from './useModalUrlSync';
+
+// Index page polling hook
+export {
+  useIndexPolling,
+  POLLING_CONSTANTS,
+} from './useIndexPolling';
+export type {
+  UseIndexPollingOptions,
+  UseIndexPollingResult,
+} from './useIndexPolling';

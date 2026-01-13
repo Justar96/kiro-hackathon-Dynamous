@@ -15,6 +15,17 @@ import {
   steelmanService,
 } from './services';
 
+import {
+  broadcastDebateEvent,
+  broadcastMarketUpdate as broadcastMarket,
+  broadcastCommentUpdate as broadcastComment,
+  addConnection,
+  removeConnection,
+  getConnectionCount,
+  startConnectionCleanup,
+  updateConnectionHeartbeat,
+} from './broadcast';
+
 import type { 
   CreateDebateInput, 
   CreateArgumentInput,
@@ -316,6 +327,21 @@ app.post('/api/debates/:id/arguments', authMiddleware, async (c) => {
   
   const argument = await debateService.submitArgument(input);
   
+  // Get the debate to determine round number for broadcast
+  const debate = await debateService.getDebateById(debateId);
+  
+  // Broadcast argument event to all connected clients (Requirement 3.1, 3.2)
+  if (debate) {
+    broadcastDebateEvent(debateId, 'argument', {
+      argumentId: argument.id,
+      roundNumber: debate.currentRound,
+      side: argument.side,
+      content: argument.content,
+      debaterId: argument.debaterId,
+      createdAt: argument.createdAt,
+    });
+  }
+  
   return c.json({ argument }, 201);
 });
 
@@ -325,6 +351,16 @@ app.post('/api/debates/:id/join', authMiddleware, async (c) => {
   const userId = c.get('userId');
   
   const debate = await debateService.joinDebateAsOppose(debateId, userId!);
+  
+  // Get the joining user's username for broadcast (Requirement 11.1, 11.2)
+  const joiningUser = await userService.getUserById(userId!);
+  if (joiningUser) {
+    broadcastDebateEvent(debateId, 'debate-join', {
+      debateId,
+      opposeDebaterId: userId!,
+      opposeDebaterUsername: joiningUser.username,
+    });
+  }
   
   return c.json({ debate });
 });
@@ -360,6 +396,9 @@ app.post('/api/debates/:id/stance/quick', authMiddleware, async (c) => {
     // Update market
     const marketPrice = await marketService.calculateMarketPrice(debateId);
     await marketService.recordMarketDataPoint(debateId, marketPrice.supportPrice, marketPrice.totalVotes);
+    
+    // Broadcast market update to all connected clients (Requirement 2.2)
+    broadcastMarket(debateId, marketPrice);
     
     return c.json({ stance: result.stance, delta: result.delta, type: 'post' }, 201);
   } else {
@@ -419,6 +458,9 @@ app.post('/api/debates/:id/stance/post', authMiddleware, async (c) => {
   // Record market data point
   const marketPrice = await marketService.calculateMarketPrice(debateId);
   await marketService.recordMarketDataPoint(debateId, marketPrice.supportPrice, marketPrice.totalVotes);
+  
+  // Broadcast market update to all connected clients (Requirement 2.1)
+  broadcastMarket(debateId, marketPrice);
   
   // Detect spikes if there's a significant delta
   if (result.delta.lastArgumentSeen && Math.abs(result.delta.delta) >= 15) {
@@ -560,6 +602,16 @@ app.post('/api/debates/:id/steelman', authMiddleware, async (c) => {
   };
   
   const steelman = await steelmanService.submitSteelman(input);
+  
+  // Broadcast steelman submission event (Requirement 10.1, 10.3)
+  broadcastDebateEvent(debateId, 'steelman', {
+    steelmanId: steelman.id,
+    debateId,
+    roundNumber: steelman.roundNumber as 2 | 3,
+    status: 'pending',
+    authorId: steelman.authorId,
+  });
+  
   return c.json({ steelman }, 201);
 });
 
@@ -577,6 +629,17 @@ app.post('/api/steelmans/:id/review', authMiddleware, async (c) => {
   };
   
   const steelman = await steelmanService.reviewSteelman(input);
+  
+  // Broadcast steelman review event (Requirement 10.2, 10.3)
+  broadcastDebateEvent(steelman.debateId, 'steelman', {
+    steelmanId: steelman.id,
+    debateId: steelman.debateId,
+    roundNumber: steelman.roundNumber as 2 | 3,
+    status: steelman.status,
+    rejectionReason: steelman.rejectionReason ?? undefined,
+    authorId: steelman.authorId,
+  });
+  
   return c.json({ steelman });
 });
 
@@ -637,6 +700,27 @@ app.post('/api/arguments/:id/react', authMiddleware, async (c) => {
   
   const reaction = await reactionService.addReaction(input);
   
+  // Get debateId from argument's round for broadcast (Requirement 4.1, 4.2)
+  const argument = await debateService.getArgumentById(argumentId);
+  if (argument) {
+    const { db } = await import('./db');
+    const { rounds } = await import('./db/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const round = await db.query.rounds.findFirst({
+      where: eq(rounds.id, argument.roundId),
+    });
+    
+    if (round) {
+      const counts = await reactionService.getReactionCounts(argumentId);
+      broadcastDebateEvent(round.debateId, 'reaction', {
+        argumentId,
+        reactionType: body.type,
+        counts,
+      });
+    }
+  }
+  
   return c.json({ reaction }, 201);
 });
 
@@ -650,6 +734,27 @@ app.delete('/api/arguments/:id/react', authMiddleware, async (c) => {
   
   if (!removed) {
     throw new HTTPException(404, { message: 'Reaction not found' });
+  }
+  
+  // Get debateId from argument's round for broadcast (Requirement 4.1, 4.2)
+  const argument = await debateService.getArgumentById(argumentId);
+  if (argument) {
+    const { db } = await import('./db');
+    const { rounds } = await import('./db/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    const round = await db.query.rounds.findFirst({
+      where: eq(rounds.id, argument.roundId),
+    });
+    
+    if (round) {
+      const counts = await reactionService.getReactionCounts(argumentId);
+      broadcastDebateEvent(round.debateId, 'reaction', {
+        argumentId,
+        reactionType: body.type,
+        counts,
+      });
+    }
   }
   
   return c.json({ success: true });
@@ -685,9 +790,9 @@ app.post('/api/debates/:id/comments', authMiddleware, async (c) => {
   
   const comment = await commentService.addComment(input);
   
-  // Broadcast comment to all connected clients
-  // Requirements: 9.2
-  broadcastCommentUpdate(debateId, comment);
+  // Broadcast comment to all connected clients using unified broadcast module
+  // Requirements: 6.1
+  broadcastComment(debateId, comment, body.parentId || null);
   
   return c.json({ comment }, 201);
 });
@@ -705,9 +810,6 @@ app.get('/api/debates/:id/comments', async (c) => {
 // SSE Stream for Realtime Updates (14.5)
 // ============================================================================
 
-// Store active SSE connections per debate
-const debateConnections = new Map<string, Set<(data: string) => void>>();
-
 // GET /api/debates/:id/stream - SSE stream for market updates
 app.get('/api/debates/:id/stream', async (c) => {
   const debateId = c.req.param('id');
@@ -719,18 +821,13 @@ app.get('/api/debates/:id/stream', async (c) => {
   }
   
   return streamSSE(c, async (stream) => {
-    // Add this connection to the debate's connection set
-    if (!debateConnections.has(debateId)) {
-      debateConnections.set(debateId, new Set());
-    }
-    
-    const connections = debateConnections.get(debateId)!;
-    
+    // Create send function for this connection
     const sendData = (data: string) => {
       stream.writeSSE({ data });
     };
     
-    connections.add(sendData);
+    // Add this connection to the debate's connection set using broadcast module
+    addConnection(debateId, sendData);
     
     // Send initial market data
     const marketPrice = await marketService.calculateMarketPrice(debateId);
@@ -746,17 +843,14 @@ app.get('/api/debates/:id/stream', async (c) => {
       } catch {
         // Connection closed
         clearInterval(heartbeatInterval);
-        connections.delete(sendData);
+        removeConnection(debateId, sendData);
       }
     }, 30000);
     
     // Clean up on close
     stream.onAbort(() => {
       clearInterval(heartbeatInterval);
-      connections.delete(sendData);
-      if (connections.size === 0) {
-        debateConnections.delete(debateId);
-      }
+      removeConnection(debateId, sendData);
     });
     
     // Keep the stream open
@@ -765,40 +859,6 @@ app.get('/api/debates/:id/stream', async (c) => {
     }
   });
 });
-
-// Helper function to broadcast market updates to all connected clients
-export async function broadcastMarketUpdate(debateId: string): Promise<void> {
-  const connections = debateConnections.get(debateId);
-  if (!connections || connections.size === 0) return;
-  
-  const marketPrice = await marketService.calculateMarketPrice(debateId);
-  const data = JSON.stringify({ event: 'market', data: marketPrice });
-  
-  for (const send of connections) {
-    try {
-      send(data);
-    } catch {
-      // Connection may be closed, will be cleaned up
-    }
-  }
-}
-
-// Helper function to broadcast comment updates to all connected clients
-// Requirements: 9.2
-export function broadcastCommentUpdate(debateId: string, comment: unknown): void {
-  const connections = debateConnections.get(debateId);
-  if (!connections || connections.size === 0) return;
-  
-  const data = JSON.stringify({ event: 'comment', data: { comment } });
-  
-  for (const send of connections) {
-    try {
-      send(data);
-    } catch {
-      // Connection may be closed, will be cleaned up
-    }
-  }
-}
 
 // ============================================================================
 // User API Routes (14.6)
@@ -930,6 +990,24 @@ app.get('/api/users/:id/debates', async (c) => {
   const debates = await debateService.getUserDebateHistory(userId);
   
   return c.json({ debates });
+});
+
+// ============================================================================
+// Connection Cleanup
+// ============================================================================
+
+// Start periodic cleanup of stale SSE connections (Requirement 1.6)
+const stopConnectionCleanup = startConnectionCleanup();
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  stopConnectionCleanup();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  stopConnectionCleanup();
+  process.exit(0);
 });
 
 // ============================================================================

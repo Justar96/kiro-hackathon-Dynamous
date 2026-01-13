@@ -68,8 +68,11 @@ function TrendingDebateCard({ item, rank }: TrendingDebateCardInnerProps) {
   const { debate, marketPrice } = item;
   const prefetchProps = useDebateLinkPrefetch(debate.id);
   
-  const supportPercent = marketPrice?.supportPrice ?? 50;
-  const opposePercent = marketPrice?.opposePrice ?? 50;
+  const rawSupport = marketPrice?.supportPrice ?? 50;
+  const rawOppose = marketPrice?.opposePrice ?? 50;
+  const total = rawSupport + rawOppose;
+  const supportPercent = total > 0 ? (rawSupport / total) * 100 : 50;
+  const opposePercent = total > 0 ? (rawOppose / total) * 100 : 50;
   const mindChangeCount = marketPrice?.mindChangeCount ?? 0;
   const isLive = debate.status === 'active';
   
@@ -121,8 +124,11 @@ function TrendingDebateCard({ item, rank }: TrendingDebateCardInnerProps) {
                 style={{ width: `${opposePercent}%` }}
               />
             </div>
-            {/* Center marker */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-2 bg-white/80" />
+            {/* Divider at boundary between support/oppose */}
+            <div 
+              className="absolute top-0 w-0.5 h-2 bg-white/80 transition-all duration-500 ease-out"
+              style={{ left: `${supportPercent}%`, transform: 'translateX(-50%)' }}
+            />
           </div>
           
           {/* Labels */}

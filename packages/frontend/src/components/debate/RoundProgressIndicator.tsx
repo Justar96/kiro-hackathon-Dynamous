@@ -38,7 +38,7 @@ export function RoundProgressIndicator({
   const isActive = debateStatus === 'active';
 
   return (
-    <div className="flex items-center gap-3 text-sm">
+    <div className="flex items-center gap-3 text-sm" data-testid="compact-progress-bar">
       {/* Compact round stepper */}
       <div className="flex items-center gap-1" role="tablist" aria-label="Debate rounds">
         {roundSteps.map((step, idx) => {
@@ -53,6 +53,7 @@ export function RoundProgressIndicator({
               aria-label={`${ROUND_LABELS[idx]}: ${getStateLabel(step.state)}`}
               disabled={!isNavigable}
               onClick={() => isNavigable && onRoundSelect?.(step.roundNumber)}
+              data-testid={`round-dot-${step.roundNumber}`}
               className={`
                 px-2.5 py-1 rounded-full text-xs font-medium transition-all
                 ${isViewing 

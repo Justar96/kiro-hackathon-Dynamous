@@ -53,6 +53,8 @@ export interface ActiveRoundViewProps {
    * Requirements: 5.5
    */
   attributedArguments?: Set<string>;
+  /** Argument ID to highlight (for real-time SSE updates) */
+  highlightArgumentId?: string | null;
   /** Steelman gate data for current user */
   steelmanData?: SteelmanData;
   /** Pending steelman reviews for opponent */
@@ -148,6 +150,7 @@ export function ActiveRoundView({
   userSide,
   isSubmitting = false,
   attributedArguments,
+  highlightArgumentId,
   steelmanData,
   pendingReviews = [],
   prevRoundArguments,
@@ -264,6 +267,7 @@ export function ActiveRoundView({
             side="support"
             author={supportAuthor}
             citations={supportCitations}
+            highlight={highlightArgumentId === supportArgument.id}
             onCitationHover={onCitationHover}
             onMindChanged={onMindChanged ? () => onMindChanged(supportArgument.id) : undefined}
             attributed={attributedArguments?.has(supportArgument.id) ?? false}
@@ -289,6 +293,7 @@ export function ActiveRoundView({
             side="oppose"
             author={opposeAuthor}
             citations={opposeCitations}
+            highlight={highlightArgumentId === opposeArgument.id}
             onCitationHover={onCitationHover}
             onMindChanged={onMindChanged ? () => onMindChanged(opposeArgument.id) : undefined}
             attributed={attributedArguments?.has(opposeArgument.id) ?? false}

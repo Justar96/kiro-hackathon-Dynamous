@@ -19,7 +19,7 @@ import {
   useOptimisticStance, 
   useOptimisticComment 
 } from '../lib/optimistic';
-import { SSEProvider, useSSEComments } from '../lib';
+import { SSEProvider, useSSEComments, useSSEMarket, useSSEArguments, useSSERound, useSSEReactions, useSSESteelman } from '../lib';
 import {
   ThreeColumnLayout,
   LeftNavRail,
@@ -64,13 +64,20 @@ export const Route = createFileRoute('/debates/$debateId')({
 
 /**
  * Wrapper component that provides SSE context for real-time updates.
- * Requirements: 9.1, 9.4
+ * Requirements: 9.1, 9.4, 8.3
  */
 function DebateViewWrapper() {
   const { debateId } = Route.useParams();
+  const router = useRouter();
+  
+  // Invalidate queries on SSE reconnection (Requirement 8.3)
+  const handleReconnect = useCallback(() => {
+    // Invalidate debate data to fetch fresh state after reconnection
+    router.invalidate();
+  }, [router]);
   
   return (
-    <SSEProvider debateId={debateId}>
+    <SSEProvider debateId={debateId} onReconnect={handleReconnect}>
       <DebateView />
       <ConnectionStatus />
     </SSEProvider>
@@ -128,6 +135,35 @@ function DebateView() {
   // Argument submission mutation
   // Requirements: 7.1, 7.3 - Argument submission integration
   const submitArgumentMutation = useSubmitArgument();
+
+  // Real-time SSE subscriptions for live updates
+  // Requirements: 2.3, 2.4, 2.5 - Market price updates
+  useSSEMarket(debateId);
+  
+  // Requirements: 3.3, 3.4, 3.6 - Argument updates with highlight animation
+  const { newArgumentId } = useSSEArguments(debateId, token);
+  
+  // Requirements: 5.3, 5.4, 5.6 - Round transition updates with toast notifications
+  useSSERound(debateId, token, {
+    onRoundAdvance: (newRound) => {
+      showToast({
+        type: 'info',
+        message: `Round ${newRound} has begun!`,
+      });
+    },
+    onDebateConcluded: () => {
+      showToast({
+        type: 'success',
+        message: 'The debate has concluded!',
+      });
+    },
+  });
+  
+  // Requirements: 4.3, 4.5 - Reaction count updates
+  useSSEReactions(debateId);
+  
+  // Requirements: 10.4, 10.5, 10.6 - Steelman status updates
+  useSSESteelman(debateId, token);
 
   // Steelman Gate hooks
   const currentRound = debateData?.debate?.currentRound ?? 1;
@@ -285,6 +321,7 @@ function DebateView() {
           supportDebater={supportDebater}
           opposeDebater={opposeDebater}
           currentUserId={token}
+          newArgumentId={newArgumentId}
           onCitationHover={handleCitationHover}
           onMindChanged={handleMindChanged}
           onArgumentSubmit={handleArgumentSubmit}
@@ -339,6 +376,7 @@ interface DebateDossierContentProps {
   supportDebater?: User | null;
   opposeDebater?: User | null;
   currentUserId?: string;
+  newArgumentId?: string | null;
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
   onMindChanged?: (argumentId: string) => void;
   onArgumentSubmit?: (content: string) => void;
@@ -359,6 +397,7 @@ function DebateDossierContent({
   supportDebater,
   opposeDebater,
   currentUserId,
+  newArgumentId,
   onCitationHover,
   onMindChanged,
   onArgumentSubmit,
@@ -449,6 +488,7 @@ function DebateDossierContent({
         arguments={roundArguments}
         variant="seamless"
         sticky
+        highlightArgumentId={newArgumentId}
         onCitationHover={handleCitationHover}
         onMindChanged={onMindChanged}
         onArgumentSubmit={onArgumentSubmit}

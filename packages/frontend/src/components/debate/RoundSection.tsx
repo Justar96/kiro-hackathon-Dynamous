@@ -29,6 +29,8 @@ export interface RoundSectionProps {
   sticky?: boolean;
   /** Winner side when debate is concluded (Requirement 6.5) */
   winnerSide?: 'support' | 'oppose' | 'tie' | null;
+  /** Argument ID to highlight (for real-time SSE updates) */
+  highlightArgumentId?: string | null;
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
   onMindChanged?: (argumentId: string) => void;
   onArgumentSubmit?: (content: string) => void;
@@ -113,6 +115,7 @@ export function RoundSection({
   variant = 'card',
   sticky = false,
   winnerSide,
+  highlightArgumentId,
   onCitationHover,
   onMindChanged,
   onArgumentSubmit,
@@ -393,6 +396,7 @@ export function RoundSection({
           userSide={userSide}
           isSubmitting={isSubmitting}
           attributedArguments={mindChangedArgs}
+          highlightArgumentId={highlightArgumentId}
           steelmanData={steelmanData}
           pendingReviews={pendingReviews}
           prevRoundArguments={prevRoundArgs}

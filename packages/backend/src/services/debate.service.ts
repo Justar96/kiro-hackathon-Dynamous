@@ -211,12 +211,23 @@ export class DebateService {
 
       // Advance to next round or conclude (Requirements 2.4, 2.5)
       if (debate.currentRound < 3) {
+        const newRoundNumber = (debate.currentRound + 1) as 1 | 2 | 3;
         await db.update(debates)
           .set({ 
-            currentRound: debate.currentRound + 1,
+            currentRound: newRoundNumber,
             currentTurn: 'support' // Reset turn to support for new round
           })
           .where(eq(debates.id, debateId));
+        
+        // Broadcast round transition (Requirement 5.1, 5.2)
+        const { broadcastRoundUpdate } = await import('../broadcast');
+        broadcastRoundUpdate(
+          debateId,
+          newRoundNumber,
+          'support',
+          true, // previousRoundCompleted
+          'active'
+        );
       } else {
         // Conclude debate after round 3
         await this.concludeDebate(debateId);
@@ -312,6 +323,16 @@ export class DebateService {
         concludedAt: new Date()
       })
       .where(eq(debates.id, debateId));
+
+    // Broadcast debate concluded event (Requirement 5.5)
+    const { broadcastRoundUpdate } = await import('../broadcast');
+    broadcastRoundUpdate(
+      debateId,
+      3, // Final round
+      debate.currentTurn, // Last turn
+      true, // previousRoundCompleted
+      'concluded'
+    );
 
     // Trigger reputation updates for all participants
     const { reputationService } = await import('./reputation.service');
