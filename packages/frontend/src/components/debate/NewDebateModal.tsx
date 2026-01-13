@@ -49,7 +49,6 @@ export function NewDebateModalProvider({ children }: NewDebateModalProviderProps
   return (
     <NewDebateModalContext.Provider value={{ isOpen, open, close }}>
       {children}
-      <NewDebateModalContent isOpen={isOpen} onClose={close} />
     </NewDebateModalContext.Provider>
   );
 }
@@ -419,4 +418,5 @@ function NewDebateModalContent({ isOpen, onClose }: NewDebateModalContentProps) 
   );
 }
 
+export { NewDebateModalContent };
 export default NewDebateModalProvider;
