@@ -347,8 +347,11 @@ function DebateDossierContent({
       {/* Resolution Header */}
       <DossierHeader debate={debate} />
 
+      {/* Divider between header and rounds - seamless integration (Requirements: 3.1, 3.2) */}
+      <HorizontalDivider spacing="lg" />
+
       {/* Unified Debate Rounds Section */}
-      {/* Requirements: 1.1, 8.1, 8.2 - Single unified component replaces three RoundSection components */}
+      {/* Requirements: 1.1, 3.1, 3.2, 3.5, 8.1, 8.2 - Single unified component with seamless integration and sticky progress */}
       <RoundSection
         debate={debate}
         rounds={rounds}
@@ -356,6 +359,8 @@ function DebateDossierContent({
         opposeDebater={opposeDebater}
         currentUserId={currentUserId}
         arguments={roundArguments}
+        variant="seamless"
+        sticky
         onCitationHover={handleCitationHover}
         onMindChanged={onMindChanged}
         onArgumentSubmit={onArgumentSubmit}

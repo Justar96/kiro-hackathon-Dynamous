@@ -15,8 +15,6 @@ import {
   getRoundLabel,
   getProgressText,
 } from './RoundSection.utils';
-import { RoundProgressIndicator } from './RoundProgressIndicator';
-import { RoundNavigator } from './RoundNavigator';
 import { RoundHistory } from './RoundHistory';
 import { ActiveRoundView } from './ActiveRoundView';
 import { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
@@ -372,390 +370,6 @@ describe('RoundSection Property Tests - Round State Derivation', () => {
           const expectedTurn = currentTurn === 'support' ? "Support's turn" : "Oppose's turn";
           expect(text).toContain(expectedTurn);
         }),
-        { numRuns: 100 }
-      );
-    });
-  });
-});
-
-
-/**
- * Property-based tests for RoundProgressIndicator component rendering.
- * 
- * Feature: unified-round-section, Property 2: Round State Derivation Correctness (rendering aspect)
- * Validates: Requirements 2.1, 2.2
- */
-describe('RoundProgressIndicator Property Tests', () => {
-  /**
-   * Property 2 (Rendering): Progress indicator displays correct round information
-   * Validates: Requirements 2.1, 2.2
-   */
-  describe('RoundProgressIndicator rendering', () => {
-    it('Property 2.R1: Progress indicator displays "Round X of 3" for any valid round', () => {
-      fc.assert(
-        fc.property(roundNumberArb, sideArb, debateStatusArb, roundsArb, roundNumberArb, 
-          (currentRound, currentTurn, debateStatus, rounds, viewedRound) => {
-            const { container } = render(
-              <RoundProgressIndicator
-                currentRound={currentRound}
-                currentTurn={currentTurn}
-                debateStatus={debateStatus}
-                viewedRound={viewedRound}
-                rounds={rounds}
-              />
-            );
-            
-            // Should contain "Round X of 3" text
-            expect(container.textContent).toContain(`Round ${currentRound} of 3`);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 2.R2: Progress indicator shows turn indicator for active debates', () => {
-      fc.assert(
-        fc.property(roundNumberArb, sideArb, roundsArb, 
-          (currentRound, currentTurn, rounds) => {
-            // Ensure viewedRound equals currentRound so we're not viewing history
-            const { container } = render(
-              <RoundProgressIndicator
-                currentRound={currentRound}
-                currentTurn={currentTurn}
-                debateStatus="active"
-                viewedRound={currentRound}
-                rounds={rounds}
-              />
-            );
-            
-            const expectedTurn = currentTurn === 'support' ? "Support's turn" : "Oppose's turn";
-            expect(container.textContent).toContain(expectedTurn);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 2.R3: Progress indicator shows "Concluded" for concluded debates', () => {
-      fc.assert(
-        fc.property(roundNumberArb, sideArb, roundsArb, roundNumberArb,
-          (currentRound, currentTurn, rounds, viewedRound) => {
-            const { container } = render(
-              <RoundProgressIndicator
-                currentRound={currentRound}
-                currentTurn={currentTurn}
-                debateStatus="concluded"
-                viewedRound={viewedRound}
-                rounds={rounds}
-              />
-            );
-            
-            expect(container.textContent).toContain('Concluded');
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 2.R4: Progress indicator renders exactly 3 step indicators', () => {
-      fc.assert(
-        fc.property(roundNumberArb, sideArb, debateStatusArb, roundsArb, roundNumberArb,
-          (currentRound, currentTurn, debateStatus, rounds, viewedRound) => {
-            const { container } = render(
-              <RoundProgressIndicator
-                currentRound={currentRound}
-                currentTurn={currentTurn}
-                debateStatus={debateStatus}
-                viewedRound={viewedRound}
-                rounds={rounds}
-              />
-            );
-            
-            // Each step has a dot with specific size classes (w-2.5 h-2.5)
-            // Filter to only count the step indicator dots, not other rounded elements like badges
-            const stepDots = container.querySelectorAll('.w-2\\.5.h-2\\.5.rounded-full');
-            expect(stepDots.length).toBe(3);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 2.R5: Progress indicator shows "Viewing history" badge when viewing historical round', () => {
-      fc.assert(
-        fc.property(roundNumberArb, sideArb, roundsArb,
-          (currentRound, currentTurn, rounds) => {
-            // Find a completed round that isn't the current round
-            const completedRoundIndex = rounds.findIndex(
-              (r, i) => r.completedAt !== null && (i + 1) !== currentRound
-            );
-            
-            if (completedRoundIndex === -1) return; // Skip if no such round exists
-            
-            const viewedRound = (completedRoundIndex + 1) as 1 | 2 | 3;
-            
-            const { container } = render(
-              <RoundProgressIndicator
-                currentRound={currentRound}
-                currentTurn={currentTurn}
-                debateStatus="active"
-                viewedRound={viewedRound}
-                rounds={rounds}
-              />
-            );
-            
-            // Should show "Viewing history" text (the badge text)
-            expect(container.textContent).toContain('Viewing history');
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-  });
-});
-
-
-/**
- * Property-based tests for RoundNavigator component.
- * 
- * Feature: unified-round-section, Property 3: Navigation State Transitions
- * Validates: Requirements 3.1, 3.2, 3.3, 3.5
- */
-describe('RoundNavigator Property Tests - Navigation State Transitions', () => {
-  /**
-   * Property 3: Navigation State Transitions
-   * For any round navigation action, the viewedRound state SHALL update correctly.
-   * 
-   * Validates: Requirements 3.1, 3.2, 3.3, 3.5
-   */
-  describe('RoundNavigator rendering and navigation', () => {
-    it('Property 3.1: RoundNavigator renders exactly 3 tabs for all round states', () => {
-      fc.assert(
-        fc.property(roundsArb, roundNumberArb, roundNumberArb,
-          (rounds, currentRound, viewedRound) => {
-            const onRoundSelect = () => {};
-            
-            const { container } = render(
-              <RoundNavigator
-                rounds={rounds}
-                currentRound={currentRound}
-                viewedRound={viewedRound}
-                onRoundSelect={onRoundSelect}
-              />
-            );
-            
-            // Should render exactly 3 tabs
-            const tabs = container.querySelectorAll('[role="tab"]');
-            expect(tabs.length).toBe(3);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 3.2: Clicking a completed round calls onRoundSelect with that round number', () => {
-      fc.assert(
-        fc.property(roundsArb, roundNumberArb, roundNumberArb,
-          (rounds, currentRound, viewedRound) => {
-            // Find a completed round
-            const completedRoundIndex = rounds.findIndex(r => r.completedAt !== null);
-            if (completedRoundIndex === -1) return; // Skip if no completed rounds
-            
-            const completedRoundNumber = (completedRoundIndex + 1) as 1 | 2 | 3;
-            let selectedRound: number | null = null;
-            const onRoundSelect = (round: 1 | 2 | 3) => { selectedRound = round; };
-            
-            const { container } = render(
-              <RoundNavigator
-                rounds={rounds}
-                currentRound={currentRound}
-                viewedRound={viewedRound}
-                onRoundSelect={onRoundSelect}
-              />
-            );
-            
-            const tabs = container.querySelectorAll('[role="tab"]');
-            const completedTab = tabs[completedRoundIndex];
-            
-            fireEvent.click(completedTab);
-            
-            expect(selectedRound).toBe(completedRoundNumber);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 3.3: Clicking the active round calls onRoundSelect with currentRound', () => {
-      fc.assert(
-        fc.property(roundsArb, roundNumberArb, roundNumberArb,
-          (rounds, currentRound, viewedRound) => {
-            let selectedRound: number | null = null;
-            const onRoundSelect = (round: 1 | 2 | 3) => { selectedRound = round; };
-            
-            const { container } = render(
-              <RoundNavigator
-                rounds={rounds}
-                currentRound={currentRound}
-                viewedRound={viewedRound}
-                onRoundSelect={onRoundSelect}
-              />
-            );
-            
-            const tabs = container.querySelectorAll('[role="tab"]');
-            const activeTab = tabs[currentRound - 1];
-            
-            fireEvent.click(activeTab);
-            
-            expect(selectedRound).toBe(currentRound);
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 3.4: Unavailable rounds (future with no arguments) are disabled', () => {
-      fc.assert(
-        fc.property(roundsArb, roundNumberArb, roundNumberArb,
-          (rounds, currentRound, viewedRound) => {
-            const onRoundSelect = () => {};
-            
-            const { container } = render(
-              <RoundNavigator
-                rounds={rounds}
-                currentRound={currentRound}
-                viewedRound={viewedRound}
-                onRoundSelect={onRoundSelect}
-              />
-            );
-            
-            const tabs = container.querySelectorAll('[role="tab"]');
-            
-            for (let i = 0; i < rounds.length; i++) {
-              const targetRound = (i + 1) as 1 | 2 | 3;
-              const tab = tabs[i];
-              const isNavigable = canNavigateToRound(targetRound, rounds, currentRound);
-              
-              // Check aria-disabled attribute matches navigability
-              expect(tab.getAttribute('aria-disabled')).toBe(isNavigable ? 'false' : 'true');
-            }
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 3.5: Clicking disabled tabs does not call onRoundSelect', () => {
-      fc.assert(
-        fc.property(roundsArb, roundNumberArb, roundNumberArb,
-          (rounds, currentRound, viewedRound) => {
-            let callCount = 0;
-            const onRoundSelect = () => { callCount++; };
-            
-            const { container } = render(
-              <RoundNavigator
-                rounds={rounds}
-                currentRound={currentRound}
-                viewedRound={viewedRound}
-                onRoundSelect={onRoundSelect}
-              />
-            );
-            
-            const tabs = container.querySelectorAll('[role="tab"]');
-            
-            // Find a disabled tab (future round with no arguments)
-            for (let i = 0; i < rounds.length; i++) {
-              const targetRound = (i + 1) as 1 | 2 | 3;
-              const isNavigable = canNavigateToRound(targetRound, rounds, currentRound);
-              
-              if (!isNavigable) {
-                const initialCallCount = callCount;
-                fireEvent.click(tabs[i]);
-                // Should not have called onRoundSelect
-                expect(callCount).toBe(initialCallCount);
-              }
-            }
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 3.6: Selected tab has aria-selected="true"', () => {
-      fc.assert(
-        fc.property(roundsArb, roundNumberArb, roundNumberArb,
-          (rounds, currentRound, viewedRound) => {
-            const onRoundSelect = () => {};
-            
-            const { container } = render(
-              <RoundNavigator
-                rounds={rounds}
-                currentRound={currentRound}
-                viewedRound={viewedRound}
-                onRoundSelect={onRoundSelect}
-              />
-            );
-            
-            const tabs = container.querySelectorAll('[role="tab"]');
-            
-            for (let i = 0; i < tabs.length; i++) {
-              const tab = tabs[i];
-              const roundNumber = (i + 1) as 1 | 2 | 3;
-              const isSelected = roundNumber === viewedRound;
-              
-              expect(tab.getAttribute('aria-selected')).toBe(isSelected ? 'true' : 'false');
-            }
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 3.7: Tab labels match round types (Opening, Rebuttal, Closing)', () => {
-      fc.assert(
-        fc.property(roundsArb, roundNumberArb, roundNumberArb,
-          (rounds, currentRound, viewedRound) => {
-            const onRoundSelect = () => {};
-            
-            const { container } = render(
-              <RoundNavigator
-                rounds={rounds}
-                currentRound={currentRound}
-                viewedRound={viewedRound}
-                onRoundSelect={onRoundSelect}
-              />
-            );
-            
-            const tabs = container.querySelectorAll('[role="tab"]');
-            
-            expect(tabs[0].textContent).toContain('Opening');
-            expect(tabs[1].textContent).toContain('Rebuttal');
-            expect(tabs[2].textContent).toContain('Closing');
-          }
-        ),
-        { numRuns: 100 }
-      );
-    });
-
-    it('Property 3.8: Navigator has proper ARIA role="tablist"', () => {
-      fc.assert(
-        fc.property(roundsArb, roundNumberArb, roundNumberArb,
-          (rounds, currentRound, viewedRound) => {
-            const onRoundSelect = () => {};
-            
-            const { container } = render(
-              <RoundNavigator
-                rounds={rounds}
-                currentRound={currentRound}
-                viewedRound={viewedRound}
-                onRoundSelect={onRoundSelect}
-              />
-            );
-            
-            const tablist = container.querySelector('[role="tablist"]');
-            expect(tablist).not.toBeNull();
-          }
-        ),
         { numRuns: 100 }
       );
     });
@@ -1931,12 +1545,13 @@ describe('RoundSection Property Tests - Round Display Matches Debate State', () 
                     />
                   );
 
-                  // Should have progress indicator (shows "Round X of 3")
-                  expect(container.textContent).toContain(`Round ${currentRound} of 3`);
+                  // Should have compact progress bar with progress text
+                  const progressBar = container.querySelector('[data-testid="compact-progress-bar"]');
+                  expect(progressBar).not.toBeNull();
 
-                  // Should have navigator tabs
-                  const tabs = container.querySelectorAll('[role="tab"]');
-                  expect(tabs.length).toBe(3);
+                  // Should have round dots for navigation (3 dots)
+                  const roundDots = container.querySelectorAll('[data-testid^="round-dot-"]');
+                  expect(roundDots.length).toBe(3);
 
                   // Should have active round view
                   const roundSection = container.querySelector('[data-round]');
@@ -1979,9 +1594,10 @@ describe('RoundSection Property Tests - Round Display Matches Debate State', () 
             // Initially should show Round 2
             expect(container.querySelector('[data-round="2"]')).not.toBeNull();
 
-            // Click on Round 1 tab (Opening - which is completed)
-            const tabs = container.querySelectorAll('[role="tab"]');
-            fireEvent.click(tabs[0]); // Opening tab
+            // Click on Round 1 dot (Opening - which is completed)
+            const roundDot1 = container.querySelector('[data-testid="round-dot-1"]');
+            expect(roundDot1).not.toBeNull();
+            fireEvent.click(roundDot1!);
 
             // Should now show Round 1
             expect(container.querySelector('[data-round="1"]')).not.toBeNull();
@@ -2260,9 +1876,10 @@ describe('RoundSection Property Tests - State Preservation During Updates', () =
               />
             );
 
-            // Navigate to Round 1 (history)
-            const tabs = container.querySelectorAll('[role="tab"]');
-            fireEvent.click(tabs[0]); // Opening tab
+            // Navigate to Round 1 (history) using round dot
+            const roundDot1 = container.querySelector('[data-testid="round-dot-1"]');
+            expect(roundDot1).not.toBeNull();
+            fireEvent.click(roundDot1!);
 
             // Verify we're viewing Round 1
             expect(container.querySelector('[data-round="1"]')).not.toBeNull();
@@ -2459,9 +2076,10 @@ describe('RoundSection Property Tests - State Preservation During Updates', () =
               />
             );
 
-            // Navigate to Round 1 (history)
-            const tabs = container.querySelectorAll('[role="tab"]');
-            fireEvent.click(tabs[0]); // Opening tab
+            // Navigate to Round 1 (history) using CompactProgressBar round dots
+            const roundDot1 = container.querySelector('[data-testid="round-dot-1"]');
+            const roundDot2 = container.querySelector('[data-testid="round-dot-2"]');
+            if (roundDot1) fireEvent.click(roundDot1);
 
             // Find and click "This changed my mind" button
             const mindChangedButton = container.querySelector('button[title="Attribute your mind-change to this argument"]');
@@ -2470,11 +2088,11 @@ describe('RoundSection Property Tests - State Preservation During Updates', () =
               expect(mindChangedCalled).toBe(true);
             }
 
-            // Navigate back to Round 2
-            fireEvent.click(tabs[1]); // Rebuttal tab
+            // Navigate back to Round 2 using round dot
+            if (roundDot2) fireEvent.click(roundDot2);
 
-            // Navigate back to Round 1
-            fireEvent.click(tabs[0]); // Opening tab
+            // Navigate back to Round 1 using round dot
+            if (roundDot1) fireEvent.click(roundDot1);
 
             // The attribution state should be preserved (button should show attributed state)
             // This is verified by the component maintaining the mindChangedArguments Set
@@ -2519,9 +2137,9 @@ describe('RoundSection Property Tests - State Preservation During Updates', () =
               />
             );
 
-            // Navigate to Round 1 (history)
-            const tabs = container.querySelectorAll('[role="tab"]');
-            fireEvent.click(tabs[0]); // Opening tab
+            // Navigate to Round 1 (history) using CompactProgressBar round dots
+            const roundDot1 = container.querySelector('[data-testid="round-dot-1"]');
+            if (roundDot1) fireEvent.click(roundDot1);
 
             // Verify we're viewing Round 1
             expect(container.querySelector('[data-round="1"]')).not.toBeNull();
@@ -3084,9 +2702,9 @@ describe('RoundSection Property Tests - Round Completion Triggers Transition', (
             // The newly submitted argument should be displayed
             // Note: After round completion, we auto-transition to Round 2, so we need to navigate back
             // to Round 1 to see the argument. But the argument data is available.
-            // Let's verify by navigating back to Round 1
-            const tabs = container.querySelectorAll('[role="tab"]');
-            fireEvent.click(tabs[0]); // Opening tab
+            // Let's verify by navigating back to Round 1 using CompactProgressBar round dots
+            const roundDot1 = container.querySelector('[data-testid="round-dot-1"]');
+            if (roundDot1) fireEvent.click(roundDot1);
 
             expect(container.textContent).toContain('Oppose argument content that was just submitted');
           }
@@ -3156,9 +2774,9 @@ describe('RoundSection Property Tests - Round Completion Triggers Transition', (
               />
             );
 
-            // Navigate to Round 1 (viewing history)
-            const tabs = container.querySelectorAll('[role="tab"]');
-            fireEvent.click(tabs[0]); // Opening tab
+            // Navigate to Round 1 (viewing history) using CompactProgressBar round dots
+            const roundDot1 = container.querySelector('[data-testid="round-dot-1"]');
+            if (roundDot1) fireEvent.click(roundDot1);
 
             // Verify we're viewing Round 1
             expect(container.querySelector('[data-round="1"]')).not.toBeNull();

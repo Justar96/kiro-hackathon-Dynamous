@@ -31,6 +31,10 @@ export interface RoundSectionProps {
   currentUserId?: string;
   arguments?: { [roundNumber: number]: { support?: Argument | null; oppose?: Argument | null } };
   citations?: { [argumentId: string]: Citation[] };
+  /** Controls whether to show card styling or seamless integration */
+  variant?: 'card' | 'seamless';
+  /** Enable sticky progress bar on scroll (Requirement 3.5) */
+  sticky?: boolean;
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
   onMindChanged?: (argumentId: string) => void;
   onArgumentSubmit?: (content: string) => void;

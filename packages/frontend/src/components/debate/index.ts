@@ -22,18 +22,17 @@ export type { EvidenceSource } from './EvidenceFootnote';
 // Round Components
 export { RoundSection } from './RoundSection';
 export type { RoundSectionProps } from './RoundSection';
-export { RoundProgressIndicator } from './RoundProgressIndicator';
-export { RoundNavigator } from './RoundNavigator';
+// Note: RoundProgressIndicator and RoundNavigator are deprecated - use CompactProgressBar instead
 export { RoundHistory } from './RoundHistory';
 export { ActiveRoundView } from './ActiveRoundView';
 export type { ActiveRoundViewProps } from './ActiveRoundView';
 export { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
 export type { ArgumentSubmissionFormProps } from './ArgumentSubmissionForm';
+export { CompactProgressBar, RoundDot, deriveRoundDotState, isRoundNavigable, getCompactProgressText } from './CompactProgressBar';
+export type { CompactProgressBarProps, RoundDotProps, RoundDotState } from './CompactProgressBar';
 
 // Types
 export type { 
-  RoundProgressIndicatorProps, 
-  RoundNavigatorProps, 
   RoundHistoryProps,
   RoundStepState,
   RoundStep,

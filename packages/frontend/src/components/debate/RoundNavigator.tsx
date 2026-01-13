@@ -1,4 +1,8 @@
 /**
+ * @deprecated This component has been replaced by CompactProgressBar.
+ * Use CompactProgressBar instead for round navigation functionality.
+ * This file is kept for backward compatibility but will be removed in a future version.
+ * 
  * RoundNavigator provides a horizontal stepper/tab interface for switching between rounds.
  * Renders three tabs (Opening, Rebuttal, Closing) with visual states and navigation controls.
  * 

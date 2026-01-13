@@ -1,4 +1,8 @@
 /**
+ * @deprecated This component has been replaced by CompactProgressBar.
+ * Use CompactProgressBar instead for progress indicator functionality.
+ * This file is kept for backward compatibility but will be removed in a future version.
+ * 
  * RoundProgressIndicator displays the current debate progress and turn information.
  * Shows "Round X of 3" with current turn indicator and visual states for each round step.
  * Stays visible without scrolling on mobile (Requirement 6.2).
