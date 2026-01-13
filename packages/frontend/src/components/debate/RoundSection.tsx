@@ -209,6 +209,7 @@ export function RoundSection({
   }, [userSide, debate.status, debate.currentRound, debate.currentTurn, viewedRound]);
 
   const viewedRoundArgs = roundArguments?.[viewedRound] || {};
+  const prevRoundArgs = viewedRound > 1 ? roundArguments?.[viewedRound - 1] || {} : undefined;
   const supportCitations = viewedRoundArgs.support?.id ? citations?.[viewedRoundArgs.support.id] || [] : [];
   const opposeCitations = viewedRoundArgs.oppose?.id ? citations?.[viewedRoundArgs.oppose.id] || [] : [];
 
@@ -399,6 +400,7 @@ export function RoundSection({
           attributedArguments={mindChangedArgs}
           steelmanData={steelmanData}
           pendingReviews={pendingReviews}
+          prevRoundArguments={prevRoundArgs}
           onCitationHover={onCitationHover}
           onMindChanged={handleMindChanged}
           onArgumentSubmit={onArgumentSubmit}

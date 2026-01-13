@@ -57,6 +57,8 @@ export interface ActiveRoundViewProps {
   steelmanData?: SteelmanData;
   /** Pending steelman reviews for opponent */
   pendingReviews?: PendingReview[];
+  /** Previous round arguments for steelman gate (rounds 2-3 need to steelman previous round's opponent argument) */
+  prevRoundArguments?: { support?: Argument | null; oppose?: Argument | null };
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
   onMindChanged?: (argumentId: string) => void;
   onArgumentSubmit?: (content: string) => void;
@@ -148,6 +150,7 @@ export function ActiveRoundView({
   attributedArguments,
   steelmanData,
   pendingReviews = [],
+  prevRoundArguments,
   onCitationHover,
   onMindChanged,
   onArgumentSubmit,
@@ -168,8 +171,11 @@ export function ActiveRoundView({
   const steelmanApproved = steelmanData?.status === 'approved';
   const canProceedWithArgument = !requiresSteelman || steelmanApproved;
   
-  // Get opponent's argument to steelman (from previous round)
-  const opponentPrevArgument = userSide === 'support' ? opposeArgument : supportArgument;
+  // Get opponent's argument to steelman from PREVIOUS round (not current round)
+  // For rounds 2-3, we need to steelman the opponent's argument from the previous round
+  const opponentPrevArgument = prevRoundArguments 
+    ? (userSide === 'support' ? prevRoundArguments.oppose : prevRoundArguments.support)
+    : null;
   
   // Determine if we should show the submission form
   // Form is visible when: user is a debater, it's their turn, viewing active round, 

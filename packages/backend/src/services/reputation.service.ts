@@ -93,36 +93,8 @@ export class ReputationService {
    * @param debateResult - The final debate result
    */
   async updateAllParticipants(debateId: string, debateResult: DebateResult): Promise<void> {
-    // Get all voters who made predictions (have post-stances)
-    const postStances = await db.query.stances.findMany({
-      where: and(
-        eq(stances.debateId, debateId),
-        eq(stances.type, 'post')
-      ),
-    });
-
-    // Update reputation for correct predictions
-    for (const stance of postStances) {
-      await this.updateReputationOnDebateConclusion(
-        stance.voterId,
-        debateId,
-        debateResult
-      );
-    }
-
-    // Update reputation for high-impact arguments
-    const debateArguments = await db.query.arguments_.findMany({
-      where: sql`${arguments_.roundId} IN (
-        SELECT id FROM ${rounds} WHERE ${rounds.debateId} = ${debateId}
-      )`,
-    });
-
-    for (const argument of debateArguments) {
-      await this.updateReputationOnHighImpactArgument(
-        argument.debaterId,
-        argument.id
-      );
-    }
+    // Delegate to processDebateConclusion to avoid code duplication
+    await this.processDebateConclusion(debateId, debateResult);
   }
 
   /**
@@ -156,30 +128,24 @@ export class ReputationService {
 
   /**
    * Update prediction accuracy for a user
-   * Tracks ratio of correct predictions over time
+   * Tracks ratio of correct predictions over time using atomic database update
+   * to avoid lost-update race conditions
    * 
    * @param userId - The user's ID
    * @param wasCorrect - Whether the prediction was correct
    */
   async updatePredictionAccuracy(userId: string, wasCorrect: boolean): Promise<void> {
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (!user) {
-      return;
-    }
-
-    // Simple accuracy calculation: weighted average with new prediction
-    // This could be enhanced with more sophisticated tracking
-    const currentAccuracy = user.predictionAccuracy;
     const weight = 0.1; // How much new predictions affect overall accuracy
-    const newAccuracy = wasCorrect 
-      ? currentAccuracy + (100 - currentAccuracy) * weight
-      : currentAccuracy - currentAccuracy * weight;
-
+    
+    // Atomic update using SQL expression to avoid read-modify-write race conditions
+    // Formula: wasCorrect ? accuracy + (100 - accuracy) * weight : accuracy - accuracy * weight
+    // Simplified: wasCorrect ? accuracy * (1 - weight) + 100 * weight : accuracy * (1 - weight)
     await db.update(users)
-      .set({ predictionAccuracy: Math.round(newAccuracy * 100) / 100 })
+      .set({ 
+        predictionAccuracy: wasCorrect
+          ? sql`ROUND(${users.predictionAccuracy} + (100 - ${users.predictionAccuracy}) * ${weight}, 2)`
+          : sql`ROUND(${users.predictionAccuracy} - ${users.predictionAccuracy} * ${weight}, 2)`
+      })
       .where(eq(users.id, userId));
   }
 

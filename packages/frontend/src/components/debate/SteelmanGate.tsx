@@ -5,7 +5,7 @@
  * This makes debates feel "alien compared to Reddit" - forces good faith.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Argument } from '@debate-platform/shared';
 
 // ============================================================================
@@ -36,6 +36,11 @@ export function SteelmanForm({
   const [content, setContent] = useState(existingSteelman?.content || '');
   const minLength = 50;
   const maxLength = 500;
+
+  // Sync content with existingSteelman prop when it changes
+  useEffect(() => {
+    setContent(existingSteelman?.content || '');
+  }, [existingSteelman]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

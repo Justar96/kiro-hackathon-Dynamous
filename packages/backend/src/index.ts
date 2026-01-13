@@ -584,7 +584,16 @@ app.post('/api/steelmans/:id/review', authMiddleware, async (c) => {
 app.get('/api/debates/:id/steelman/status', authMiddleware, async (c) => {
   const debateId = c.req.param('id');
   const userId = c.get('userId');
-  const roundNumber = parseInt(c.req.query('round') || '1', 10) as 1 | 2 | 3;
+  
+  // Parse and validate round number
+  const raw = c.req.query('round');
+  const rawNum = raw ? parseInt(raw, 10) : NaN;
+  
+  if (Number.isNaN(rawNum) || ![1, 2, 3].includes(rawNum)) {
+    return c.json({ error: 'Invalid round' }, 400);
+  }
+  
+  const roundNumber = rawNum as 1 | 2 | 3;
   
   const status = await steelmanService.canSubmitArgument(debateId, userId!, roundNumber);
   const steelman = await steelmanService.getSteelman(debateId, userId!, roundNumber);

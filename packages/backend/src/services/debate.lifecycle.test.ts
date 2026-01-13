@@ -191,9 +191,15 @@ describe('Debate Lifecycle Integration', () => {
       argumentId
     );
 
-    // Should create a spike record since change > 5%
-    // This would need to be verified by querying the database
-    // For now, we verify it doesn't throw an error
-    expect(true).toBe(true);
+    // Verify spike was created by querying the spikes
+    const spikes = await marketService.getSpikes(debateId);
+    
+    // Should have at least one spike record since change > 5%
+    expect(spikes.length).toBeGreaterThan(0);
+    
+    // Find the spike we just created
+    const createdSpike = spikes.find(s => s.argumentId === argumentId);
+    expect(createdSpike).toBeDefined();
+    expect(createdSpike?.priceChange).toBe(15); // 60 - 45 = 15
   });
 });

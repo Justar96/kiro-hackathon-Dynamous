@@ -480,17 +480,21 @@ export const commentsInfiniteQueryOptions = (debateId: string, pageSize: number 
           `/api/debates/${debateId}/comments?${params.toString()}`
         );
         return response;
-      } catch {
-        // Fallback for non-paginated API - return all comments as first page
-        const response = await fetchApi<CommentsResponse>(
-          `/api/debates/${debateId}/comments`
-        );
-        return {
-          comments: response.comments,
-          nextCursor: null,
-          hasMore: false,
-          totalCount: response.comments.length,
-        };
+      } catch (error) {
+        // Only fallback to non-paginated API when endpoint doesn't support pagination (404)
+        // Rethrow other errors (auth, server issues, etc.)
+        if (error instanceof ApiError && error.status === 404) {
+          const response = await fetchApi<CommentsResponse>(
+            `/api/debates/${debateId}/comments`
+          );
+          return {
+            comments: response.comments,
+            nextCursor: null,
+            hasMore: false,
+            totalCount: response.comments.length,
+          };
+        }
+        throw error;
       }
     },
     initialPageParam: null as string | null,
