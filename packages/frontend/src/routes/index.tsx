@@ -3,7 +3,6 @@ import { useState, useMemo, useCallback } from 'react';
 import { debatesWithMarketQueryOptions } from '../lib/queries';
 import { useQuickStance } from '../lib/hooks';
 import { useSession } from '../lib/useSession';
-import { useIndexPolling } from '../lib/useIndexPolling';
 import { 
   DebateIndexList, 
   SkeletonDebateRow, 
@@ -19,6 +18,8 @@ import {
   useAuthModal,
   useNewDebateModal,
   HorizontalDivider,
+  PlusIcon,
+  ChartIcon,
 } from '../components';
 import type { DebateTabType } from '../components';
 
@@ -41,12 +42,6 @@ function HomePage() {
   const { showToast } = useToast();
   const { openSignIn } = useAuthModal();
   const isAuthenticated = !!user;
-  
-  // Index page polling for real-time updates (Requirements: 7.1, 7.2, 7.6)
-  const { isRefreshing, refresh, lastRefresh } = useIndexPolling({
-    interval: 15000, // 15 seconds
-    enabled: true,
-  });
   
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<DebateTabType>(() => {
@@ -130,9 +125,6 @@ function HomePage() {
           isAuthenticated={isAuthenticated}
           userStances={userStances}
           onQuickStance={handleQuickStance}
-          isRefreshing={isRefreshing}
-          onRefresh={refresh}
-          lastRefresh={lastRefresh}
         />
       }
       rightRail={
@@ -173,18 +165,14 @@ function IndexLeftRail({ isAuthenticated, sandboxData, debates, currentUserId }:
             onClick={openNewDebate}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded-small hover:bg-accent-hover transition-colors shadow-paper"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <PlusIcon size="sm" decorative />
             Start a Debate
           </button>
           <Link 
             to="/"
             className="flex items-center gap-2 px-3 py-2 text-sm text-text-secondary hover:text-accent hover:bg-page-bg rounded-small transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+            <ChartIcon size="sm" decorative />
             Leaderboard
           </Link>
         </div>
@@ -261,12 +249,6 @@ interface IndexCenterContentProps {
   isAuthenticated: boolean;
   userStances?: Record<string, number>;
   onQuickStance?: (debateId: string, side: 'support' | 'oppose') => void;
-  /** Whether a refresh is in progress (Requirement 7.3) */
-  isRefreshing?: boolean;
-  /** Manual refresh callback (Requirement 7.5) */
-  onRefresh?: () => void;
-  /** Last refresh timestamp */
-  lastRefresh?: Date | null;
 }
 
 function IndexCenterContent({
@@ -278,53 +260,20 @@ function IndexCenterContent({
   isAuthenticated,
   userStances = {},
   onQuickStance,
-  isRefreshing = false,
-  onRefresh,
-  lastRefresh,
 }: IndexCenterContentProps) {
   const { open: openNewDebate } = useNewDebateModal();
   
   return (
     <div>
       {/* Header - Paper aesthetic with serif typography */}
-      <header className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-heading text-heading-1 sm:text-[2.25rem] sm:leading-[1.3] font-semibold text-text-primary tracking-tight">
-              Debate Index
-            </h1>
-            <p className="mt-3 text-body-small text-text-secondary" style={{ letterSpacing: '0.02em' }}>
-              Take a position&nbsp;&nbsp;•&nbsp;&nbsp;See what others think&nbsp;&nbsp;•&nbsp;&nbsp;Track mind changes
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Manual refresh button (Requirement 7.5) */}
-            {onRefresh && (
-              <button
-                onClick={onRefresh}
-                disabled={isRefreshing}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-sm text-text-secondary hover:text-accent border border-divider rounded-lg hover:border-accent/30 transition-colors disabled:opacity-50"
-                title={lastRefresh ? `Last updated: ${lastRefresh.toLocaleTimeString()}` : 'Refresh debates'}
-              >
-                <svg 
-                  className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                {isRefreshing ? 'Refreshing...' : 'Refresh'}
-              </button>
-            )}
-            <button
-              onClick={openNewDebate}
-              className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-hover transition-colors shadow-sm"
-            >
-              <span>+</span>
-              <span>New Debate</span>
-            </button>
-          </div>
+      <header className="mb-6">
+        <div>
+          <h1 className="font-heading text-2xl sm:text-3xl font-semibold text-text-primary tracking-tight">
+            Debate Index
+          </h1>
+          <p className="mt-1.5 text-sm text-text-secondary" style={{ letterSpacing: '0.02em' }}>
+            Take a position&nbsp;&nbsp;•&nbsp;&nbsp;See what others think&nbsp;&nbsp;•&nbsp;&nbsp;Track mind changes
+          </p>
         </div>
         {/* Subtle horizontal divider below header */}
         <HorizontalDivider spacing="lg" className="mt-8" />

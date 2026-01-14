@@ -22,15 +22,15 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
       <header className="lg:hidden fixed top-0 left-0 right-0 z-sticky bg-paper border-b border-hairline px-4 py-3 flex items-center justify-between">
         <button
           onClick={toggleDrawer}
-          className="p-2 -ml-2 text-text-secondary hover:text-text-primary"
+          className="p-2 -ml-2 text-text-secondary hover:text-text-primary transition-colors"
           aria-label="Open navigation"
         >
           <MenuIcon size="lg" decorative />
         </button>
-        <span className="font-heading text-lg">Debate</span>
+        <span className="font-heading text-lg font-semibold">Debate</span>
         <button
           onClick={toggleBottomSheet}
-          className="p-2 -mr-2 text-text-secondary hover:text-text-primary"
+          className="p-2 -mr-2 text-text-secondary hover:text-text-primary transition-colors"
           aria-label="Open market data"
         >
           <ChartIcon size="lg" decorative />
@@ -47,15 +47,15 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
 
       {/* Mobile Drawer (Left Rail) */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 bottom-0 z-modal w-rail bg-paper shadow-modal transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed top-0 left-0 bottom-0 z-modal w-72 bg-paper shadow-modal transform transition-transform duration-300 ease-in-out ${
           isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="p-4 border-b border-hairline flex items-center justify-between">
-          <span className="font-heading text-lg">Contents</span>
+          <span className="font-heading text-lg font-semibold">Contents</span>
           <button
             onClick={closeDrawer}
-            className="p-1 text-text-secondary hover:text-text-primary"
+            className="p-1 text-text-secondary hover:text-text-primary transition-colors"
             aria-label="Close navigation"
           >
             <XIcon size="md" decorative />
@@ -111,10 +111,10 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
         style={{ maxHeight: '70vh' }}
       >
         <div className="p-4 border-b border-hairline flex items-center justify-between">
-          <span className="font-heading text-lg">Market Data</span>
+          <span className="font-heading text-lg font-semibold">Market Data</span>
           <button
             onClick={closeBottomSheet}
-            className="p-1 text-text-secondary hover:text-text-primary"
+            className="p-1 text-text-secondary hover:text-text-primary transition-colors"
             aria-label="Close market data"
           >
             <XIcon size="md" decorative />

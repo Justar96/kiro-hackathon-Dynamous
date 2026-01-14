@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
+import { XIcon } from '../icons';
 
 const ONBOARDING_DISMISSED_KEY = 'debate-onboarding-dismissed';
 
@@ -91,9 +92,7 @@ export function OnboardingBanner({ onDismiss }: OnboardingBannerProps) {
           className="flex-shrink-0 p-1.5 text-gray-300 hover:text-gray-500 transition-colors rounded-full hover:bg-gray-100"
           aria-label="Dismiss welcome banner"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <XIcon size="sm" decorative />
         </button>
       </div>
     </section>

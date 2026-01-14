@@ -58,12 +58,12 @@ export function ArgumentBlock({
   
   return (
     <article 
-      className={`bg-white border border-divider/60 rounded-subtle overflow-hidden transition-all duration-500 ${
-        highlight ? 'ring-2 ring-accent/50 shadow-md animate-pulse-once' : ''
+      className={`bg-paper border border-hairline rounded-lg shadow-sm overflow-hidden transition-all duration-500 hover:shadow-md ${
+        highlight ? 'ring-2 ring-accent/50 shadow-lg animate-pulse-once' : ''
       }`}
     >
       {/* Byline Header - Author attribution in refined style (Req 5.4) */}
-      <div className="px-5 pt-4 pb-2 flex items-baseline justify-between gap-3">
+      <div className="px-5 pt-4 pb-2 flex items-baseline justify-between gap-3 bg-page-bg/20">
         <div className="flex items-baseline gap-2">
           {/* Side label with small-caps styling (Req 5.2) */}
           <span className={`small-caps text-xs font-medium ${sideConfig.color}`}>

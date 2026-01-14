@@ -145,29 +145,29 @@ This plan implements a centralized icon system using heroicons-animated for UI i
     - Review and replace any inline SVG icons
     - _Requirements: 5.4_
 
-- [ ] 9. Replace icons in index/route components
-  - [ ] 9.1 Update index.tsx route icons
+- [x] 9. Replace icons in index/route components
+  - [x] 9.1 Update index.tsx route icons
     - Replace plus icon with PlusIcon
     - Replace chart icon with ChartIcon
     - _Requirements: 2.4_
 
-  - [ ] 9.2 Update __root.tsx icons
+  - [x] 9.2 Update __root.tsx icons
     - Replace error warning icon with WarningIcon
     - _Requirements: 4.4_
 
-- [ ] 10. Checkpoint - Verify all replacements
+- [x] 10. Checkpoint - Verify all replacements
   - Ensure all tests pass, ask the user if questions arise.
   - Verify no inline SVG icons remain (except custom domain icons)
   - Test animations work correctly
   - Verify accessibility with screen reader
 
-- [ ] 11. Final cleanup and documentation
-  - [ ] 11.1 Remove unused inline icon definitions
+- [x] 11. Final cleanup and documentation
+  - [x] 11.1 Remove unused inline icon definitions
     - Clean up any remaining inline SVG function components
     - Ensure all icons import from components/icons
     - _Requirements: 1.1_
 
-  - [ ] 11.2 Update component index exports
+  - [x] 11.2 Update component index exports
     - Add icons to main components/index.ts if needed
     - _Requirements: 1.1_
 

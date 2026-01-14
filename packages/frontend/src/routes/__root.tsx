@@ -4,7 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useAuthModal, ProfileDropdown, useNewDebateModal } from '../components';
+import { useAuthModal, ProfileDropdown, useNewDebateModal, WarningIcon } from '../components';
 import { NewDebateModalContent } from '../components/debate/NewDebateModal';
 import { useSessionWatcher, useSession } from '../lib/useSession';
 import { useCurrentUser } from '../lib/hooks';
@@ -33,9 +33,7 @@ function QueryErrorFallback({ error, resetErrorBoundary }: QueryErrorFallbackPro
     <div className="min-h-[50vh] flex items-center justify-center bg-page-bg">
       <div className="bg-paper rounded-subtle shadow-sm p-8 text-center max-w-md mx-4">
         <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-          <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+          <WarningIcon size="lg" className="text-red-600" decorative />
         </div>
         <h2 className="font-heading text-heading-2 text-text-primary mb-2">
           Something went wrong
@@ -138,7 +136,7 @@ function Navigation({ sessionState }: NavigationProps) {
 
   return (
     <nav className="bg-paper border-b border-black/[0.08]" aria-label="Main navigation">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6">
+      <div className="max-w-[1320px] mx-auto px-6">
         <div className="flex items-center justify-between h-14">
           {/* Logo / Brand - Clean minimal style */}
           <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group min-h-[44px]">

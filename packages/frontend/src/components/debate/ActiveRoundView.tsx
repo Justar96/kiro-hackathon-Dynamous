@@ -14,6 +14,7 @@ import { ArgumentBlock, type Citation } from './ArgumentBlock';
 import { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
 import { SteelmanForm, SteelmanReview, SteelmanGateBadge } from './SteelmanGate';
 import { getRoundConfig } from './RoundSection.utils';
+import { ClockIcon, ChatBubbleIcon } from '../icons';
 
 export interface SteelmanData {
   status: 'none' | 'pending' | 'approved' | 'rejected';
@@ -94,9 +95,9 @@ function ArgumentPlaceholder({
       };
   
   return (
-    <article className="bg-white border border-dashed border-divider rounded-subtle overflow-hidden">
+    <article className="bg-paper border border-hairline rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
       {/* Byline Header - Matches ArgumentBlock structure (Req 5.2, 5.4) */}
-      <div className="px-5 pt-4 pb-2 flex items-baseline gap-2">
+      <div className="px-5 pt-4 pb-2 flex items-baseline gap-2 bg-page-bg/30">
         {/* Side label with small-caps styling */}
         <span className={`small-caps text-xs font-medium ${sideConfig.color}`}>
           {sideConfig.label}
@@ -108,22 +109,18 @@ function ArgumentPlaceholder({
       </div>
       
       {/* Card Body - Placeholder content with paper aesthetic */}
-      <div className="px-5 pb-5 pt-2">
+      <div className="px-5 pb-5 pt-3">
         <div className="flex items-center gap-3 text-text-tertiary">
           {isWaiting ? (
             <>
-              <svg className="w-4 h-4 animate-pulse flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <ClockIcon size="sm" className="animate-pulse flex-shrink-0" decorative />
               <p className="text-body-small leading-relaxed">
                 Waiting for argument to be submitted...
               </p>
             </>
           ) : (
             <>
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
+              <ChatBubbleIcon size="sm" className="flex-shrink-0" decorative />
               <p className="text-body-small leading-relaxed">
                 No argument has been submitted for this position.
               </p>

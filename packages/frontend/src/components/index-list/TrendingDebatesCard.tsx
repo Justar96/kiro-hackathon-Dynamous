@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { Debate, MarketPrice } from '@debate-platform/shared';
 import { useDebateLinkPrefetch } from '../../lib/usePrefetch';
+import { TrendingUpIcon } from '../icons';
 
 interface DebateWithMarket {
   debate: Debate;
@@ -145,9 +146,7 @@ function TrendingDebateCard({ item, rank }: TrendingDebateCardInnerProps) {
         {/* Bottom row: Mind changes */}
         <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
+            <TrendingUpIcon size="sm" className="text-accent" decorative />
             <span className="text-sm font-semibold text-accent">
               {mindChangeCount}
             </span>

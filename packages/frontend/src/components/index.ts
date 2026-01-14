@@ -204,3 +204,51 @@ export type {
   HorizontalDividerProps,
   DividerSpacing,
 } from './ui';
+
+// ============================================
+// Icons
+// ============================================
+export {
+  // Icon utilities
+  createIcon,
+  useReducedMotion,
+  BrandLogo,
+  // Navigation icons
+  MenuIcon,
+  XIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  // Action icons
+  PlusIcon,
+  CheckIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  // Status icons
+  WarningIcon,
+  SpinnerIcon,
+  InfoIcon,
+  ClockIcon,
+  ShieldCheckIcon,
+  // User icons
+  UserIcon,
+  ChatIcon,
+  SignOutIcon,
+  // Chart/data icons
+  ChartIcon,
+  LightBulbIcon,
+  TrendingUpIcon,
+  ChatBubbleIcon,
+  // Custom domain-specific icons
+  DeltaIcon,
+  MindChangeIcon,
+  ImpactIcon,
+  VoteIcon,
+} from './icons';
+export type {
+  IconSize,
+  AnimationTrigger,
+  IconProps,
+  BrandLogoProps,
+} from './icons';

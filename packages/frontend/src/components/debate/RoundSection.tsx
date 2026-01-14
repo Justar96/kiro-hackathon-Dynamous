@@ -14,6 +14,7 @@ import { RoundHistory } from './RoundHistory';
 import { ActiveRoundView } from './ActiveRoundView';
 import { HorizontalDivider } from '../ui/HorizontalDivider';
 import { getEnhancedRoundConfig } from './RoundSection.utils';
+import { CheckCircleIcon } from '../icons';
 
 export interface RoundSectionProps {
   debate: Debate;
@@ -254,18 +255,18 @@ export function RoundSection({
 
   // Variant-based styling (Requirements: 3.1, 3.2, 3.4)
   const containerClasses = variant === 'seamless'
-    ? 'bg-transparent overflow-hidden'
-    : 'rounded-lg border border-gray-100 bg-white shadow-sm overflow-hidden';
+    ? 'bg-paper border border-hairline rounded-lg shadow-sm overflow-hidden'
+    : 'rounded-lg border border-hairline bg-paper shadow-sm overflow-hidden';
 
   const progressBarClasses = variant === 'seamless'
-    ? 'bg-gray-50/30'
-    : 'bg-gray-50/50';
+    ? 'bg-page-bg/80 backdrop-blur-sm'
+    : 'bg-page-bg/50';
 
   // Sticky progress bar classes (Requirement 3.5)
   // When sticky, add solid background to prevent content showing through
   // Only sticky on large screens (lg:) to prevent overlaps on mobile
   const stickyClasses = sticky
-    ? `lg:sticky top-0 z-10 transition-shadow duration-200 ${isSticky ? 'shadow-md bg-white/95 backdrop-blur-sm' : ''}`
+    ? `lg:sticky top-0 z-10 transition-all duration-200 ${isSticky ? 'shadow-lg bg-paper/98 backdrop-blur-md border-b border-hairline' : ''}`
     : '';
 
   return (
@@ -280,12 +281,12 @@ export function RoundSection({
 
       {/* Integrated Progress Bar + Header (Requirements: 1.1, 1.2, 3.3, 3.4, 3.5, 4.4) */}
       <div 
-        className={`${progressBarClasses} ${variant === 'seamless' ? '' : 'border-b border-gray-100'} ${stickyClasses}`}
+        className={`${progressBarClasses} ${variant === 'seamless' ? '' : 'border-b border-hairline'} ${stickyClasses}`}
         id={`round-${viewedRound}-progress`}
         data-sticky={sticky && isSticky}
       >
-        <div className="p-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text-primary">Rounds</h2>
+        <div className="px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-heading font-semibold text-text-primary">Debate Rounds</h2>
           <RoundProgressIndicator
             currentRound={debate.currentRound}
             currentTurn={debate.currentTurn}
@@ -300,7 +301,7 @@ export function RoundSection({
       {/* Round Header - Positioned directly below progress bar (Requirements: 3.3, 3.4, 4.4, 7.1, 7.2, 7.3, 7.4, 7.5) */}
       <header 
         id={`round-${viewedRound}-header`}
-        className={`scroll-mt-16 ${variant === 'seamless' ? 'px-0 pt-3 pb-0' : 'px-5 pt-4 pb-0'}`}
+        className={`scroll-mt-16 ${variant === 'seamless' ? 'px-6 pt-5 pb-0' : 'px-5 pt-4 pb-0'}`}
       >
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-heading text-heading-2 text-text-primary leading-tight">
@@ -309,24 +310,17 @@ export function RoundSection({
           {/* Subtle completion indicator (Requirement 7.4) */}
           {isRoundComplete && (
             <span className="small-caps text-xs text-text-tertiary flex items-center gap-1.5 flex-shrink-0">
-              <svg 
-                className="w-3.5 h-3.5 text-green-500" 
-                fill="currentColor" 
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" 
-                  clipRule="evenodd" 
-                />
-              </svg>
+              <CheckCircleIcon 
+                size="sm" 
+                className="text-green-500" 
+                decorative
+              />
               Complete
             </span>
           )}
         </div>
         {/* Muted description text (Requirement 7.2) */}
-        <p className="text-body-small text-text-secondary mt-1 leading-relaxed">
+        <p className="text-body-small text-text-secondary mt-1.5 leading-relaxed">
           {roundConfig.description}
         </p>
         {/* Subtle divider below header - only in card mode (Requirement 3.4) */}
@@ -336,7 +330,7 @@ export function RoundSection({
       {/* Card Body - Round Content (Requirement 4.4 - smooth scroll targets) */}
       <div 
         id={`round-${viewedRound}-content`}
-        className={`scroll-mt-8 ${variant === 'seamless' ? 'px-0 pb-0 pt-4' : 'px-5 pb-5'}`}
+        className={`scroll-mt-8 ${variant === 'seamless' ? 'px-6 pb-6 pt-5' : 'px-5 pb-5'}`}
       >
         {viewedRound === debate.currentRound && completedRounds.length > 0 && (
           <div className="mb-4">

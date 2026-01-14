@@ -462,9 +462,6 @@ function DebateDossierContent({
       {/* Resolution Header */}
       <DossierHeader debate={debate} />
 
-      {/* Divider between header and rounds - seamless integration (Requirements: 3.1, 3.2) */}
-      <HorizontalDivider spacing="lg" />
-
       {/* Unified Debate Rounds Section */}
       {/* Requirements: 1.1, 3.1, 3.2, 3.5, 8.1, 8.2 - Single unified component with seamless integration and sticky progress */}
       <RoundSection
@@ -516,16 +513,16 @@ function OutcomeSection({ debate }: OutcomeSectionProps) {
   const isActive = debate.status === 'active';
 
   return (
-    <section id="outcome" className="mt-8 scroll-mt-8">
-      {/* Horizontal divider before outcome section - Requirements: 3.1, 3.2 */}
+    <section id="outcome" className="scroll-mt-8">
+      {/* Horizontal divider before outcome section */}
       <HorizontalDivider spacing="lg" />
       
-      <h2 className="font-heading text-heading-2 text-text-primary mb-3">
+      <h2 className="font-heading text-heading-2 text-text-primary mb-4">
         Outcome
       </h2>
       
       {isActive ? (
-        <div className="py-6 px-4 bg-gray-50 rounded-subtle text-center">
+        <div className="py-6 px-4 bg-page-bg border border-hairline rounded-subtle text-center">
           <p className="text-body text-text-secondary">
             This debate is still in progress.
           </p>
@@ -534,7 +531,7 @@ function OutcomeSection({ debate }: OutcomeSectionProps) {
           </p>
         </div>
       ) : (
-        <div className="py-6 px-4 bg-gray-50 rounded-subtle">
+        <div className="py-6 px-4 bg-page-bg border border-hairline rounded-subtle">
           <p className="text-body text-text-primary text-center">
             Debate concluded on {formatDate(debate.concludedAt)}
           </p>
@@ -549,9 +546,9 @@ function OutcomeSection({ debate }: OutcomeSectionProps) {
  */
 function DebateNotFound() {
   return (
-    <div className="min-h-screen bg-page-bg flex items-center justify-center">
-      <div className="bg-paper rounded-subtle shadow-sm p-8 text-center max-w-md">
-        <h2 className="font-heading text-heading-2 text-text-primary mb-2">
+    <div className="min-h-screen bg-page-bg flex items-center justify-center px-4">
+      <div className="bg-paper border border-hairline rounded-subtle shadow-sm p-8 text-center max-w-md w-full">
+        <h2 className="font-heading text-heading-2 text-text-primary mb-3">
           Debate not found
         </h2>
         <p className="text-body text-text-secondary mb-6">
@@ -559,7 +556,7 @@ function DebateNotFound() {
         </p>
         <Link
           to="/"
-          className="inline-block px-4 py-2 bg-accent text-white rounded-subtle hover:bg-accent-hover transition-colors"
+          className="inline-flex items-center justify-center px-4 py-2 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-hover transition-colors"
         >
           Back to Home
         </Link>
@@ -592,7 +589,7 @@ function DebateViewPending() {
         <main className="w-full max-w-paper flex-shrink-0 pb-6">
           <div className="paper-surface min-h-full px-10 py-6">
             {/* Header skeleton - Resolution */}
-            <div className="mb-4 pb-4 border-b border-gray-100">
+            <div className="mb-4 pb-4 border-b border-divider">
               <SkeletonText lines={1} width="6rem" className="mb-2" />
               <SkeletonHeading className="mb-2" width="75%" />
               <SkeletonText lines={1} width="12rem" />
@@ -605,14 +602,14 @@ function DebateViewPending() {
                 <Skeleton className="h-6 w-24" />
               </div>
               
-              <div className="flex gap-2 border-b border-gray-100 pb-2">
+              <div className="flex gap-2 border-b border-divider pb-2">
                 {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-10 w-24 rounded-subtle" />
+                  <Skeleton key={i} className="h-10 w-24 rounded-lg" />
                 ))}
               </div>
               
               <div className="pt-3">
-                <div className="mb-4 pb-2 border-b border-gray-100">
+                <div className="mb-4 pb-2 border-b border-divider">
                   <SkeletonHeading className="mb-2" width="12rem" height={28} />
                   <SkeletonText lines={1} width="16rem" />
                 </div>
@@ -625,9 +622,9 @@ function DebateViewPending() {
             </div>
 
             {/* Outcome section skeleton */}
-            <div className="mb-6 pt-6 border-t border-gray-100">
+            <div className="mb-6 pt-6 border-t border-divider">
               <SkeletonHeading className="mb-3" width="8rem" height={24} />
-              <Skeleton className="h-20 w-full rounded-subtle" />
+              <Skeleton className="h-20 w-full rounded-lg" />
             </div>
           </div>
         </main>
@@ -646,7 +643,7 @@ function DebateViewPending() {
             <Skeleton className="h-6 w-32" />
             <div className="flex gap-2">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-8 w-20 rounded-subtle" />
+                <Skeleton key={i} className="h-8 w-20 rounded-lg" />
               ))}
             </div>
             <Skeleton className="h-40 w-full" />
@@ -675,9 +672,9 @@ function DebateViewError() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-page-bg flex items-center justify-center">
-      <div className="bg-paper rounded-subtle shadow-sm p-8 text-center max-w-md mx-4">
-        <h2 className="font-heading text-heading-2 text-text-primary mb-2">
+    <div className="min-h-screen bg-page-bg flex items-center justify-center px-4">
+      <div className="bg-paper border border-hairline rounded-subtle shadow-sm p-8 text-center max-w-md w-full">
+        <h2 className="font-heading text-heading-2 text-text-primary mb-3">
           Unable to load debate
         </h2>
         <p className="text-body text-text-secondary mb-6">
@@ -686,13 +683,13 @@ function DebateViewError() {
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => router.invalidate()}
-            className="px-4 py-2 bg-accent text-white rounded-subtle hover:bg-accent-hover transition-colors"
+            className="px-4 py-2 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-hover transition-colors"
           >
             Try Again
           </button>
           <Link
             to="/"
-            className="px-4 py-2 border border-hairline text-text-primary rounded-subtle hover:bg-page-bg transition-colors"
+            className="px-4 py-2 border border-hairline text-text-primary text-sm font-medium rounded-lg hover:bg-page-bg transition-colors"
           >
             Back to Index
           </Link>

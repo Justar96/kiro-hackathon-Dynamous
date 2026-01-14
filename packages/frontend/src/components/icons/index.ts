@@ -55,6 +55,8 @@ import {
 import {
   ChartBarIcon as HeroChartBarIcon,
   LightBulbIcon as HeroLightBulbIcon,
+  ArrowTrendingUpIcon as HeroArrowTrendingUpIcon,
+  ChatBubbleLeftEllipsisIcon as HeroChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
 
 // Navigation icons
@@ -86,6 +88,8 @@ export const SignOutIcon = createIcon(HeroArrowRightOnRectangleIcon, 'SignOutIco
 // Chart/data icons
 export const ChartIcon = createIcon(HeroChartBarIcon, 'ChartIcon');
 export const LightBulbIcon = createIcon(HeroLightBulbIcon, 'LightBulbIcon');
+export const TrendingUpIcon = createIcon(HeroArrowTrendingUpIcon, 'TrendingUpIcon');
+export const ChatBubbleIcon = createIcon(HeroChatBubbleLeftEllipsisIcon, 'ChatBubbleIcon');
 
 // Custom domain-specific icons
 export { DeltaIcon } from './custom/DeltaIcon';
