@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as fc from 'fast-check';
 import { useIndexPolling, POLLING_CONSTANTS } from './useIndexPolling';
@@ -51,13 +51,13 @@ describe('useIndexPolling Property Tests', () => {
     // Mock addEventListener/removeEventListener for visibilitychange
     vi.spyOn(document, 'addEventListener').mockImplementation((event, handler) => {
       if (event === 'visibilitychange' && typeof handler === 'function') {
-        visibilityChangeListeners.push(handler);
+        visibilityChangeListeners.push(handler as () => void);
       }
     });
     
     vi.spyOn(document, 'removeEventListener').mockImplementation((event, handler) => {
       if (event === 'visibilitychange' && typeof handler === 'function') {
-        const index = visibilityChangeListeners.indexOf(handler);
+        const index = visibilityChangeListeners.indexOf(handler as () => void);
         if (index > -1) visibilityChangeListeners.splice(index, 1);
       }
     });

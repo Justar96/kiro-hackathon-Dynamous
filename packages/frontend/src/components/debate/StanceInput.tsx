@@ -77,10 +77,10 @@ export function StanceInput({
   // Locked Before stance display (compact with check)
   if (isPreStance && locked && initialValue) {
     return (
-      <div className="bg-paper rounded-lg border border-hairline p-4">
+      <div className="bg-paper rounded-lg border border-hairline p-4 animate-scaleIn">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-text-secondary">Before</h3>
-          <span className="text-support text-sm" aria-label="Stance locked">✓</span>
+          <span className="text-support text-sm animate-check" aria-label="Stance locked">✓</span>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex-1">
@@ -194,6 +194,10 @@ export function StanceInput({
             disabled={!isInteractive}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
             aria-label="Support percentage"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={supportValue}
+            aria-valuetext={`${supportValue}% support, ${opposeValue}% oppose`}
           />
           {/* Slider thumb indicator */}
           <div 
@@ -228,7 +232,8 @@ export function StanceInput({
           <label className="block text-sm font-medium text-text-primary mb-3">
             How confident are you in this position?
           </label>
-          <div className="grid grid-cols-5 gap-2">
+          {/* Responsive grid: 3 columns on mobile, 5 on desktop */}
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {CONFIDENCE_LEVELS.map((level) => (
               <button
                 key={level.value}
@@ -261,21 +266,30 @@ export function StanceInput({
       )}
 
       {/* Submit Button */}
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={!isInteractive}
-        className="w-full py-3 px-4 bg-accent text-white font-medium rounded-lg hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isSubmitting ? (
-          <span className="flex items-center justify-center gap-2">
-            <LoadingSpinner className="w-4 h-4" />
-            Submitting...
-          </span>
-        ) : (
-          isPreStance ? 'Lock In' : 'Record'
+      <div className="relative group">
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!isInteractive}
+          className="w-full py-3 px-4 bg-accent text-white font-medium rounded-lg hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? (
+            <span className="flex items-center justify-center gap-2">
+              <LoadingSpinner className="w-4 h-4" />
+              Submitting...
+            </span>
+          ) : (
+            isPreStance ? 'Lock In' : 'Record'
+          )}
+        </button>
+        {/* Tooltip for disabled state */}
+        {!isInteractive && !isSubmitting && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-text-primary text-white text-xs rounded shadow-elevated opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+            {isLocked ? 'Stance already recorded' : 'Select a position first'}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-text-primary" />
+          </div>
         )}
-      </button>
+      </div>
 
       {/* Info text */}
       {isPreStance && (

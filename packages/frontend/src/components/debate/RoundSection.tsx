@@ -114,7 +114,7 @@ export function RoundSection({
   citations,
   variant = 'card',
   sticky = false,
-  winnerSide,
+  // winnerSide is available in props for future use (Requirement 6.5)
   highlightArgumentId,
   onCitationHover,
   onMindChanged,
@@ -239,40 +239,10 @@ export function RoundSection({
 
   const isActiveRound = viewedRound === debate.currentRound && debate.status === 'active';
 
-  // Determine if it's the user's turn (for turn highlighting)
-  const isUserTurn = useMemo(() => {
-    return userSide !== undefined && 
-           debate.status === 'active' && 
-           debate.currentTurn === userSide;
-  }, [userSide, debate.status, debate.currentTurn]);
-
-  // Calculate argument counts per round for activity indicator (Requirement 6.4)
-  const argumentCounts = useMemo(() => {
-    const counts: { [roundNumber: number]: number } = {};
-    if (roundArguments) {
-      for (const [roundNum, args] of Object.entries(roundArguments)) {
-        let count = 0;
-        if (args.support) count++;
-        if (args.oppose) count++;
-        counts[Number(roundNum)] = count;
-      }
-    }
-    return counts;
-  }, [roundArguments]);
-
-  // Handler to scroll to submission form when CTA is clicked (Requirement 6.3)
-  const handleSubmitClick = useCallback(() => {
-    // Scroll to the argument submission form
-    const submissionForm = document.querySelector('[data-testid="argument-submission-form"]');
-    if (submissionForm) {
-      submissionForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Focus the textarea if available
-      const textarea = submissionForm.querySelector('textarea');
-      if (textarea) {
-        setTimeout(() => textarea.focus(), 300);
-      }
-    }
-  }, []);
+  // Note: The following functionality is planned for future implementation:
+  // - isUserTurn: Turn highlighting (Requirement 6.3) 
+  // - argumentCounts: Activity indicator per round (Requirement 6.4)
+  // - handleSubmitClick: Scroll to submission form when CTA is clicked (Requirement 6.3)
 
   if (!currentRoundData) {
     return <div className="p-4 text-text-tertiary text-center">Round data not available</div>;
@@ -293,8 +263,9 @@ export function RoundSection({
 
   // Sticky progress bar classes (Requirement 3.5)
   // When sticky, add solid background to prevent content showing through
+  // Only sticky on large screens (lg:) to prevent overlaps on mobile
   const stickyClasses = sticky
-    ? `sticky top-0 z-10 transition-shadow duration-200 ${isSticky ? 'shadow-md bg-white/95 backdrop-blur-sm' : ''}`
+    ? `lg:sticky top-0 z-10 transition-shadow duration-200 ${isSticky ? 'shadow-md bg-white/95 backdrop-blur-sm' : ''}`
     : '';
 
   return (

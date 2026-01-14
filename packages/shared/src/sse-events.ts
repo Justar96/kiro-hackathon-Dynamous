@@ -2,10 +2,10 @@
  * SSE Event Type Schemas
  * 
  * Defines interfaces for all SSE event types used in real-time updates.
- * Requirements: 1.3, 1.5
+ * Requirements: 1.3, 1.5, 3.2, 7.3
  */
 
-import type { Comment, Side, SteelmanStatus, ReactionCounts, RoundNumber } from './types';
+import type { Comment, Side, SteelmanStatus, ReactionCounts, RoundNumber, CommentReactionType, CommentReactionCounts, NotificationType } from './types';
 
 // ============================================================================
 // Base Event Interface
@@ -20,7 +20,7 @@ export interface SSEEventBase {
 // Event Type Definitions
 // ============================================================================
 
-export type SSEEventType = 'market' | 'comment' | 'argument' | 'reaction' | 'round' | 'steelman' | 'debate-join';
+export type SSEEventType = 'market' | 'comment' | 'argument' | 'reaction' | 'round' | 'steelman' | 'debate-join' | 'comment-reaction' | 'notification';
 
 // ============================================================================
 // Market Event (Requirement 2.6)
@@ -134,6 +134,40 @@ export interface DebateJoinEvent extends SSEEventBase {
 }
 
 // ============================================================================
+// Comment Reaction Event (Requirement 3.2)
+// ============================================================================
+
+export interface CommentReactionEventData {
+  commentId: string;
+  reactionType: CommentReactionType;
+  counts: CommentReactionCounts;
+}
+
+export interface CommentReactionEvent extends SSEEventBase {
+  event: 'comment-reaction';
+  data: CommentReactionEventData;
+}
+
+// ============================================================================
+// Notification Event (Requirement 7.3)
+// ============================================================================
+
+export interface NotificationEventData {
+  id: string;
+  type: NotificationType;
+  message: string;
+  debateId?: string;
+  createdAt: string;
+}
+
+export interface NotificationEvent {
+  event: 'notification';
+  timestamp: string;
+  userId: string;
+  data: NotificationEventData;
+}
+
+// ============================================================================
 // Union Type for All SSE Events
 // ============================================================================
 
@@ -144,7 +178,9 @@ export type SSEEvent =
   | ReactionEvent
   | RoundEvent
   | SteelmanEvent
-  | DebateJoinEvent;
+  | DebateJoinEvent
+  | CommentReactionEvent
+  | NotificationEvent;
 
 // ============================================================================
 // Type Guards
@@ -178,6 +214,14 @@ export function isDebateJoinEvent(event: SSEEvent): event is DebateJoinEvent {
   return event.event === 'debate-join';
 }
 
+export function isCommentReactionEvent(event: SSEEvent): event is CommentReactionEvent {
+  return event.event === 'comment-reaction';
+}
+
+export function isNotificationEvent(event: SSEEvent): event is NotificationEvent {
+  return event.event === 'notification';
+}
+
 // ============================================================================
 // Validation Helpers
 // ============================================================================
@@ -193,6 +237,8 @@ export const SSE_EVENT_REQUIRED_FIELDS: Record<SSEEventType, string[]> = {
   round: ['newRoundNumber', 'currentTurn', 'previousRoundCompleted'],
   steelman: ['steelmanId', 'roundNumber', 'status', 'authorId'],
   'debate-join': ['opposeDebaterId', 'opposeDebaterUsername'],
+  'comment-reaction': ['commentId', 'reactionType', 'counts'],
+  notification: ['id', 'type', 'message', 'createdAt'],
 };
 
 /**

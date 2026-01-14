@@ -7,12 +7,12 @@
  * Requirements: 5.3, 5.4, 5.6
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSSE } from './useSSE';
 import { queryKeys } from './queries';
 import { useToast } from '../components/common/Toast';
-import type { RoundEventData, Side, RoundNumber, Debate, Round, Argument } from '@debate-platform/shared';
+import type { RoundEventData, Debate, Round, Argument } from '@debate-platform/shared';
 
 interface DebateDetailResponse {
   debate: Debate;

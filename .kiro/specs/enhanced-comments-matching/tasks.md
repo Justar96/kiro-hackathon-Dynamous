@@ -77,124 +77,124 @@ This plan implements the enhanced comment system (threading, reactions, real-tim
     - **Property 5: Comment Reaction Count Consistency**
     - **Validates: Requirements 2.3, 2.4**
 
-- [ ] 6. Checkpoint - Comment reactions complete
+- [x] 6. Checkpoint - Comment reactions complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Broadcast module extensions
-  - [ ] 7.1 Add comment-reaction event type
+- [x] 7. Broadcast module extensions
+  - [x] 7.1 Add comment-reaction event type
     - Extend EventType and BroadcastPayload
     - Include commentId, reactionType, counts
     - _Requirements: 3.2_
-  - [ ] 7.2 Add notification event type
+  - [x] 7.2 Add notification event type
     - Extend EventType and BroadcastPayload
     - Include id, type, message, debateId, createdAt
     - _Requirements: 7.3_
-  - [ ] 7.3 Implement user-specific connections
+  - [x] 7.3 Implement user-specific connections
     - Add userConnections Map
     - Implement addUserConnection, removeUserConnection
     - Implement broadcastToUser function
     - _Requirements: 7.1, 7.2_
-  - [ ] 7.4 Write property test for broadcast payload completeness
+  - [x] 7.4 Write property test for broadcast payload completeness
     - **Property 12: Broadcast Payload Completeness**
     - **Validates: Requirements 3.4**
-  - [ ] 7.5 Write property test for comment reaction broadcast
+  - [x] 7.5 Write property test for comment reaction broadcast
     - **Property 13: Comment Reaction Broadcast**
     - **Validates: Requirements 3.2**
 
-- [ ] 8. Checkpoint - Broadcast extensions complete
+- [x] 8. Checkpoint - Broadcast extensions complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 9. Matching service implementation
-  - [ ] 9.1 Create matching.service.ts with getOpponentQueue
+- [x] 9. Matching service implementation
+  - [x] 9.1 Create matching.service.ts with getOpponentQueue
     - Query debates without opponents, status active
     - Order by createdAt ascending (FIFO)
     - Include creator info (username, reputation)
     - _Requirements: 4.1, 4.3_
-  - [ ] 9.2 Implement queue filtering
+  - [x] 9.2 Implement queue filtering
     - Filter by keywords in resolution
     - Filter by max reputation difference
     - _Requirements: 4.5_
-  - [ ] 9.3 Implement findMatches method
+  - [x] 9.3 Implement findMatches method
     - Exclude user's own debates
     - Prioritize by reputation similarity (within 20 points first)
     - Return oldest first within priority groups
     - _Requirements: 5.1, 5.2, 5.3, 5.5_
-  - [ ] 9.4 Implement queue lifecycle hooks
+  - [x] 9.4 Implement queue lifecycle hooks
     - onDebateCreated: add to queue if no opponent
     - onOpponentJoined: remove from queue
     - onDebateConcluded: remove from queue
     - _Requirements: 4.1, 4.2, 4.4_
-  - [ ] 9.5 Write property test for queue membership invariant
+  - [x] 9.5 Write property test for queue membership invariant
     - **Property 6: Queue Membership Invariant**
     - **Validates: Requirements 4.1, 4.2, 4.4**
-  - [ ] 9.6 Write property test for queue FIFO ordering
+  - [x] 9.6 Write property test for queue FIFO ordering
     - **Property 7: Queue FIFO Ordering**
     - **Validates: Requirements 4.3, 5.5**
-  - [ ] 9.7 Write property test for self-exclusion
+  - [x] 9.7 Write property test for self-exclusion
     - **Property 8: Self-Exclusion from Matches**
     - **Validates: Requirements 5.3**
-  - [ ] 9.8 Write property test for reputation prioritization
+  - [x] 9.8 Write property test for reputation prioritization
     - **Property 9: Reputation-Based Match Prioritization**
     - **Validates: Requirements 5.2**
 
-- [ ] 10. Checkpoint - Matching service complete
+- [x] 10. Checkpoint - Matching service complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. Notification service implementation
-  - [ ] 11.1 Create notification.service.ts with createNotification
+- [x] 11. Notification service implementation
+  - [x] 11.1 Create notification.service.ts with createNotification
     - Store notification with all required fields
     - Broadcast to user if connected
     - _Requirements: 6.1, 6.2, 7.1_
-  - [ ] 11.2 Implement getUserNotifications
+  - [x] 11.2 Implement getUserNotifications
     - Return unread first, then by createdAt descending
     - Support unreadOnly filter
     - _Requirements: 6.3_
-  - [ ] 11.3 Implement markAsRead and markAllAsRead
+  - [x] 11.3 Implement markAsRead and markAllAsRead
     - Update read status
     - Return affected count
     - _Requirements: 6.4_
-  - [ ] 11.4 Implement getUnreadCount
+  - [x] 11.4 Implement getUnreadCount
     - Return count of unread notifications for user
     - _Requirements: 6.3_
-  - [ ] 11.5 Write property test for notification storage completeness
+  - [x] 11.5 Write property test for notification storage completeness
     - **Property 10: Notification Storage Completeness**
     - **Validates: Requirements 6.2, 7.4**
-  - [ ] 11.6 Write property test for notification ordering
+  - [x] 11.6 Write property test for notification ordering
     - **Property 11: Notification Ordering**
     - **Validates: Requirements 6.3**
 
-- [ ] 12. Checkpoint - Notification service complete
+- [x] 12. Checkpoint - Notification service complete
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 13. API endpoints integration
-  - [ ] 13.1 Add comment threading endpoint
+- [x] 13. API endpoints integration
+  - [x] 13.1 Add comment threading endpoint
     - GET /api/debates/:id/comments/tree - returns threaded comments
     - _Requirements: 1.1, 1.2, 1.3_
-  - [ ] 13.2 Add comment reaction endpoints
+  - [x] 13.2 Add comment reaction endpoints
     - POST /api/comments/:id/react - add reaction
     - DELETE /api/comments/:id/react - remove reaction
     - GET /api/comments/:id/reactions - get counts and user reactions
     - Broadcast comment-reaction events
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.2_
-  - [ ] 13.3 Add matching endpoints
+  - [x] 13.3 Add matching endpoints
     - GET /api/matching/queue - list opponent queue
     - GET /api/matching/find - find matches for current user
     - _Requirements: 4.1, 4.3, 5.1_
-  - [ ] 13.4 Add notification endpoints
+  - [x] 13.4 Add notification endpoints
     - GET /api/notifications - get user notifications
     - POST /api/notifications/:id/read - mark as read
     - POST /api/notifications/read-all - mark all as read
     - GET /api/notifications/count - get unread count
     - _Requirements: 6.3, 6.4_
-  - [ ] 13.5 Add user SSE stream for notifications
+  - [x] 13.5 Add user SSE stream for notifications
     - GET /api/users/stream - SSE stream for user notifications
     - _Requirements: 7.1, 7.2_
-  - [ ] 13.6 Wire matching hooks to debate service
+  - [x] 13.6 Wire matching hooks to debate service
     - Call matching service on debate create/join/conclude
     - Create notifications on opponent join
     - _Requirements: 4.1, 4.2, 4.4, 6.1_
 
-- [ ] 14. Final checkpoint - All features complete
+- [x] 14. Final checkpoint - All features complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

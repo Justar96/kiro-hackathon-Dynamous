@@ -259,6 +259,7 @@ function NewDebateModalContent({ isOpen, onClose }: NewDebateModalContentProps) 
               rows={3}
               disabled={isSubmitting}
               ref={form.fieldRefs.resolution}
+              autoFocus
             />
             
             {/* Topic suggestions toggle with hover animation */}

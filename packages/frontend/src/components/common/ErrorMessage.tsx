@@ -1,3 +1,5 @@
+import { XCircleIcon } from '../icons';
+
 export type ErrorMessageVariant = 'inline' | 'block' | 'toast';
 
 export interface ErrorMessageProps {
@@ -97,7 +99,7 @@ function InlineErrorMessage({ message, onRetry, retryText, className }: ErrorVar
       role="alert"
       aria-live="polite"
     >
-      <ErrorIcon size="sm" />
+      <XCircleIcon size="sm" className="text-oppose flex-shrink-0" decorative />
       <span className="text-body-small">{message}</span>
       {onRetry && (
         <button
@@ -124,7 +126,7 @@ function BlockErrorMessage({ message, onRetry, retryText, className }: ErrorVari
       aria-live="polite"
     >
       <div className="flex items-start gap-3">
-        <ErrorIcon size="md" />
+        <XCircleIcon size="md" className="text-oppose flex-shrink-0" decorative />
         <div className="flex-1">
           <p className="text-body-small text-oppose mb-1">{message}</p>
           {onRetry && (
@@ -158,7 +160,7 @@ function ToastErrorMessage({ message, onRetry, retryText, className }: ErrorVari
       aria-live="assertive"
     >
       <span className="flex-shrink-0 mt-0.5 text-oppose">
-        <ErrorIcon size="md" />
+        <XCircleIcon size="md" decorative />
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm leading-relaxed">{message}</p>
@@ -173,30 +175,6 @@ function ToastErrorMessage({ message, onRetry, retryText, className }: ErrorVari
         )}
       </div>
     </div>
-  );
-}
-
-/**
- * Error icon component
- */
-function ErrorIcon({ size = 'md' }: { size?: 'sm' | 'md' }) {
-  const sizeClasses = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5';
-  
-  return (
-    <svg 
-      className={`${sizeClasses} text-oppose flex-shrink-0`} 
-      fill="none" 
-      stroke="currentColor" 
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        strokeWidth={2} 
-        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-      />
-    </svg>
   );
 }
 

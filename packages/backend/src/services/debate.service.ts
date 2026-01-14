@@ -324,6 +324,10 @@ export class DebateService {
       })
       .where(eq(debates.id, debateId));
 
+    // Wire matching hook: debate concluded (Requirement 4.4)
+    const { matchingService } = await import('./matching.service');
+    await matchingService.onDebateConcluded(debateId);
+
     // Broadcast debate concluded event (Requirement 5.5)
     const { broadcastRoundUpdate } = await import('../broadcast');
     broadcastRoundUpdate(

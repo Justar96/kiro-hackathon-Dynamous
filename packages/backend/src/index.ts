@@ -13,17 +13,23 @@ import {
   commentService,
   userService,
   steelmanService,
+  matchingService,
+  notificationService,
 } from './services';
 
 import {
   broadcastDebateEvent,
   broadcastMarketUpdate as broadcastMarket,
   broadcastCommentUpdate as broadcastComment,
+  broadcastCommentReaction,
   addConnection,
   removeConnection,
   getConnectionCount,
   startConnectionCleanup,
   updateConnectionHeartbeat,
+  addUserConnection,
+  removeUserConnection,
+  updateUserConnectionHeartbeat,
 } from './broadcast';
 
 import type { 
@@ -221,6 +227,9 @@ app.post('/api/debates', authMiddleware, async (c) => {
   
   const result = await debateService.createDebate(input);
   
+  // Wire matching hook: debate created without opponent (Requirement 4.1)
+  await matchingService.onDebateCreated(result.debate);
+  
   return c.json(result, 201);
 });
 
@@ -350,15 +359,34 @@ app.post('/api/debates/:id/join', authMiddleware, async (c) => {
   const debateId = c.req.param('id');
   const userId = c.get('userId');
   
+  // Get the debate before joining to get the creator ID
+  const debateBefore = await debateService.getDebateById(debateId);
+  if (!debateBefore) {
+    throw new HTTPException(404, { message: 'Debate not found' });
+  }
+  
   const debate = await debateService.joinDebateAsOppose(debateId, userId!);
   
-  // Get the joining user's username for broadcast (Requirement 11.1, 11.2)
+  // Wire matching hook: opponent joined (Requirement 4.2)
+  await matchingService.onOpponentJoined(debateId);
+  
+  // Get the joining user's username for broadcast and notification
   const joiningUser = await userService.getUserById(userId!);
+  
+  // Broadcast debate-join event (Requirement 11.1, 11.2)
   if (joiningUser) {
     broadcastDebateEvent(debateId, 'debate-join', {
       debateId,
       opposeDebaterId: userId!,
       opposeDebaterUsername: joiningUser.username,
+    });
+    
+    // Create notification for debate creator (Requirement 6.1)
+    await notificationService.createNotification({
+      userId: debateBefore.supportDebaterId,
+      type: 'opponent_joined',
+      message: `${joiningUser.username} has joined your debate as the opposing side`,
+      debateId,
     });
   }
   
@@ -804,6 +832,245 @@ app.get('/api/debates/:id/comments', async (c) => {
   const comments = await commentService.getDebateComments(debateId);
   
   return c.json({ comments });
+});
+
+// GET /api/debates/:id/comments/tree - Get threaded comments for a debate
+// Requirements: 1.1, 1.2, 1.3 - Return comments with parent-child relationships, reply counts, hierarchical structure
+app.get('/api/debates/:id/comments/tree', async (c) => {
+  const debateId = c.req.param('id');
+  const includeDeleted = c.req.query('includeDeleted') === 'true';
+  const maxDepthParam = c.req.query('maxDepth');
+  const maxDepth = maxDepthParam ? parseInt(maxDepthParam, 10) : undefined;
+  
+  // Check if debate exists
+  const debate = await debateService.getDebateById(debateId);
+  if (!debate) {
+    throw new HTTPException(404, { message: 'Debate not found' });
+  }
+  
+  const tree = await commentService.getCommentTree(debateId, {
+    includeDeleted,
+    maxDepth: maxDepth && !isNaN(maxDepth) ? maxDepth : undefined,
+  });
+  
+  return c.json({ comments: tree });
+});
+
+// ============================================================================
+// Comment Reaction API Routes
+// Requirements: 2.1, 2.2, 2.3, 2.4, 3.2
+// ============================================================================
+
+// POST /api/comments/:id/react - Add reaction to comment (requires auth)
+// Requirements: 2.1, 2.2 - Store reaction, reject duplicates
+app.post('/api/comments/:id/react', authMiddleware, async (c) => {
+  const commentId = c.req.param('id');
+  const userId = c.get('userId');
+  const body = await c.req.json();
+  
+  const reaction = await reactionService.addCommentReaction({
+    commentId,
+    userId: userId!,
+    type: body.type,
+  });
+  
+  // Get the comment to find its debate for broadcast (Requirement 3.2)
+  const comment = await commentService.getComment(commentId);
+  if (comment) {
+    const counts = await reactionService.getCommentReactionCounts(commentId);
+    broadcastCommentReaction(comment.debateId, commentId, body.type, counts);
+  }
+  
+  return c.json({ reaction }, 201);
+});
+
+// DELETE /api/comments/:id/react - Remove reaction from comment (requires auth)
+// Requirement 2.4 - Delete reaction and update counts
+app.delete('/api/comments/:id/react', authMiddleware, async (c) => {
+  const commentId = c.req.param('id');
+  const userId = c.get('userId');
+  const body = await c.req.json();
+  
+  const removed = await reactionService.removeCommentReaction(commentId, userId!, body.type);
+  
+  if (!removed) {
+    throw new HTTPException(404, { message: 'Reaction not found' });
+  }
+  
+  // Get the comment to find its debate for broadcast (Requirement 3.2)
+  const comment = await commentService.getComment(commentId);
+  if (comment) {
+    const counts = await reactionService.getCommentReactionCounts(commentId);
+    broadcastCommentReaction(comment.debateId, commentId, body.type, counts);
+  }
+  
+  return c.json({ success: true });
+});
+
+// GET /api/comments/:id/reactions - Get reactions for a comment
+// Requirement 2.3 - Return counts for each reaction type and user reactions
+app.get('/api/comments/:id/reactions', optionalAuthMiddleware, async (c) => {
+  const commentId = c.req.param('id');
+  const userId = c.get('userId');
+  
+  const counts = await reactionService.getCommentReactionCounts(commentId);
+  
+  let userReactions = null;
+  if (userId) {
+    userReactions = await reactionService.getUserCommentReactions(commentId, userId);
+  }
+  
+  return c.json({ counts, userReactions });
+});
+
+// ============================================================================
+// Matching API Routes
+// Requirements: 4.1, 4.3, 5.1
+// ============================================================================
+
+// GET /api/matching/queue - List opponent queue
+// Requirements: 4.1, 4.3 - Return active debates without opponents, ordered by creation time
+app.get('/api/matching/queue', optionalAuthMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const keywords = c.req.query('keywords');
+  const maxReputationDiff = c.req.query('maxReputationDiff');
+  
+  const filter: { keywords?: string[]; maxReputationDiff?: number; userId?: string } = {};
+  
+  if (keywords) {
+    filter.keywords = keywords.split(',').map(k => k.trim()).filter(k => k.length > 0);
+  }
+  
+  if (maxReputationDiff && userId) {
+    const diff = parseInt(maxReputationDiff, 10);
+    if (!isNaN(diff)) {
+      filter.maxReputationDiff = diff;
+      filter.userId = userId;
+    }
+  }
+  
+  const queue = await matchingService.getOpponentQueue(Object.keys(filter).length > 0 ? filter : undefined);
+  
+  return c.json({ queue });
+});
+
+// GET /api/matching/find - Find matches for current user
+// Requirement 5.1 - Find debates where user can take opposing side
+app.get('/api/matching/find', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const limitParam = c.req.query('limit');
+  const limit = limitParam ? parseInt(limitParam, 10) : 10;
+  
+  const matches = await matchingService.findMatches(userId!, Math.min(limit, 50));
+  
+  return c.json({ matches });
+});
+
+// ============================================================================
+// Notification API Routes
+// Requirements: 6.3, 6.4
+// ============================================================================
+
+// GET /api/notifications - Get user notifications
+// Requirement 6.3 - Return unread notifications first, then by creation time
+app.get('/api/notifications', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const unreadOnly = c.req.query('unreadOnly') === 'true';
+  
+  const notifications = await notificationService.getUserNotifications(userId!, unreadOnly);
+  
+  return c.json({ notifications });
+});
+
+// GET /api/notifications/count - Get unread notification count
+// Requirement 6.3 - Support getting unread count
+app.get('/api/notifications/count', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  
+  const count = await notificationService.getUnreadCount(userId!);
+  
+  return c.json({ count });
+});
+
+// POST /api/notifications/:id/read - Mark notification as read
+// Requirement 6.4 - Update read status
+app.post('/api/notifications/:id/read', authMiddleware, async (c) => {
+  const notificationId = c.req.param('id');
+  
+  const success = await notificationService.markAsRead(notificationId);
+  
+  if (!success) {
+    throw new HTTPException(404, { message: 'Notification not found or already read' });
+  }
+  
+  return c.json({ success: true });
+});
+
+// POST /api/notifications/read-all - Mark all notifications as read
+// Requirement 6.4 - Update read status for all
+app.post('/api/notifications/read-all', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  
+  const count = await notificationService.markAllAsRead(userId!);
+  
+  return c.json({ success: true, count });
+});
+
+// ============================================================================
+// User SSE Stream for Notifications
+// Requirements: 7.1, 7.2
+// ============================================================================
+
+// GET /api/users/stream - SSE stream for user notifications
+// Requirements: 7.1, 7.2 - User-specific notification channel
+app.get('/api/users/stream', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  
+  return streamSSE(c, async (stream) => {
+    // Create send function for this connection
+    const sendData = (data: string) => {
+      stream.writeSSE({ data });
+    };
+    
+    // Add this connection to the user's notification channel
+    addUserConnection(userId!, sendData);
+    
+    // Send initial connection confirmation
+    await stream.writeSSE({
+      event: 'connected',
+      data: JSON.stringify({ userId, timestamp: new Date().toISOString() }),
+    });
+    
+    // Send unread notification count on connect
+    const unreadCount = await notificationService.getUnreadCount(userId!);
+    await stream.writeSSE({
+      event: 'unread-count',
+      data: JSON.stringify({ count: unreadCount }),
+    });
+    
+    // Keep connection alive with periodic heartbeats
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        await stream.writeSSE({ event: 'heartbeat', data: 'ping' });
+        updateUserConnectionHeartbeat(sendData);
+      } catch {
+        // Connection closed
+        clearInterval(heartbeatInterval);
+        removeUserConnection(userId!, sendData);
+      }
+    }, 30000);
+    
+    // Clean up on close
+    stream.onAbort(() => {
+      clearInterval(heartbeatInterval);
+      removeUserConnection(userId!, sendData);
+    });
+    
+    // Keep the stream open
+    while (true) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  });
 });
 
 // ============================================================================

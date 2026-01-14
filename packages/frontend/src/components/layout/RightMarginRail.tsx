@@ -4,6 +4,7 @@ import { AudienceStats } from '../debate/AudienceStats';
 import { SectionAnchorNav, DEFAULT_DEBATE_ANCHORS } from './SectionAnchorNav';
 import type { SectionAnchor } from './SectionAnchorNav';
 import { HorizontalDivider } from '../ui/HorizontalDivider';
+import { Skeleton } from '../common/Skeleton';
 
 interface RightMarginRailProps {
   debateId: string;
@@ -26,6 +27,8 @@ interface RightMarginRailProps {
   activeSection?: string;
   /** Callback when active section changes via scroll */
   onActiveSectionChange?: (sectionId: string) => void;
+  /** Whether market data is still loading */
+  isLoadingMarketData?: boolean;
 }
 
 export function RightMarginRail({
@@ -44,6 +47,7 @@ export function RightMarginRail({
   sectionAnchors = DEFAULT_DEBATE_ANCHORS,
   activeSection,
   onActiveSectionChange,
+  isLoadingMarketData = false,
 }: RightMarginRailProps) {
   const [beforeValue, setBeforeValue] = useState(userStance?.before ?? 50);
   const [afterValue, setAfterValue] = useState(userStance?.after ?? 50);
@@ -101,7 +105,12 @@ export function RightMarginRail({
       </div>
 
       {/* Sparkline Chart */}
-      {dataPoints.length > 0 && (
+      {isLoadingMarketData ? (
+        <div className="space-y-1.5">
+          <h3 className="label-text">Trend</h3>
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ) : dataPoints.length > 0 && (
         <div className="space-y-1.5">
           <h3 className="label-text">Trend</h3>
           <MiniSparkline dataPoints={dataPoints} />
@@ -258,9 +267,21 @@ function MiniSparkline({ dataPoints }: { dataPoints: MarketDataPoint[] }) {
     return `${x},${y}`;
   }).join(' ');
 
+  // Calculate trend for accessibility description
+  const latestValue = values[values.length - 1];
+  const firstValue = values[0];
+  const trendDirection = latestValue >= firstValue ? 'upward' : 'downward';
+  const trendPercent = Math.abs(latestValue - firstValue).toFixed(1);
+
   // Use muted teal (#2D8A6E) from the paper-polish color palette
   return (
-    <svg width={width} height={height} className="w-full">
+    <svg 
+      width={width} 
+      height={height} 
+      className="w-full"
+      role="img"
+      aria-label={`Price history sparkline showing ${trendDirection} trend of ${trendPercent}% over ${values.length} data points`}
+    >
       <polyline
         points={points}
         fill="none"

@@ -10,31 +10,7 @@ import type { RoundHistoryProps, RoundSummary } from './RoundSection.types';
 import { generateExcerpt, getRoundLabel } from './RoundSection.utils';
 import { BottomSheet } from '../common/BottomSheet';
 import { useIsMobile } from '../common/hooks';
-
-// Inline SVG icons
-function ChevronDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-  );
-}
-
-function ChevronUpIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-    </svg>
-  );
-}
-
-function CheckCircleIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
+import { ChevronDownIcon, ChevronUpIcon, CheckCircleIcon } from '../icons';
 
 /**
  * Collapsible history view of completed rounds.
@@ -104,12 +80,12 @@ export function RoundHistory({
           aria-controls="round-history-sheet"
         >
           <div className="flex items-center gap-2">
-            <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+            <CheckCircleIcon size="sm" className="text-green-500 flex-shrink-0" animate="mount" />
             <span className="text-sm font-medium text-text-primary">
               Previous ({completedRounds.length})
             </span>
           </div>
-          <ChevronUpIcon className="w-4 h-4 text-text-tertiary" />
+          <ChevronUpIcon size="sm" className="text-text-tertiary" />
         </button>
 
         {/* Bottom sheet for expanded content */}
@@ -125,7 +101,7 @@ export function RoundHistory({
               id="round-history-title" 
               className="text-lg font-medium text-text-primary mb-4 flex items-center gap-2"
             >
-              <CheckCircleIcon className="w-5 h-5 text-green-500" />
+              <CheckCircleIcon size="md" className="text-green-500" animate="mount" />
               Previous Rounds
             </h3>
             {historyContent}
@@ -146,15 +122,15 @@ export function RoundHistory({
         aria-controls="round-history-content"
       >
         <div className="flex items-center gap-2">
-          <CheckCircleIcon className="w-4 h-4 text-green-500" />
+          <CheckCircleIcon size="sm" className="text-green-500" animate="mount" />
           <span className="text-body font-medium text-text-primary">
             Previous Rounds ({completedRounds.length})
           </span>
         </div>
         {expanded ? (
-          <ChevronUpIcon className="w-5 h-5 text-text-tertiary" />
+          <ChevronUpIcon size="md" className="text-text-tertiary" animate="state-change" />
         ) : (
-          <ChevronDownIcon className="w-5 h-5 text-text-tertiary" />
+          <ChevronDownIcon size="md" className="text-text-tertiary" animate="state-change" />
         )}
       </button>
 
@@ -197,7 +173,7 @@ function RoundSummaryCard({
           {getRoundLabel(summary.roundType)}
         </span>
         <span className="text-xs sm:text-label text-green-600 flex items-center gap-1">
-          <CheckCircleIcon className="w-3 h-3" />
+          <CheckCircleIcon size="xs" className="text-green-600" animate="mount" />
           <span className="hidden sm:inline">Completed</span>
         </span>
       </div>

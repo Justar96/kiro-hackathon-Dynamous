@@ -871,7 +871,7 @@ describe('Property 9: Submission CTA Visibility', () => {
   });
 
   it('submission CTA is not visible when viewing history', () => {
-    fc.assert(fc.property(roundNumberArb, sideArb, (currentRound, currentTurn) => {
+    fc.assert(fc.property(roundNumberArb, sideArb, (_currentRound, currentTurn) => {
       cleanup();
       
       // Create rounds where round 1 is completed

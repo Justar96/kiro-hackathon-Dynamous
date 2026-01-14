@@ -1,6 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { testDb, closeTestDb } from './test-db';
-import * as schema from './schema';
+import { db } from './index';
 
 /**
  * Setup test database - runs migrations and cleans tables
@@ -16,20 +15,28 @@ export async function setupTestDb() {
 export async function cleanTestDb() {
   // Delete in order respecting foreign key constraints
   const tables = [
+    'notifications',
     'comment_reactions',
-    'comment_matches', 
     'comments',
-    'votes',
-    'debate_participants',
+    'steelmans',
+    'stance_spikes',
+    'market_data_points',
+    'reactions',
+    'stances',
+    'arguments',
+    'rounds',
     'debates',
     'users',
   ];
 
   for (const table of tables) {
     try {
-      await testDb.execute(sql.raw(`DELETE FROM ${table}`));
-    } catch (e) {
-      // Table might not exist yet, ignore
+      await db.execute(sql.raw(`DELETE FROM ${table}`));
+    } catch (e: any) {
+      // Only warn on non-existence errors, ignore them
+      if (e?.code !== '42P01') {
+        console.warn(`Could not clean table ${table}:`, e?.message || e);
+      }
     }
   }
 }
@@ -38,7 +45,5 @@ export async function cleanTestDb() {
  * Teardown test database connection
  */
 export async function teardownTestDb() {
-  await closeTestDb();
+  // Connection is handled by db instance
 }
-
-export { testDb };

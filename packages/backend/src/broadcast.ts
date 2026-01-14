@@ -2,16 +2,16 @@
  * Unified Broadcast Module for SSE Events
  * 
  * Centralizes all SSE broadcast functionality for the debate platform.
- * Requirements: 1.1, 1.2, 1.4
+ * Requirements: 1.1, 1.2, 1.4, 3.2, 7.1, 7.2, 7.3
  */
 
-import type { MarketPrice, Comment, Side, SteelmanStatus, ReactionCounts } from '@debate-platform/shared';
+import type { MarketPrice, Comment, Side, SteelmanStatus, ReactionCounts, CommentReactionType, CommentReactionCounts, NotificationType } from '@debate-platform/shared';
 
 // ============================================================================
 // Event Type Definitions
 // ============================================================================
 
-export type EventType = 'market' | 'comment' | 'argument' | 'reaction' | 'round' | 'steelman' | 'debate-join';
+export type EventType = 'market' | 'comment' | 'argument' | 'reaction' | 'round' | 'steelman' | 'debate-join' | 'comment-reaction' | 'notification';
 
 export interface BroadcastPayload {
   market: MarketPrice;
@@ -48,6 +48,18 @@ export interface BroadcastPayload {
     debateId: string;
     opposeDebaterId: string;
     opposeDebaterUsername: string;
+  };
+  'comment-reaction': {
+    commentId: string;
+    reactionType: CommentReactionType;
+    counts: CommentReactionCounts;
+  };
+  notification: {
+    id: string;
+    type: NotificationType;
+    message: string;
+    debateId?: string;
+    createdAt: string;
   };
 }
 
@@ -290,4 +302,194 @@ export function broadcastRoundUpdate(
  */
 export function getDebateConnections(): Map<string, Set<(data: string) => void>> {
   return debateConnections;
+}
+
+// ============================================================================
+// User-Specific Connection Management
+// Requirements: 7.1, 7.2
+// ============================================================================
+
+/**
+ * Store active SSE connections per user for notifications
+ * Map<userId, Set<sendFunction>>
+ */
+const userConnections = new Map<string, Set<(data: string) => void>>();
+
+/**
+ * Track last heartbeat time for user connections
+ */
+const userConnectionHeartbeats = new Map<(data: string) => void, number>();
+
+/**
+ * Add a connection to a user's notification channel
+ * Requirement 7.2: Support user-specific notification channels
+ */
+export function addUserConnection(userId: string, sendFn: (data: string) => void): void {
+  if (!userConnections.has(userId)) {
+    userConnections.set(userId, new Set());
+  }
+  userConnections.get(userId)!.add(sendFn);
+  // Record initial heartbeat time
+  userConnectionHeartbeats.set(sendFn, Date.now());
+}
+
+/**
+ * Remove a connection from a user's notification channel
+ */
+export function removeUserConnection(userId: string, sendFn: (data: string) => void): void {
+  const connections = userConnections.get(userId);
+  if (connections) {
+    connections.delete(sendFn);
+    if (connections.size === 0) {
+      userConnections.delete(userId);
+    }
+  }
+  // Clean up heartbeat tracking
+  userConnectionHeartbeats.delete(sendFn);
+}
+
+/**
+ * Update heartbeat timestamp for a user connection
+ */
+export function updateUserConnectionHeartbeat(sendFn: (data: string) => void): void {
+  userConnectionHeartbeats.set(sendFn, Date.now());
+}
+
+/**
+ * Get the number of active connections for a user
+ */
+export function getUserConnectionCount(userId: string): number {
+  return userConnections.get(userId)?.size ?? 0;
+}
+
+/**
+ * Check if a user has any active connections
+ */
+export function isUserConnected(userId: string): boolean {
+  return getUserConnectionCount(userId) > 0;
+}
+
+/**
+ * Broadcast an event to a specific user's SSE connections
+ * Requirement 7.1: Send notification event to target user's SSE connection
+ * Requirement 7.3: Include notification ID, type, message, and timestamp
+ * 
+ * @param userId - The target user's ID
+ * @param eventType - The type of event to broadcast
+ * @param payload - The event payload
+ * @returns true if at least one connection received the message, false if user not connected
+ */
+export function broadcastToUser<T extends EventType>(
+  userId: string,
+  eventType: T,
+  payload: BroadcastPayload[T]
+): boolean {
+  const connections = userConnections.get(userId);
+  
+  // Return false if user has no active connections
+  if (!connections || connections.size === 0) {
+    return false;
+  }
+
+  // Consistent JSON serialization format
+  const message = JSON.stringify({
+    event: eventType,
+    data: payload,
+    timestamp: new Date().toISOString(),
+    userId,
+  });
+
+  const failedConnections: Array<(data: string) => void> = [];
+  let successCount = 0;
+
+  for (const send of connections) {
+    try {
+      send(message);
+      successCount++;
+    } catch {
+      // Track failed connections for removal
+      failedConnections.push(send);
+    }
+  }
+
+  // Remove failed connections from the pool
+  for (const failed of failedConnections) {
+    connections.delete(failed);
+    userConnectionHeartbeats.delete(failed);
+  }
+
+  // Clean up empty connection sets
+  if (connections.size === 0) {
+    userConnections.delete(userId);
+  }
+
+  return successCount > 0;
+}
+
+/**
+ * Broadcast a notification to a user
+ * Convenience wrapper for notification events
+ * Requirements: 7.1, 7.3
+ */
+export function broadcastNotification(
+  userId: string,
+  notification: BroadcastPayload['notification']
+): boolean {
+  return broadcastToUser(userId, 'notification', notification);
+}
+
+/**
+ * Broadcast a comment reaction event to all clients connected to a debate
+ * Convenience wrapper for comment-reaction events
+ * Requirement 3.2
+ */
+export function broadcastCommentReaction(
+  debateId: string,
+  commentId: string,
+  reactionType: CommentReactionType,
+  counts: CommentReactionCounts
+): void {
+  broadcastDebateEvent(debateId, 'comment-reaction', {
+    commentId,
+    reactionType,
+    counts,
+  });
+}
+
+/**
+ * Get the user connections map for direct access
+ */
+export function getUserConnections(): Map<string, Set<(data: string) => void>> {
+  return userConnections;
+}
+
+/**
+ * Clean up stale user connections
+ */
+export function cleanupStaleUserConnections(): number {
+  const now = Date.now();
+  let removedCount = 0;
+
+  for (const [userId, connections] of userConnections.entries()) {
+    const staleConnections: Array<(data: string) => void> = [];
+
+    for (const sendFn of connections) {
+      const lastHeartbeat = userConnectionHeartbeats.get(sendFn);
+      if (!lastHeartbeat || now - lastHeartbeat > HEARTBEAT_TIMEOUT) {
+        staleConnections.push(sendFn);
+      }
+    }
+
+    for (const staleFn of staleConnections) {
+      connections.delete(staleFn);
+      userConnectionHeartbeats.delete(staleFn);
+      removedCount++;
+    }
+
+    if (connections.size === 0) {
+      userConnections.delete(userId);
+    }
+  }
+
+  return removedCount;
 }

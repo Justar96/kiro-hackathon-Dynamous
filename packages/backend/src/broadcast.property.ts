@@ -18,8 +18,13 @@ import {
   broadcastMarketUpdate,
   broadcastCommentUpdate,
   broadcastRoundUpdate,
+  broadcastCommentReaction,
+  broadcastNotification,
+  broadcastToUser,
   addConnection, 
-  removeConnection, 
+  removeConnection,
+  addUserConnection,
+  removeUserConnection,
   type BroadcastPayload 
 } from './broadcast';
 
@@ -664,6 +669,411 @@ describe('Property 3: Broadcast Trigger Consistency', () => {
           } finally {
             for (const mockSend of mockSends) {
               removeConnection(debateId, mockSend);
+            }
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+
+// ============================================================================
+// Property 12: Broadcast Payload Completeness
+// Feature: enhanced-comments-matching, Property 12: Broadcast Payload Completeness
+// Validates: Requirements 3.4
+// ============================================================================
+
+describe('Property 12: Broadcast Payload Completeness', () => {
+  /**
+   * Property 12: Broadcast Payload Completeness
+   * For any comment event broadcast, the payload SHALL include the full comment data
+   * (id, debateId, userId, content, createdAt) and parentId.
+   */
+  it('Comment event payloads include all required comment fields and parentId', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.record({
+          id: fc.uuid(),
+          debateId: fc.uuid(),
+          userId: fc.uuid(),
+          parentId: fc.option(fc.uuid(), { nil: null }),
+          content: fc.string({ minLength: 1, maxLength: 500 }),
+          createdAt: fc.date(),
+        }),
+        fc.option(fc.uuid(), { nil: null }),
+        (debateId, comment, parentId) => {
+          let capturedMessage: string | null = null;
+          const mockSend = (data: string) => { capturedMessage = data; };
+          
+          addConnection(debateId, mockSend);
+          
+          try {
+            broadcastCommentUpdate(debateId, comment, parentId);
+            
+            expect(capturedMessage).not.toBeNull();
+            const parsed = JSON.parse(capturedMessage!);
+            
+            // Verify event type
+            expect(parsed.event).toBe('comment');
+            expect(parsed.debateId).toBe(debateId);
+            
+            // Verify full comment data is included (Requirement 3.4)
+            expect(parsed.data.comment).toHaveProperty('id');
+            expect(parsed.data.comment).toHaveProperty('debateId');
+            expect(parsed.data.comment).toHaveProperty('userId');
+            expect(parsed.data.comment).toHaveProperty('content');
+            expect(parsed.data.comment).toHaveProperty('createdAt');
+            
+            // Verify parentId is included
+            expect(parsed.data).toHaveProperty('parentId');
+            
+            // Verify values match
+            expect(parsed.data.comment.id).toBe(comment.id);
+            expect(parsed.data.comment.debateId).toBe(comment.debateId);
+            expect(parsed.data.comment.userId).toBe(comment.userId);
+            expect(parsed.data.comment.content).toBe(comment.content);
+            expect(parsed.data.parentId).toBe(parentId);
+          } finally {
+            removeConnection(debateId, mockSend);
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('Comment-reaction event payloads include commentId, reactionType, and counts', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.uuid(),
+        fc.constantFrom('support' as const, 'oppose' as const),
+        fc.record({
+          support: fc.integer({ min: 0, max: 1000 }),
+          oppose: fc.integer({ min: 0, max: 1000 }),
+        }),
+        (debateId, commentId, reactionType, counts) => {
+          let capturedMessage: string | null = null;
+          const mockSend = (data: string) => { capturedMessage = data; };
+          
+          addConnection(debateId, mockSend);
+          
+          try {
+            broadcastCommentReaction(debateId, commentId, reactionType, counts);
+            
+            expect(capturedMessage).not.toBeNull();
+            const parsed = JSON.parse(capturedMessage!);
+            
+            // Verify event type
+            expect(parsed.event).toBe('comment-reaction');
+            expect(parsed.debateId).toBe(debateId);
+            
+            // Verify all required fields are present
+            expect(parsed.data).toHaveProperty('commentId');
+            expect(parsed.data).toHaveProperty('reactionType');
+            expect(parsed.data).toHaveProperty('counts');
+            
+            // Verify values match
+            expect(parsed.data.commentId).toBe(commentId);
+            expect(parsed.data.reactionType).toBe(reactionType);
+            expect(parsed.data.counts.support).toBe(counts.support);
+            expect(parsed.data.counts.oppose).toBe(counts.oppose);
+          } finally {
+            removeConnection(debateId, mockSend);
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('Notification event payloads include id, type, message, and createdAt', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.record({
+          id: fc.uuid(),
+          type: fc.constantFrom('opponent_joined' as const, 'debate_started' as const, 'your_turn' as const),
+          message: fc.string({ minLength: 1, maxLength: 200 }),
+          debateId: fc.option(fc.uuid(), { nil: undefined }),
+          createdAt: fc.date().map(d => d.toISOString()),
+        }),
+        (userId, notification) => {
+          let capturedMessage: string | null = null;
+          const mockSend = (data: string) => { capturedMessage = data; };
+          
+          addUserConnection(userId, mockSend);
+          
+          try {
+            const result = broadcastNotification(userId, notification);
+            
+            expect(result).toBe(true);
+            expect(capturedMessage).not.toBeNull();
+            const parsed = JSON.parse(capturedMessage!);
+            
+            // Verify event type
+            expect(parsed.event).toBe('notification');
+            expect(parsed.userId).toBe(userId);
+            
+            // Verify all required fields are present (Requirement 7.3)
+            expect(parsed.data).toHaveProperty('id');
+            expect(parsed.data).toHaveProperty('type');
+            expect(parsed.data).toHaveProperty('message');
+            expect(parsed.data).toHaveProperty('createdAt');
+            
+            // Verify values match
+            expect(parsed.data.id).toBe(notification.id);
+            expect(parsed.data.type).toBe(notification.type);
+            expect(parsed.data.message).toBe(notification.message);
+            expect(parsed.data.createdAt).toBe(notification.createdAt);
+          } finally {
+            removeUserConnection(userId, mockSend);
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// ============================================================================
+// Property 13: Comment Reaction Broadcast
+// Feature: enhanced-comments-matching, Property 13: Comment Reaction Broadcast
+// Validates: Requirements 3.2
+// ============================================================================
+
+describe('Property 13: Comment Reaction Broadcast', () => {
+  /**
+   * Property 13: Comment Reaction Broadcast
+   * For any comment reaction added or removed, a 'comment-reaction' event SHALL be
+   * broadcast with the commentId and updated counts.
+   */
+  it('broadcastCommentReaction sends comment-reaction event with correct payload', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.uuid(),
+        fc.constantFrom('support' as const, 'oppose' as const),
+        fc.record({
+          support: fc.integer({ min: 0, max: 1000 }),
+          oppose: fc.integer({ min: 0, max: 1000 }),
+        }),
+        (debateId, commentId, reactionType, counts) => {
+          let capturedMessage: string | null = null;
+          const mockSend = (data: string) => { capturedMessage = data; };
+          
+          addConnection(debateId, mockSend);
+          
+          try {
+            broadcastCommentReaction(debateId, commentId, reactionType, counts);
+            
+            expect(capturedMessage).not.toBeNull();
+            const parsed = JSON.parse(capturedMessage!);
+            
+            // Verify event type is 'comment-reaction'
+            expect(parsed.event).toBe('comment-reaction');
+            
+            // Verify commentId is included
+            expect(parsed.data.commentId).toBe(commentId);
+            
+            // Verify reactionType is included
+            expect(parsed.data.reactionType).toBe(reactionType);
+            
+            // Verify counts are included and correct
+            expect(parsed.data.counts).toEqual(counts);
+          } finally {
+            removeConnection(debateId, mockSend);
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('comment-reaction events are broadcast to all connected clients for a debate', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.integer({ min: 2, max: 5 }),
+        fc.uuid(),
+        fc.constantFrom('support' as const, 'oppose' as const),
+        fc.record({
+          support: fc.integer({ min: 0, max: 1000 }),
+          oppose: fc.integer({ min: 0, max: 1000 }),
+        }),
+        (debateId, clientCount, commentId, reactionType, counts) => {
+          const capturedMessages: string[] = [];
+          const mockSends: Array<(data: string) => void> = [];
+          
+          // Add multiple connections
+          for (let i = 0; i < clientCount; i++) {
+            const mockSend = (data: string) => { capturedMessages.push(data); };
+            mockSends.push(mockSend);
+            addConnection(debateId, mockSend);
+          }
+          
+          try {
+            broadcastCommentReaction(debateId, commentId, reactionType, counts);
+            
+            // All clients should receive the message
+            expect(capturedMessages.length).toBe(clientCount);
+            
+            // All messages should be identical and contain correct data
+            for (const msg of capturedMessages) {
+              const parsed = JSON.parse(msg);
+              expect(parsed.event).toBe('comment-reaction');
+              expect(parsed.data.commentId).toBe(commentId);
+              expect(parsed.data.counts).toEqual(counts);
+            }
+          } finally {
+            for (const mockSend of mockSends) {
+              removeConnection(debateId, mockSend);
+            }
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('no comment-reaction broadcast is sent when no clients are connected', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.uuid(),
+        fc.constantFrom('support' as const, 'oppose' as const),
+        fc.record({
+          support: fc.integer({ min: 0, max: 1000 }),
+          oppose: fc.integer({ min: 0, max: 1000 }),
+        }),
+        (debateId, commentId, reactionType, counts) => {
+          // No connection added - should not throw
+          expect(() => {
+            broadcastCommentReaction(debateId, commentId, reactionType, counts);
+          }).not.toThrow();
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+// ============================================================================
+// User-Specific Broadcast Tests
+// ============================================================================
+
+describe('User-Specific Broadcast Tests', () => {
+  it('broadcastToUser sends events only to the specified user', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.uuid(),
+        fc.record({
+          id: fc.uuid(),
+          type: fc.constantFrom('opponent_joined' as const, 'debate_started' as const, 'your_turn' as const),
+          message: fc.string({ minLength: 1, maxLength: 200 }),
+          debateId: fc.option(fc.uuid(), { nil: undefined }),
+          createdAt: fc.date().map(d => d.toISOString()),
+        }),
+        (userId1, userId2, notification) => {
+          let user1Message: string | null = null;
+          let user2Message: string | null = null;
+          
+          const mockSend1 = (data: string) => { user1Message = data; };
+          const mockSend2 = (data: string) => { user2Message = data; };
+          
+          addUserConnection(userId1, mockSend1);
+          addUserConnection(userId2, mockSend2);
+          
+          try {
+            // Broadcast to user1 only
+            broadcastToUser(userId1, 'notification', notification);
+            
+            // User1 should receive the message
+            expect(user1Message).not.toBeNull();
+            
+            // User2 should NOT receive the message
+            expect(user2Message).toBeNull();
+            
+            // Verify user1's message content
+            const parsed = JSON.parse(user1Message!);
+            expect(parsed.event).toBe('notification');
+            expect(parsed.userId).toBe(userId1);
+          } finally {
+            removeUserConnection(userId1, mockSend1);
+            removeUserConnection(userId2, mockSend2);
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('broadcastToUser returns false when user is not connected', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.record({
+          id: fc.uuid(),
+          type: fc.constantFrom('opponent_joined' as const, 'debate_started' as const, 'your_turn' as const),
+          message: fc.string({ minLength: 1, maxLength: 200 }),
+          debateId: fc.option(fc.uuid(), { nil: undefined }),
+          createdAt: fc.date().map(d => d.toISOString()),
+        }),
+        (userId, notification) => {
+          // No connection added
+          const result = broadcastToUser(userId, 'notification', notification);
+          
+          // Should return false when user is not connected
+          expect(result).toBe(false);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('broadcastToUser sends to all connections for a user', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.integer({ min: 2, max: 5 }),
+        fc.record({
+          id: fc.uuid(),
+          type: fc.constantFrom('opponent_joined' as const, 'debate_started' as const, 'your_turn' as const),
+          message: fc.string({ minLength: 1, maxLength: 200 }),
+          debateId: fc.option(fc.uuid(), { nil: undefined }),
+          createdAt: fc.date().map(d => d.toISOString()),
+        }),
+        (userId, connectionCount, notification) => {
+          const capturedMessages: string[] = [];
+          const mockSends: Array<(data: string) => void> = [];
+          
+          // Add multiple connections for the same user
+          for (let i = 0; i < connectionCount; i++) {
+            const mockSend = (data: string) => { capturedMessages.push(data); };
+            mockSends.push(mockSend);
+            addUserConnection(userId, mockSend);
+          }
+          
+          try {
+            const result = broadcastToUser(userId, 'notification', notification);
+            
+            expect(result).toBe(true);
+            
+            // All connections should receive the message
+            expect(capturedMessages.length).toBe(connectionCount);
+            
+            // All messages should be identical
+            const firstMessage = capturedMessages[0];
+            for (const msg of capturedMessages) {
+              expect(msg).toBe(firstMessage);
+            }
+          } finally {
+            for (const mockSend of mockSends) {
+              removeUserConnection(userId, mockSend);
             }
           }
         }

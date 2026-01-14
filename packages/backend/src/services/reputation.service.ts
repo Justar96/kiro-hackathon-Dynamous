@@ -143,8 +143,8 @@ export class ReputationService {
     await db.update(users)
       .set({ 
         predictionAccuracy: wasCorrect
-          ? sql`ROUND(${users.predictionAccuracy} + (100 - ${users.predictionAccuracy}) * ${weight}, 2)`
-          : sql`ROUND(${users.predictionAccuracy} - ${users.predictionAccuracy} * ${weight}, 2)`
+          ? sql`ROUND(CAST(${users.predictionAccuracy} + (100 - ${users.predictionAccuracy}) * ${weight} AS NUMERIC), 2)`
+          : sql`ROUND(CAST(${users.predictionAccuracy} - ${users.predictionAccuracy} * ${weight} AS NUMERIC), 2)`
       })
       .where(eq(users.id, userId));
   }

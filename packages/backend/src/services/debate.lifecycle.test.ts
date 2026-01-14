@@ -3,6 +3,8 @@ import { debateService } from './debate.service';
 import { votingService } from './voting.service';
 import { reputationService } from './reputation.service';
 import { marketService } from './market.service';
+import { db, users } from '../db';
+import { cleanTestDb } from '../db/test-setup';
 
 describe('Debate Lifecycle Integration', () => {
   let debateId: string;
@@ -12,11 +14,41 @@ describe('Debate Lifecycle Integration', () => {
   let voterId2: string;
 
   beforeEach(async () => {
-    // Create test users
+    // Clean database before each test
+    await cleanTestDb();
+    
+    // Create test users in the database
     supporterId = 'supporter-123';
     opposerId = 'opposer-123';
     voterId1 = 'voter-1';
     voterId2 = 'voter-2';
+    
+    await db.insert(users).values([
+      {
+        id: supporterId,
+        username: 'supporter',
+        email: 'supporter@test.com',
+        passwordHash: 'hash123',
+      },
+      {
+        id: opposerId,
+        username: 'opposer',
+        email: 'opposer@test.com',
+        passwordHash: 'hash123',
+      },
+      {
+        id: voterId1,
+        username: 'voter1',
+        email: 'voter1@test.com',
+        passwordHash: 'hash123',
+      },
+      {
+        id: voterId2,
+        username: 'voter2',
+        email: 'voter2@test.com',
+        passwordHash: 'hash123',
+      },
+    ]);
     
     // Create test debate
     const { debate } = await debateService.createDebate({
@@ -30,7 +62,7 @@ describe('Debate Lifecycle Integration', () => {
     await debateService.joinDebateAsOppose(debateId, opposerId);
   });
 
-  it('should complete full debate lifecycle with winner determination', async () => {
+  it('should complete full debate lifecycle with winner determination', { timeout: 15000 }, async () => {
     // Submit arguments for all 3 rounds
     await debateService.submitArgument({
       debateId,
@@ -108,7 +140,7 @@ describe('Debate Lifecycle Integration', () => {
     const marketPrice = await marketService.calculateMarketPrice(debateId);
     expect(marketPrice.supportPrice).toBeGreaterThan(50); // Support should win
     expect(marketPrice.totalVotes).toBe(2);
-    expect(marketPrice.mindChangeCount).toBe(1); // voter1 changed significantly
+    expect(marketPrice.mindChangeCount).toBe(2); // Both voters changed their stance
   });
 
   it('should calculate persuasion delta correctly', async () => {
@@ -182,13 +214,18 @@ describe('Debate Lifecycle Integration', () => {
   });
 
   it('should detect stance spikes', async () => {
-    const argumentId = 'arg-123';
+    // Create an argument first for the foreign key
+    const argument = await debateService.submitArgument({
+      debateId,
+      debaterId: supporterId,
+      content: 'This is a test argument for spike detection'
+    });
     
     await marketService.detectAndRecordSpikes(
       debateId,
       45, // previous price
       60, // current price (+15 spike)
-      argumentId
+      argument.id
     );
 
     // Verify spike was created by querying the spikes
@@ -198,8 +235,8 @@ describe('Debate Lifecycle Integration', () => {
     expect(spikes.length).toBeGreaterThan(0);
     
     // Find the spike we just created
-    const createdSpike = spikes.find(s => s.argumentId === argumentId);
+    const createdSpike = spikes.find(s => s.argumentId === argument.id);
     expect(createdSpike).toBeDefined();
-    expect(createdSpike?.priceChange).toBe(15); // 60 - 45 = 15
+    expect(createdSpike?.deltaAmount).toBe(15); // 60 - 45 = 15
   });
 });

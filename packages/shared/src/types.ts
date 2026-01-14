@@ -383,3 +383,27 @@ export const FULL_VOTE_WEIGHT = 1.0;
 // Rate limiting
 export const COMMENT_RATE_LIMIT = 3;
 export const COMMENT_RATE_WINDOW_MINUTES = 10;
+
+// ============================================
+// Matching Queue Types
+// ============================================
+
+export interface QueuedDebate {
+  debate: Debate;
+  creatorUsername: string;
+  creatorReputation: number;
+  queuedAt: Date;
+}
+
+export interface MatchResult {
+  debate: Debate;
+  creatorUsername: string;
+  creatorReputation: number;
+  reputationDiff: number;
+}
+
+export interface QueueFilter {
+  keywords?: string[];
+  maxReputationDiff?: number;
+  userId?: string; // For filtering by user's reputation
+}

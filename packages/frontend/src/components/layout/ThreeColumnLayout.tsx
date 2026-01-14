@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { MenuIcon, XIcon, ChartIcon, ChevronUpIcon } from '../icons';
 
 interface ThreeColumnLayoutProps {
   leftRail: React.ReactNode;
@@ -24,9 +25,7 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
           className="p-2 -ml-2 text-text-secondary hover:text-text-primary"
           aria-label="Open navigation"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+          <MenuIcon size="lg" decorative />
         </button>
         <span className="font-heading text-lg">Debate</span>
         <button
@@ -34,9 +33,7 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
           className="p-2 -mr-2 text-text-secondary hover:text-text-primary"
           aria-label="Open market data"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
+          <ChartIcon size="lg" decorative />
         </button>
       </header>
 
@@ -61,9 +58,7 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
             className="p-1 text-text-secondary hover:text-text-primary"
             aria-label="Close navigation"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon size="md" decorative />
           </button>
         </div>
         <div className="overflow-y-auto h-full pb-20">
@@ -122,9 +117,7 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
             className="p-1 text-text-secondary hover:text-text-primary"
             aria-label="Close market data"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <XIcon size="md" decorative />
           </button>
         </div>
         <div className="overflow-y-auto p-4" style={{ maxHeight: 'calc(70vh - 60px)' }}>
@@ -140,9 +133,7 @@ export function ThreeColumnLayout({ leftRail, centerPaper, rightMargin }: ThreeC
             className="w-full flex items-center justify-between text-text-secondary"
           >
             <span className="text-sm">View Market Data</span>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 15l7-7 7 7" />
-            </svg>
+            <ChevronUpIcon size="md" decorative />
           </button>
         </div>
       )}

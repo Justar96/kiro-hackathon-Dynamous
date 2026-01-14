@@ -10,8 +10,13 @@ const databaseUrl = isTestDb
   ? process.env.TEST_DATABASE_URL! 
   : process.env.DATABASE_URL!;
 
+// Use test-only schema for Railway PostgreSQL (no Neon Auth)
+const schemaPath = isTestDb 
+  ? './src/db/schema.test-only.ts'
+  : './src/db/schema.ts';
+
 export default defineConfig({
-  schema: './src/db/schema.ts',
+  schema: schemaPath,
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {

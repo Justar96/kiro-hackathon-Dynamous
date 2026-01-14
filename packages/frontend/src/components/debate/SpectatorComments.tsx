@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { Comment, User } from '@debate-platform/shared';
 import { HorizontalDivider } from '../ui/HorizontalDivider';
+import { SkeletonParagraph, SkeletonText } from '../common/Skeleton';
 
 interface SpectatorCommentsProps {
   debateId: string;
@@ -9,6 +10,8 @@ interface SpectatorCommentsProps {
   currentUserId?: string;
   onAddComment: (content: string, parentId?: string | null) => void;
   isSubmitting?: boolean;
+  /** Whether comments are still loading */
+  isLoading?: boolean;
 }
 
 /**
@@ -23,6 +26,7 @@ export function SpectatorComments({
   currentUserId,
   onAddComment,
   isSubmitting = false,
+  isLoading = false,
 }: SpectatorCommentsProps) {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [newCommentContent, setNewCommentContent] = useState('');
@@ -86,7 +90,9 @@ export function SpectatorComments({
 
       {/* Comments list */}
       <div className="mt-4 space-y-3">
-        {threadedComments.length === 0 ? (
+        {isLoading ? (
+          <CommentsLoadingSkeleton />
+        ) : threadedComments.length === 0 ? (
           <EmptyComments isAuthenticated={!!currentUserId} />
         ) : (
           threadedComments.map((thread) => (
@@ -122,7 +128,10 @@ interface CommentFormProps {
   placeholder?: string;
   isSubmitting?: boolean;
   isReply?: boolean;
+  maxLength?: number;
 }
+
+const DEFAULT_COMMENT_MAX_LENGTH = 500;
 
 function CommentForm({
   value,
@@ -132,7 +141,12 @@ function CommentForm({
   placeholder = 'Write a comment...',
   isSubmitting = false,
   isReply = false,
+  maxLength = DEFAULT_COMMENT_MAX_LENGTH,
 }: CommentFormProps) {
+  const charCount = value.length;
+  const isOverLimit = charCount > maxLength;
+  const isNearLimit = charCount > maxLength * 0.8;
+  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -151,21 +165,37 @@ function CommentForm({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={isSubmitting}
+        maxLength={maxLength + 50} /* Allow slight overflow for UX, validate on submit */
         className={`
           w-full px-4 py-3 
-          bg-gray-50 border border-gray-200 rounded-subtle
+          bg-gray-50 border rounded-subtle
           text-body text-text-primary placeholder:text-text-tertiary
           focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent
           disabled:opacity-50 disabled:cursor-not-allowed
           resize-none
           ${isReply ? 'min-h-[80px]' : 'min-h-[100px]'}
+          ${isOverLimit ? 'border-oppose' : 'border-gray-200'}
         `}
         rows={isReply ? 2 : 3}
+        aria-describedby="comment-char-count"
       />
       <div className="flex items-center justify-between mt-2">
-        <span className="text-caption text-text-tertiary">
-          {isReply ? 'Press Esc to cancel' : 'Press ⌘+Enter to submit'}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-caption text-text-tertiary">
+            {isReply ? 'Press Esc to cancel' : 'Press ⌘+Enter to submit'}
+          </span>
+          {/* Character counter */}
+          <span 
+            id="comment-char-count"
+            className={`text-caption ${
+              isOverLimit ? 'text-oppose font-medium' : 
+              isNearLimit ? 'text-text-secondary' : 
+              'text-text-tertiary'
+            }`}
+          >
+            {charCount}/{maxLength}
+          </span>
+        </div>
         <div className="flex gap-2">
           {onCancel && (
             /* Cancel button - 44px minimum touch target for accessibility (Requirement 8.4) */
@@ -182,7 +212,7 @@ function CommentForm({
           <button
             type="button"
             onClick={onSubmit}
-            disabled={isSubmitting || !value.trim()}
+            disabled={isSubmitting || !value.trim() || isOverLimit}
             className="min-h-[44px] px-4 bg-accent text-white text-body-small rounded-subtle hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
           >
             {isSubmitting ? 'Posting...' : isReply ? 'Reply' : 'Post'}
@@ -229,7 +259,7 @@ function CommentThread({
   const maxDepth = 3; // Limit nesting depth
 
   return (
-    <div className={`${depth > 0 ? 'ml-6 pl-4 border-l border-gray-100' : ''}`}>
+    <div className={`${depth > 0 ? 'ml-6 pl-4 border-l border-gray-100' : ''} animate-fadeIn`}>
       {/* Comment content */}
       <article className="group">
         {/* Author info */}
@@ -257,11 +287,13 @@ function CommentThread({
         </p>
 
         {/* Actions - 44px minimum touch target for accessibility (Requirement 8.4) */}
+        {/* Always visible but muted, brightens on hover/focus for better keyboard nav */}
         {currentUserId && depth < maxDepth && (
-          <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="mt-2">
             <button
               onClick={() => onReplyClick(isReplying ? null : comment.id)}
-              className="min-h-[44px] px-2 text-caption text-text-tertiary hover:text-accent transition-colors inline-flex items-center"
+              className="min-h-[44px] px-2 text-caption text-text-tertiary hover:text-accent focus:text-accent focus:outline-none focus:ring-2 focus:ring-accent/50 focus:ring-offset-1 rounded transition-colors inline-flex items-center"
+              aria-label={isReplying ? 'Cancel reply' : `Reply to comment by ${author?.username || 'Anonymous'}`}
             >
               {isReplying ? 'Cancel' : 'Reply'}
             </button>
@@ -325,6 +357,26 @@ function EmptyComments({ isAuthenticated }: { isAuthenticated: boolean }) {
           Sign in to join the discussion.
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Loading skeleton for comments section.
+ */
+function CommentsLoadingSkeleton() {
+  return (
+    <div className="space-y-4" aria-label="Loading comments">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="animate-pulse">
+          <div className="flex items-center gap-2 mb-2">
+            <SkeletonText className="w-20" />
+            <span className="text-caption text-text-tertiary">·</span>
+            <SkeletonText className="w-12" />
+          </div>
+          <SkeletonParagraph lines={2} />
+        </div>
+      ))}
     </div>
   );
 }

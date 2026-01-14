@@ -53,17 +53,22 @@ export function DebateIndexList({
         <div className="w-6 flex-shrink-0" />
       </div>
 
-      {/* Debate rows */}
+      {/* Debate rows with staggered fade-in animation */}
       <div>
-        {debates.map(({ debate, marketPrice }) => (
-          <DebateIndexRow 
-            key={debate.id} 
-            debate={debate} 
-            marketPrice={marketPrice}
-            userStance={userStances[debate.id]}
-            onQuickStance={onQuickStance}
-            isAuthenticated={isAuthenticated}
-          />
+        {debates.map(({ debate, marketPrice }, index) => (
+          <div 
+            key={debate.id}
+            className="animate-fadeIn"
+            style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
+          >
+            <DebateIndexRow 
+              debate={debate} 
+              marketPrice={marketPrice}
+              userStance={userStances[debate.id]}
+              onQuickStance={onQuickStance}
+              isAuthenticated={isAuthenticated}
+            />
+          </div>
         ))}
       </div>
     </div>

@@ -144,29 +144,17 @@ function DebateView() {
   const { newArgumentId } = useSSEArguments(debateId, token);
   
   // Requirements: 5.3, 5.4, 5.6 - Round transition updates with toast notifications
-  useSSERound(debateId, token, {
-    onRoundAdvance: (newRound) => {
-      showToast({
-        type: 'info',
-        message: `Round ${newRound} has begun!`,
-      });
-    },
-    onDebateConcluded: () => {
-      showToast({
-        type: 'success',
-        message: 'The debate has concluded!',
-      });
-    },
-  });
+  useSSERound(debateId, token);
   
   // Requirements: 4.3, 4.5 - Reaction count updates
   useSSEReactions(debateId);
   
-  // Requirements: 10.4, 10.5, 10.6 - Steelman status updates
-  useSSESteelman(debateId, token);
-
   // Steelman Gate hooks
   const currentRound = debateData?.debate?.currentRound ?? 1;
+  
+  // Requirements: 10.4, 10.5, 10.6 - Steelman status updates
+  useSSESteelman(debateId, currentRound, undefined, token);
+
   const { data: steelmanStatusData } = useSteelmanStatus(debateId, currentRound);
   const { data: pendingReviewsData } = usePendingSteelmans(debateId);
   const submitSteelmanMutation = useSubmitSteelman();

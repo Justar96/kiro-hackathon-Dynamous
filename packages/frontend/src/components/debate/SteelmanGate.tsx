@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Argument } from '@debate-platform/shared';
+import { ClockIcon, CheckCircleIcon, XCircleIcon, LightBulbIcon, ShieldCheckIcon } from '../icons';
 
 // ============================================================================
 // Steelman Form - Submit a steelman of opponent's argument
@@ -56,19 +57,13 @@ export function SteelmanForm({
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 mt-0.5">
             {existingSteelman.status === 'pending' && (
-              <svg className="w-5 h-5 text-amber-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <ClockIcon size="md" className="text-amber-500" animate="state-change" />
             )}
             {existingSteelman.status === 'approved' && (
-              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <CheckCircleIcon size="md" className="text-green-500" animate="mount" />
             )}
             {existingSteelman.status === 'rejected' && (
-              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <XCircleIcon size="md" className="text-red-500" animate="mount" />
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -101,9 +96,7 @@ export function SteelmanForm({
     <form onSubmit={handleSubmit} className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
       <div className="flex items-start gap-3 mb-3">
         <div className="flex-shrink-0 mt-0.5">
-          <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
+          <LightBulbIcon size="md" className="text-amber-600" />
         </div>
         <div>
           <h4 className="text-sm font-medium text-amber-800">
@@ -183,9 +176,7 @@ export function SteelmanReview({
     <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4">
       <div className="flex items-start gap-3 mb-3">
         <div className="flex-shrink-0 mt-0.5">
-          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
+          <ShieldCheckIcon size="md" className="text-blue-600" />
         </div>
         <div>
           <h4 className="text-sm font-medium text-blue-800">
@@ -277,9 +268,7 @@ export function SteelmanGateBadge({ status, roundNumber }: SteelmanGateBadgeProp
 
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${config.bg} ${config.text}`}>
-      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-      </svg>
+      <ShieldCheckIcon size="xs" animate={status === 'approved' ? 'mount' : 'none'} />
       R{roundNumber}: {config.label}
     </span>
   );

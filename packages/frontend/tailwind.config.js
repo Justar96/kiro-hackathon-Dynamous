@@ -65,6 +65,41 @@ export default {
         'modal': '400',
         'toast': '600',
       },
+      animation: {
+        'fadeIn': 'fadeIn 0.3s ease-out',
+        'fadeInUp': 'fadeInUp 0.3s ease-out',
+        'scaleIn': 'scaleIn 0.2s ease-out',
+        'check': 'check 0.3s ease-out',
+        'lock': 'lock 0.2s ease-out',
+        'delta': 'delta 0.4s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        fadeInUp: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        check: {
+          '0%': { opacity: '0', transform: 'scale(0.5)' },
+          '50%': { transform: 'scale(1.2)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        lock: {
+          '0%': { backgroundColor: 'rgba(45, 138, 110, 0.1)' },
+          '100%': { backgroundColor: 'transparent' },
+        },
+        delta: {
+          '0%': { opacity: '0', transform: 'translateX(-4px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+      },
       fontSize: {
         // Headings - Serif (refined line-heights for paper aesthetic)
         // Requirements: 1.3, 1.5 - Clear typographic hierarchy

@@ -107,11 +107,15 @@ export function ArgumentSubmissionForm({
       
       {/* Card Footer - Submit actions */}
       <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/30 flex items-center justify-between">
-        <p className="text-xs text-text-tertiary hidden sm:block">
-          <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs">⌘</kbd>
-          <span className="mx-1">+</span>
-          <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs">Enter</kbd>
-          <span className="ml-1.5">to submit</span>
+        {/* Desktop keyboard hint (hidden on mobile), Mobile touch hint (visible on small screens) */}
+        <p className="text-xs text-text-tertiary">
+          <span className="hidden sm:inline">
+            <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs">⌘</kbd>
+            <span className="mx-1">+</span>
+            <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-xs">Enter</kbd>
+            <span className="ml-1.5">to submit</span>
+          </span>
+          <span className="sm:hidden">Tap Submit when ready</span>
         </p>
         
         <button
