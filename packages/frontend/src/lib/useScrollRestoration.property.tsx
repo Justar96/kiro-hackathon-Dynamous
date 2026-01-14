@@ -1,31 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { renderHook, act, cleanup } from '@testing-library/react';
+import { useScrollRestoration } from './useScrollRestoration';
 
 /**
- * Feature: uiux-improvements
- * Property 28: Scroll Position Restoration
+ * Property 2: Scroll Position Preservation
  * 
- * For any back navigation, the scroll position SHALL be restored to where 
- * the user was before navigating away.
+ * For any feed with loaded debates, when new content is appended, the scroll 
+ * position relative to existing content SHALL remain unchanged. Additionally, 
+ * when navigating away and returning, the saved scroll position SHALL be restored.
  * 
- * Validates: Requirements 10.1
+ * Validates: Requirements 1.4, 1.5
  */
-
-// Mock TanStack Router
-const mockLocation = { pathname: '/test' };
-const mockSubscribe = vi.fn(() => vi.fn());
-const mockRouter = {
-  subscribe: mockSubscribe,
-};
-
-vi.mock('@tanstack/react-router', () => ({
-  useLocation: () => mockLocation,
-  useRouter: () => mockRouter,
-}));
-
-// Import after mocking
-import { useScrollRestoration } from './useScrollRestoration';
 
 // Arbitrary for scroll positions (0 to 10000 pixels)
 const scrollPositionArbitrary = fc.record({
@@ -94,11 +80,11 @@ describe('useScrollRestoration Property Tests', () => {
   });
 
   /**
-   * Property 28: Scroll Position Restoration
-   * Validates: Requirements 10.1
+   * Property 2: Scroll Position Preservation
+   * Validates: Requirements 1.4, 1.5
    */
-  describe('Property 28: Scroll Position Restoration', () => {
-    it('saveScroll should store current scroll position for any valid position', () => {
+  describe('Property 2: Scroll Position Preservation', () => {
+    it('savePosition should store current scroll position for any valid position', () => {
       fc.assert(
         fc.property(scrollPositionArbitrary, (position) => {
           cleanup();
@@ -108,11 +94,11 @@ describe('useScrollRestoration Property Tests', () => {
           mockScrollX = position.x;
           mockScrollY = position.y;
           
-          const { result } = renderHook(() => useScrollRestoration());
+          const { result } = renderHook(() => useScrollRestoration({ key: '/test' }));
           
           // Save scroll position
           act(() => {
-            result.current.saveScroll();
+            result.current.savePosition();
           });
           
           // Verify storage was called
@@ -132,7 +118,7 @@ describe('useScrollRestoration Property Tests', () => {
       );
     });
 
-    it('restoreScroll should restore saved position for any valid position', () => {
+    it('restorePosition should restore saved position for any valid position', () => {
       fc.assert(
         fc.property(scrollPositionArbitrary, (position) => {
           cleanup();
@@ -149,11 +135,11 @@ describe('useScrollRestoration Property Tests', () => {
             },
           });
           
-          const { result } = renderHook(() => useScrollRestoration());
+          const { result } = renderHook(() => useScrollRestoration({ key: '/test' }));
           
           // Restore scroll position
           act(() => {
-            result.current.restoreScroll();
+            result.current.restorePosition();
           });
           
           // Verify scrollTo was called with correct position
@@ -163,41 +149,11 @@ describe('useScrollRestoration Property Tests', () => {
       );
     });
 
-    it('clearScroll should remove saved position for current key', () => {
-      fc.assert(
-        fc.property(scrollPositionArbitrary, (position) => {
-          cleanup();
-          mockSessionStorage.clear();
-          
-          // Pre-populate storage
-          mockStorage['scroll-positions'] = JSON.stringify({
-            '/test': {
-              x: position.x,
-              y: position.y,
-              timestamp: Date.now(),
-            },
-          });
-          
-          const { result } = renderHook(() => useScrollRestoration());
-          
-          // Clear scroll position
-          act(() => {
-            result.current.clearScroll();
-          });
-          
-          // Verify position was removed
-          const storedData = JSON.parse(mockStorage['scroll-positions'] || '{}');
-          expect(storedData['/test']).toBeUndefined();
-        }),
-        { numRuns: 100 }
-      );
-    });
-
     it('custom key should store position under that key', () => {
       fc.assert(
         fc.property(
           scrollPositionArbitrary,
-          fc.string({ minLength: 1, maxLength: 50 }).filter(s => !s.includes('"')),
+          fc.string({ minLength: 1, maxLength: 50 }).filter(s => !s.includes('"') && !s.includes('\\')),
           (position, customKey) => {
             cleanup();
             mockSessionStorage.clear();
@@ -205,11 +161,11 @@ describe('useScrollRestoration Property Tests', () => {
             mockScrollX = position.x;
             mockScrollY = position.y;
             
-            const { result } = renderHook(() => useScrollRestoration(customKey));
+            const { result } = renderHook(() => useScrollRestoration({ key: customKey }));
             
             // Save scroll position
             act(() => {
-              result.current.saveScroll();
+              result.current.savePosition();
             });
             
             // Verify position was stored under custom key
@@ -235,11 +191,11 @@ describe('useScrollRestoration Property Tests', () => {
           mockScrollX = position.x;
           mockScrollY = position.y;
           
-          const { result } = renderHook(() => useScrollRestoration());
+          const { result } = renderHook(() => useScrollRestoration({ key: '/test' }));
           
           // Save position
           act(() => {
-            result.current.saveScroll();
+            result.current.savePosition();
           });
           
           // Simulate navigation (scroll to different position)
@@ -248,7 +204,7 @@ describe('useScrollRestoration Property Tests', () => {
           
           // Restore position
           act(() => {
-            result.current.restoreScroll();
+            result.current.restorePosition();
           });
           
           // Verify scrollTo was called with original position
@@ -258,20 +214,25 @@ describe('useScrollRestoration Property Tests', () => {
       );
     });
 
-    it('restoreScroll should do nothing if no saved position exists', () => {
+    it('restorePosition should do nothing if no saved position exists', () => {
       fc.assert(
         fc.property(fc.boolean(), () => {
           cleanup();
           mockSessionStorage.clear();
+          // Clear any auto-restore calls
+          vi.clearAllMocks();
           
-          const { result } = renderHook(() => useScrollRestoration());
+          const { result } = renderHook(() => useScrollRestoration({ key: '/nonexistent' }));
+          
+          // Clear mocks again after mount (which may trigger auto-restore)
+          vi.clearAllMocks();
           
           // Try to restore when nothing is saved
           act(() => {
-            result.current.restoreScroll();
+            result.current.restorePosition();
           });
           
-          // scrollTo should not have been called
+          // scrollTo should not have been called for manual restore
           expect(window.scrollTo).not.toHaveBeenCalled();
         }),
         { numRuns: 100 }
@@ -287,20 +248,20 @@ describe('useScrollRestoration Property Tests', () => {
             cleanup();
             mockSessionStorage.clear();
             
-            const { result } = renderHook(() => useScrollRestoration());
+            const { result } = renderHook(() => useScrollRestoration({ key: '/test' }));
             
             // Save first position
             mockScrollX = position1.x;
             mockScrollY = position1.y;
             act(() => {
-              result.current.saveScroll();
+              result.current.savePosition();
             });
             
             // Save second position
             mockScrollX = position2.x;
             mockScrollY = position2.y;
             act(() => {
-              result.current.saveScroll();
+              result.current.savePosition();
             });
             
             // Verify only second position is stored
@@ -311,6 +272,47 @@ describe('useScrollRestoration Property Tests', () => {
             expect(storedPosition.y).toBe(position2.y);
           }
         ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('enabled=false should prevent saving and restoring', () => {
+      fc.assert(
+        fc.property(scrollPositionArbitrary, (position) => {
+          cleanup();
+          mockSessionStorage.clear();
+          
+          mockScrollX = position.x;
+          mockScrollY = position.y;
+          
+          const { result } = renderHook(() => 
+            useScrollRestoration({ key: '/test', enabled: false })
+          );
+          
+          // Try to save position
+          act(() => {
+            result.current.savePosition();
+          });
+          
+          // Verify nothing was stored
+          expect(mockSessionStorage.setItem).not.toHaveBeenCalled();
+          
+          // Pre-populate storage
+          mockStorage['scroll-positions'] = JSON.stringify({
+            '/test': { x: 500, y: 500, timestamp: Date.now() },
+          });
+          
+          // Clear mocks
+          vi.clearAllMocks();
+          
+          // Try to restore
+          act(() => {
+            result.current.restorePosition();
+          });
+          
+          // Verify scrollTo was not called
+          expect(window.scrollTo).not.toHaveBeenCalled();
+        }),
         { numRuns: 100 }
       );
     });

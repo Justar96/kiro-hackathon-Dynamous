@@ -11,7 +11,8 @@ import {
   MindChangeLeaderboard,
   DebateTabs,
   getPersistedTab,
-  TrendingDebatesCard,
+  TrendingRail,
+  InfiniteFeed,
   SeekingOpponentsSection,
   IndexThreeColumnLayout,
   useToast,
@@ -21,6 +22,7 @@ import {
   PlusIcon,
   ChartIcon,
 } from '../components';
+import { useInfiniteDebates } from '../lib/useInfiniteDebates';
 import type { DebateTabType } from '../components';
 
 export const Route = createFileRoute('/')({
@@ -117,7 +119,6 @@ function HomePage() {
       }
       centerContent={
         <IndexCenterContent
-          debatesWithMarket={debatesWithMarket}
           filteredDebates={filteredDebates}
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -238,10 +239,10 @@ function IndexLeftRail({ isAuthenticated, sandboxData, debates, currentUserId }:
 }
 
 /**
- * Center Content - Header, Trending, Tabs, Debate List
+ * Center Content - Header, Tabs, Infinite Feed
+ * Requirements: All - Wire up new components
  */
 interface IndexCenterContentProps {
-  debatesWithMarket: ReturnType<typeof Route.useLoaderData>['debatesWithMarket'];
   filteredDebates: ReturnType<typeof Route.useLoaderData>['debatesWithMarket'];
   activeTab: DebateTabType;
   onTabChange: (tab: DebateTabType) => void;
@@ -252,7 +253,6 @@ interface IndexCenterContentProps {
 }
 
 function IndexCenterContent({
-  debatesWithMarket,
   filteredDebates,
   activeTab,
   onTabChange,
@@ -263,24 +263,36 @@ function IndexCenterContent({
 }: IndexCenterContentProps) {
   const { open: openNewDebate } = useNewDebateModal();
   
+  // Use infinite debates hook for pagination
+  // Requirements: 1.1, 1.2, 1.3 - Infinite scroll with cursor-based pagination
+  const {
+    debates: infiniteDebates,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    refetch,
+  } = useInfiniteDebates({
+    filter: activeTab,
+  });
+
+  // Use infinite debates if available, otherwise fall back to filtered debates
+  const displayDebates = infiniteDebates.length > 0 ? infiniteDebates : filteredDebates;
+  
   return (
     <div>
-      {/* Header - Paper aesthetic with serif typography */}
-      <header className="mb-6">
-        <div>
-          <h1 className="font-heading text-2xl sm:text-3xl font-semibold text-text-primary tracking-tight">
-            Debate Index
-          </h1>
-          <p className="mt-1.5 text-sm text-text-secondary" style={{ letterSpacing: '0.02em' }}>
-            Take a position&nbsp;&nbsp;•&nbsp;&nbsp;See what others think&nbsp;&nbsp;•&nbsp;&nbsp;Track mind changes
-          </p>
-        </div>
-        {/* Subtle horizontal divider below header */}
-        <HorizontalDivider spacing="lg" className="mt-8" />
+      {/* Header - Compact and prominent */}
+      <header className="mb-4 flex items-baseline gap-3 border-b border-border-subtle pb-3">
+        <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
+          Debate Index
+        </h1>
+        <p className="text-xs text-text-tertiary hidden sm:block">
+          Take a position • See what others think • Track mind changes
+        </p>
       </header>
 
-      {/* Trending Debates */}
-      <TrendingDebatesCard debates={debatesWithMarket} maxCount={3} />
+      {/* Trending section relocated to right rail - Requirements: 4.1 */}
 
       {/* Tabs */}
       <DebateTabs
@@ -290,17 +302,18 @@ function IndexCenterContent({
         isAuthenticated={isAuthenticated}
       />
 
-      {/* Debate List with Quick Stance */}
-      <DebateIndexList 
-        debates={filteredDebates}
+      {/* Infinite Feed - Requirements: 1.1, 1.2, 1.3, 5.1, 5.2, 5.3, 5.4 */}
+      <InfiniteFeed
+        debates={displayDebates}
+        fetchNextPage={fetchNextPage}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        isLoading={isLoading}
+        isError={isError}
+        refetch={refetch}
         userStances={userStances}
         onQuickStance={onQuickStance}
         isAuthenticated={isAuthenticated}
-        emptyMessage={
-          activeTab === 'my-debates' 
-            ? "You haven't participated in any debates yet. Join one or start your own!"
-            : "No debates yet. Be the first to start a structured discussion."
-        }
       />
 
       {/* Mobile: New Debate CTA */}
@@ -324,7 +337,8 @@ function IndexCenterContent({
 }
 
 /**
- * Right Rail - Most Persuasive, Platform Stats
+ * Right Rail - Trending, Most Persuasive, Platform Stats
+ * Requirements: 4.1 - Relocate trending section to right rail
  */
 interface IndexRightRailProps {
   debatesWithMarket: Array<{ debate: { status: string }; marketPrice: { mindChangeCount: number } | null }>;
@@ -333,6 +347,9 @@ interface IndexRightRailProps {
 function IndexRightRail({ debatesWithMarket }: IndexRightRailProps) {
   return (
     <div className="space-y-4">
+      {/* Trending Rail - Requirements: 4.1, 4.2, 4.3, 4.4 */}
+      <TrendingRail debates={debatesWithMarket as any} maxCount={5} />
+
       {/* Most Persuasive */}
       <div className="bg-paper rounded-small border border-divider overflow-hidden shadow-paper">
         <div className="px-4 py-3 border-b border-divider">

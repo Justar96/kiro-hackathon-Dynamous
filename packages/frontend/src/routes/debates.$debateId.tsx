@@ -38,7 +38,6 @@ import {
   ConnectionStatus,
   useToast,
   createUnifiedTocSections,
-  DEFAULT_DEBATE_ANCHORS,
   HorizontalDivider,
 } from '../components';
 import type { NavSection, Citation, SteelmanData, PendingReview } from '../components';
@@ -293,6 +292,10 @@ function DebateView() {
 
   return (
     <ThreeColumnLayout
+      marketPreview={{
+        forPercent: Math.round(supportPrice),
+        againstPercent: Math.round(opposePrice),
+      }}
       leftRail={
         <LeftNavRail
           sections={tocSections}
@@ -329,7 +332,6 @@ function DebateView() {
             supportPrice={supportPrice}
             opposePrice={opposePrice}
             dataPoints={market?.history || []}
-            spikes={market?.spikes || []}
             userStance={userStance}
             debateStatus={debate.status}
             readingProgress={readingProgress}
@@ -338,9 +340,6 @@ function DebateView() {
             afterUnlocked={afterUnlocked}
             isSubmitting={isStancePending}
             isAuthenticated={!!token}
-            sectionAnchors={DEFAULT_DEBATE_ANCHORS}
-            activeSection={activeSection}
-            onActiveSectionChange={handleActiveSectionChange}
           />
           {/* Source card displayed in margin on citation hover */}
           {hoveredSource && (
@@ -522,7 +521,7 @@ function OutcomeSection({ debate }: OutcomeSectionProps) {
       </h2>
       
       {isActive ? (
-        <div className="py-6 px-4 bg-page-bg border border-hairline rounded-subtle text-center">
+        <div className="py-6 px-4 bg-page-bg/50 border border-divider rounded-lg text-center shadow-paper">
           <p className="text-body text-text-secondary">
             This debate is still in progress.
           </p>
@@ -531,7 +530,7 @@ function OutcomeSection({ debate }: OutcomeSectionProps) {
           </p>
         </div>
       ) : (
-        <div className="py-6 px-4 bg-page-bg border border-hairline rounded-subtle">
+        <div className="py-6 px-4 bg-page-bg/50 border border-divider rounded-lg shadow-paper">
           <p className="text-body text-text-primary text-center">
             Debate concluded on {formatDate(debate.concludedAt)}
           </p>
@@ -547,7 +546,7 @@ function OutcomeSection({ debate }: OutcomeSectionProps) {
 function DebateNotFound() {
   return (
     <div className="min-h-screen bg-page-bg flex items-center justify-center px-4">
-      <div className="bg-paper border border-hairline rounded-subtle shadow-sm p-8 text-center max-w-md w-full">
+      <div className="bg-paper border border-divider rounded-lg shadow-paper p-8 text-center max-w-md w-full">
         <h2 className="font-heading text-heading-2 text-text-primary mb-3">
           Debate not found
         </h2>
@@ -673,7 +672,7 @@ function DebateViewError() {
 
   return (
     <div className="min-h-screen bg-page-bg flex items-center justify-center px-4">
-      <div className="bg-paper border border-hairline rounded-subtle shadow-sm p-8 text-center max-w-md w-full">
+      <div className="bg-paper border border-divider rounded-lg shadow-paper p-8 text-center max-w-md w-full">
         <h2 className="font-heading text-heading-2 text-text-primary mb-3">
           Unable to load debate
         </h2>
@@ -689,7 +688,7 @@ function DebateViewError() {
           </button>
           <Link
             to="/"
-            className="px-4 py-2 border border-hairline text-text-primary text-sm font-medium rounded-lg hover:bg-page-bg transition-colors"
+            className="px-4 py-2 border border-divider text-text-primary text-sm font-medium rounded-small hover:bg-page-bg transition-colors"
           >
             Back to Index
           </Link>

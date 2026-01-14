@@ -38,34 +38,25 @@ export function AudienceStats({ debateId }: AudienceStatsProps) {
       : 'text-text-secondary';
 
   return (
-    <div className="space-y-3">
-      {/* Main delta display */}
-      <div>
-        <div className="text-label uppercase tracking-wider text-text-tertiary mb-1">
-          Audience Shift
-        </div>
-        <div className={`text-xl font-semibold ${deltaColor}`}>
-          Δ {deltaSign}{stats.avgDelta}
-        </div>
+    <div className="space-y-2">
+      {/* Header with delta */}
+      <div className="flex items-baseline justify-between">
+        <span className="text-caption text-text-tertiary uppercase tracking-wide">Persuasion</span>
+        <span className={`text-lg font-semibold ${deltaColor}`}>
+          {deltaSign}{stats.avgDelta}%
+        </span>
       </div>
 
-      {/* Stats breakdown */}
-      <div className="grid grid-cols-2 gap-2 text-caption">
-        <div>
-          <span className="text-text-tertiary">Before:</span>{' '}
-          <span className="text-text-primary">{stats.avgPreStance}%</span>
-        </div>
-        <div>
-          <span className="text-text-tertiary">After:</span>{' '}
-          <span className="text-text-primary">{stats.avgPostStance}%</span>
-        </div>
+      {/* Before/After inline */}
+      <div className="flex items-center gap-3 text-caption">
+        <span className="text-text-tertiary">{stats.avgPreStance}%</span>
+        <span className="text-text-tertiary">→</span>
+        <span className="text-text-primary font-medium">{stats.avgPostStance}%</span>
       </div>
 
       {/* Mind changed count */}
-      <div className="pt-2 border-t border-hairline">
-        <span className="text-caption text-text-tertiary">
-          {stats.mindChangedCount} of {stats.totalVoters} changed their mind
-        </span>
+      <div className="text-caption text-text-tertiary">
+        {stats.mindChangedCount}/{stats.totalVoters} {stats.mindChangedCount === 1 ? 'mind' : 'minds'} changed
       </div>
     </div>
   );

@@ -1,20 +1,14 @@
 /**
  * ActiveRoundView displays the currently viewed round's full content.
- * Shows ArgumentBlock components for both sides, and
- * ArgumentSubmissionForm when appropriate.
- * 
+ * Shows ArgumentBlock components for both sides, and ArgumentSubmissionForm when appropriate.
  * Includes Steelman Gate for rounds 2 and 3.
- * 
- * Requirements: 1.1, 7.1, 7.4
- * Paper Polish Requirements: 5.1 (minimize visual chrome), 7.1, 7.2
  */
 
 import type { Round, Argument, User } from '@debate-platform/shared';
 import { ArgumentBlock, type Citation } from './ArgumentBlock';
 import { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
-import { SteelmanForm, SteelmanReview, SteelmanGateBadge } from './SteelmanGate';
-import { getRoundConfig } from './RoundSection.utils';
-import { ClockIcon, ChatBubbleIcon } from '../icons';
+import { SteelmanForm, SteelmanReview } from './SteelmanGate';
+import { ClockIcon } from '../icons';
 
 export interface SteelmanData {
   status: 'none' | 'pending' | 'approved' | 'rejected';
@@ -48,11 +42,7 @@ export interface ActiveRoundViewProps {
   /** Which side the current user is on (if they are a debater) */
   userSide?: 'support' | 'oppose';
   isSubmitting?: boolean;
-  /** 
-   * Set of argument IDs that have been attributed as "changed my mind".
-   * Used to show the attributed state on the button.
-   * Requirements: 5.5
-   */
+  /** Set of argument IDs that have been attributed as "changed my mind" */
   attributedArguments?: Set<string>;
   /** Argument ID to highlight (for real-time SSE updates) */
   highlightArgumentId?: string | null;
@@ -60,7 +50,7 @@ export interface ActiveRoundViewProps {
   steelmanData?: SteelmanData;
   /** Pending steelman reviews for opponent */
   pendingReviews?: PendingReview[];
-  /** Previous round arguments for steelman gate (rounds 2-3 need to steelman previous round's opponent argument) */
+  /** Previous round arguments for steelman gate */
   prevRoundArguments?: { support?: Argument | null; oppose?: Argument | null };
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
   onMindChanged?: (argumentId: string) => void;
@@ -72,10 +62,85 @@ export interface ActiveRoundViewProps {
 }
 
 /**
- * Placeholder shown when an argument hasn't been submitted yet.
- * Styled to match the paper aesthetic with minimal visual chrome.
- * 
- * Paper Polish Requirements: 5.1 (minimize visual chrome)
+ * EmptyRoundState - Side-by-side columns design for when both arguments are empty.
+ */
+function EmptyRoundState({ 
+  currentTurn,
+  isActiveRound 
+}: { 
+  currentTurn?: 'support' | 'oppose';
+  isActiveRound: boolean;
+}) {
+  const turnLabel = currentTurn === 'support' ? 'For' : 'Against';
+  
+  return (
+    <div className="bg-paper border border-divider rounded-lg overflow-hidden shadow-paper">
+      {/* Side-by-side columns */}
+      <div className="grid grid-cols-2 divide-x divide-divider">
+        {/* For (Support) Column */}
+        <div className="p-6 text-center">
+          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 ${
+            currentTurn === 'support' && isActiveRound 
+              ? 'bg-support/10 ring-2 ring-support/30' 
+              : 'bg-page-bg'
+          }`}>
+            <span className={`text-xl font-semibold ${
+              currentTurn === 'support' && isActiveRound ? 'text-support' : 'text-text-tertiary'
+            }`}>
+              F
+            </span>
+          </div>
+          <h3 className={`text-base font-medium mb-1 ${
+            currentTurn === 'support' && isActiveRound ? 'text-support' : 'text-text-secondary'
+          }`}>
+            For
+          </h3>
+          <p className="text-sm text-text-tertiary">
+            {currentTurn === 'support' && isActiveRound ? 'Awaiting argument' : 'No argument yet'}
+          </p>
+        </div>
+
+        {/* Against (Oppose) Column */}
+        <div className="p-6 text-center">
+          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 ${
+            currentTurn === 'oppose' && isActiveRound 
+              ? 'bg-oppose/10 ring-2 ring-oppose/30' 
+              : 'bg-page-bg'
+          }`}>
+            <span className={`text-xl font-semibold ${
+              currentTurn === 'oppose' && isActiveRound ? 'text-oppose' : 'text-text-tertiary'
+            }`}>
+              A
+            </span>
+          </div>
+          <h3 className={`text-base font-medium mb-1 ${
+            currentTurn === 'oppose' && isActiveRound ? 'text-oppose' : 'text-text-secondary'
+          }`}>
+            Against
+          </h3>
+          <p className="text-sm text-text-tertiary">
+            {currentTurn === 'oppose' && isActiveRound ? 'Awaiting argument' : 'No argument yet'}
+          </p>
+        </div>
+      </div>
+
+      {/* Unified status footer */}
+      {isActiveRound && currentTurn && (
+        <div className="px-6 py-3 bg-page-bg/50 border-t border-divider">
+          <div className="flex items-center justify-center gap-2 text-sm text-text-secondary">
+            <ClockIcon size="sm" className="text-text-tertiary" decorative />
+            <span>
+              Waiting for <span className={currentTurn === 'support' ? 'text-support font-medium' : 'text-oppose font-medium'}>{turnLabel}</span> to submit their argument
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Single-side placeholder when one argument exists but the other doesn't.
  */
 function ArgumentPlaceholder({ 
   side, 
@@ -85,48 +150,28 @@ function ArgumentPlaceholder({
   isWaiting?: boolean;
 }) {
   const sideConfig = side === 'support' 
-    ? { 
-        label: 'For', 
-        color: 'text-support', 
-      }
-    : { 
-        label: 'Against', 
-        color: 'text-oppose', 
-      };
+    ? { label: 'For', color: 'text-support', bgColor: 'bg-support/5', borderColor: 'border-support/20' }
+    : { label: 'Against', color: 'text-oppose', bgColor: 'bg-oppose/5', borderColor: 'border-oppose/20' };
   
   return (
-    <article className="bg-paper border border-hairline rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-      {/* Byline Header - Matches ArgumentBlock structure (Req 5.2, 5.4) */}
-      <div className="px-5 pt-4 pb-2 flex items-baseline gap-2 bg-page-bg/30">
-        {/* Side label with small-caps styling */}
-        <span className={`small-caps text-xs font-medium ${sideConfig.color}`}>
-          {sideConfig.label}
-        </span>
-        <span className="text-divider">—</span>
-        <span className="text-body-small text-text-tertiary italic">
-          Awaiting submission
-        </span>
-      </div>
-      
-      {/* Card Body - Placeholder content with paper aesthetic */}
-      <div className="px-5 pb-5 pt-3">
-        <div className="flex items-center gap-3 text-text-tertiary">
-          {isWaiting ? (
-            <>
-              <ClockIcon size="sm" className="animate-pulse flex-shrink-0" decorative />
-              <p className="text-body-small leading-relaxed">
-                Waiting for argument to be submitted...
-              </p>
-            </>
-          ) : (
-            <>
-              <ChatBubbleIcon size="sm" className="flex-shrink-0" decorative />
-              <p className="text-body-small leading-relaxed">
-                No argument has been submitted for this position.
-              </p>
-            </>
-          )}
+    <article className={`border-2 border-dashed ${sideConfig.borderColor} rounded-lg p-5 ${sideConfig.bgColor}`}>
+      <div className="flex items-center gap-3">
+        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+          side === 'support' ? 'bg-support/10' : 'bg-oppose/10'
+        }`}>
+          <span className={`text-sm font-semibold ${sideConfig.color}`}>
+            {side === 'support' ? 'F' : 'A'}
+          </span>
         </div>
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-medium ${sideConfig.color}`}>{sideConfig.label}</p>
+          <p className="text-sm text-text-tertiary">
+            {isWaiting ? 'Waiting for submission...' : 'No argument submitted'}
+          </p>
+        </div>
+        {isWaiting && (
+          <ClockIcon size="sm" className="text-text-tertiary animate-pulse flex-shrink-0" decorative />
+        )}
       </div>
     </article>
   );
@@ -161,10 +206,6 @@ export function ActiveRoundView({
 }: ActiveRoundViewProps) {
   const sectionId = `active-round-${roundNumber}`;
   const isComplete = round.completedAt !== null;
-  const hasArguments = supportArgument || opposeArgument;
-  
-  // Get round configuration for header display
-  const roundConfig = getRoundConfig(round.roundType);
   
   // Steelman gate: For rounds 2 and 3, check if user needs to submit/has approved steelman
   const requiresSteelman = roundNumber > 1 && userSide && isActiveRound;
@@ -205,26 +246,8 @@ export function ActiveRoundView({
       id={sectionId}
       data-round={roundNumber}
       className="scroll-mt-8"
-      aria-labelledby={`${sectionId}-heading`}
+      aria-labelledby={`round-${roundNumber}-header`}
     >
-      {/* Section header - minimal */}
-      <header className="mb-5">
-        <div className="flex items-center gap-2">
-          <h2 
-            id={`${sectionId}-heading`}
-            className="text-lg font-semibold text-text-primary"
-          >
-            {roundConfig.title}
-          </h2>
-          {requiresSteelman && steelmanData && (
-            <SteelmanGateBadge status={steelmanData.status} roundNumber={roundNumber} />
-          )}
-        </div>
-        <p className="text-sm text-text-secondary mt-0.5">
-          {roundConfig.description}
-        </p>
-      </header>
-
       {/* Pending steelman reviews (for opponent to review) */}
       {pendingReviews.length > 0 && opponentPrevArgument && (
         <div className="mb-5 space-y-3">
@@ -256,59 +279,67 @@ export function ActiveRoundView({
       )}
       
       {/* Arguments container */}
-      <div className="space-y-5">
-        {/* Support (FOR) argument or form */}
-        {supportArgument ? (
-          <ArgumentBlock
-            argument={supportArgument}
-            side="support"
-            author={supportAuthor}
-            citations={supportCitations}
-            highlight={highlightArgumentId === supportArgument.id}
-            onCitationHover={onCitationHover}
-            onMindChanged={onMindChanged ? () => onMindChanged(supportArgument.id) : undefined}
-            attributed={attributedArguments?.has(supportArgument.id) ?? false}
-          />
-        ) : showSupportForm && onArgumentSubmit ? (
-          <ArgumentSubmissionForm
-            roundType={round.roundType}
-            side="support"
-            onSubmit={onArgumentSubmit}
-            isSubmitting={isSubmitting}
-          />
-        ) : (
-          <ArgumentPlaceholder 
-            side="support" 
-            isWaiting={!isComplete && isActiveRound} 
-          />
-        )}
-        
-        {/* Oppose (AGAINST) argument or form */}
-        {opposeArgument ? (
-          <ArgumentBlock
-            argument={opposeArgument}
-            side="oppose"
-            author={opposeAuthor}
-            citations={opposeCitations}
-            highlight={highlightArgumentId === opposeArgument.id}
-            onCitationHover={onCitationHover}
-            onMindChanged={onMindChanged ? () => onMindChanged(opposeArgument.id) : undefined}
-            attributed={attributedArguments?.has(opposeArgument.id) ?? false}
-          />
-        ) : showOpposeForm && onArgumentSubmit ? (
-          <ArgumentSubmissionForm
-            roundType={round.roundType}
-            side="oppose"
-            onSubmit={onArgumentSubmit}
-            isSubmitting={isSubmitting}
-          />
-        ) : (
-          <ArgumentPlaceholder 
-            side="oppose" 
-            isWaiting={!isComplete && !!hasArguments} 
-          />
-        )}
-      </div>
+      {!supportArgument && !opposeArgument && !showSupportForm && !showOpposeForm ? (
+        /* Both sides empty and no forms to show - use unified empty state */
+        <EmptyRoundState 
+          currentTurn={currentTurn}
+          isActiveRound={isActiveRound}
+        />
+      ) : (
+        <div className="space-y-5">
+          {/* Support (FOR) argument or form */}
+          {supportArgument ? (
+            <ArgumentBlock
+              argument={supportArgument}
+              side="support"
+              author={supportAuthor}
+              citations={supportCitations}
+              highlight={highlightArgumentId === supportArgument.id}
+              onCitationHover={onCitationHover}
+              onMindChanged={onMindChanged ? () => onMindChanged(supportArgument.id) : undefined}
+              attributed={attributedArguments?.has(supportArgument.id) ?? false}
+            />
+          ) : showSupportForm && onArgumentSubmit ? (
+            <ArgumentSubmissionForm
+              roundType={round.roundType}
+              side="support"
+              onSubmit={onArgumentSubmit}
+              isSubmitting={isSubmitting}
+            />
+          ) : (
+            <ArgumentPlaceholder 
+              side="support" 
+              isWaiting={!isComplete && isActiveRound} 
+            />
+          )}
+          
+          {/* Oppose (AGAINST) argument or form */}
+          {opposeArgument ? (
+            <ArgumentBlock
+              argument={opposeArgument}
+              side="oppose"
+              author={opposeAuthor}
+              citations={opposeCitations}
+              highlight={highlightArgumentId === opposeArgument.id}
+              onCitationHover={onCitationHover}
+              onMindChanged={onMindChanged ? () => onMindChanged(opposeArgument.id) : undefined}
+              attributed={attributedArguments?.has(opposeArgument.id) ?? false}
+            />
+          ) : showOpposeForm && onArgumentSubmit ? (
+            <ArgumentSubmissionForm
+              roundType={round.roundType}
+              side="oppose"
+              onSubmit={onArgumentSubmit}
+              isSubmitting={isSubmitting}
+            />
+          ) : (
+            <ArgumentPlaceholder 
+              side="oppose" 
+              isWaiting={!isComplete && supportArgument !== null} 
+            />
+          )}
+        </div>
+      )}
     </section>
   );
 }

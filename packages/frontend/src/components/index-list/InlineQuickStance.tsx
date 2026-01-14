@@ -47,21 +47,24 @@ export function InlineQuickStance({
   }
 
   // Quick vote buttons
+  // Requirements: 6.3, 6.4 - Larger touch targets on mobile (44px min)
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 sm:gap-1">
       <button
         onClick={(e) => handleClick(e, 'support')}
         disabled={disabled}
-        className="px-1.5 py-0.5 text-[10px] font-medium text-support bg-support/10 hover:bg-support/20 rounded transition-colors disabled:opacity-50"
+        className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 px-2 sm:px-1.5 py-1.5 sm:py-0.5 text-xs sm:text-[10px] font-medium text-support bg-support/10 hover:bg-support/20 active:bg-support/30 rounded transition-colors disabled:opacity-50"
         title="Support"
+        data-testid="quick-stance-support"
       >
         {supportPercent.toFixed(0)}%
       </button>
       <button
         onClick={(e) => handleClick(e, 'oppose')}
         disabled={disabled}
-        className="px-1.5 py-0.5 text-[10px] font-medium text-oppose bg-oppose/10 hover:bg-oppose/20 rounded transition-colors disabled:opacity-50"
+        className="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 px-2 sm:px-1.5 py-1.5 sm:py-0.5 text-xs sm:text-[10px] font-medium text-oppose bg-oppose/10 hover:bg-oppose/20 active:bg-oppose/30 rounded transition-colors disabled:opacity-50"
         title="Oppose"
+        data-testid="quick-stance-oppose"
       >
         {opposePercent.toFixed(0)}%
       </button>

@@ -4,37 +4,31 @@ export interface NavSection {
   id: string;
   label: string;
   indent?: number;
+  /** Optional badge content (e.g., round number, status) */
+  badge?: string;
+  /** Optional status indicator */
+  status?: 'active' | 'completed' | 'pending';
 }
 
 /**
- * Generates the unified "Debate Rounds" TOC label with round indicator.
- * Format: "Debate Rounds (X/3)" where X is the current round number.
- * 
- * Requirements: 8.3 - TOC SHALL show the current round indicator next to "Debate Rounds"
- * 
- * @param currentRound - The current round number (1, 2, or 3)
- * @returns The formatted label string
+ * Generates the label for the Debate Rounds TOC entry.
  */
-export function generateDebateRoundsLabel(currentRound: 1 | 2 | 3): string {
-  return `Debate Rounds (${currentRound}/3)`;
+export function generateDebateRoundsLabel(): string {
+  return 'Rounds';
 }
 
 /**
  * Creates the unified TOC sections array for a debate page.
- * Replaces three separate round entries with a single "Debate Rounds" entry.
  * 
  * Requirements: 8.1, 8.3, 8.4
- * - 8.1: Single "Debate Rounds" section instead of three separate round entries
- * - 8.3: Current round indicator next to "Debate Rounds"
- * - 8.4: Maintain entries for Resolution, Outcome, and Discussion sections
- * 
- * @param currentRound - The current round number (1, 2, or 3)
- * @returns Array of NavSection objects for the TOC
+ * - 8.1: Single "Debate Rounds" section
+ * - 8.3: Current round indicator badge
+ * - 8.4: Resolution, Outcome, and Discussion sections
  */
 export function createUnifiedTocSections(currentRound: 1 | 2 | 3): NavSection[] {
   return [
     { id: 'resolution', label: 'Resolution' },
-    { id: 'debate-rounds', label: generateDebateRoundsLabel(currentRound) },
+    { id: 'debate-rounds', label: 'Rounds', badge: `${currentRound}/3`, status: 'active' },
     { id: 'outcome', label: 'Outcome' },
     { id: 'comments', label: 'Discussion' },
   ];
@@ -47,6 +41,15 @@ interface LeftNavRailProps {
   onActiveSectionChange?: (sectionId: string) => void;
 }
 
+/**
+ * LeftNavRail - Modern, compact navigation sidebar
+ * 
+ * Features:
+ * - Clean vertical line indicator for active section
+ * - Compact spacing with better visual hierarchy
+ * - Badge support for status indicators
+ * - Smooth animations for state changes
+ */
 export function LeftNavRail({ 
   sections, 
   activeSection, 
@@ -108,32 +111,54 @@ export function LeftNavRail({
   }, [sections, onActiveSectionChange]);
 
   return (
-    <nav className="space-y-0.5" aria-label="Table of contents">
-      <h2 className="label-text mb-3 px-3">Contents</h2>
-      <ul className="space-y-0.5">
+    <nav className="relative" aria-label="Page navigation">
+      {/* Navigation items */}
+      <ul className="space-y-1">
         {sections.map((section) => {
           const isActive = activeSection === section.id;
-          const indentClass = section.indent 
-            ? `pl-${3 + section.indent * 3}` 
-            : 'pl-3';
+          
+          const indicatorClasses = [
+            'absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full',
+            'transition-all duration-200',
+            isActive ? 'bg-accent opacity-100' : 'bg-transparent opacity-0'
+          ].join(' ');
+
+          const buttonClasses = [
+            'w-full text-left pl-3 pr-2 py-2 rounded-r-lg',
+            'transition-all duration-150',
+            'flex items-center justify-between gap-2',
+            isActive 
+              ? 'text-accent bg-accent/5' 
+              : 'text-text-secondary hover:text-text-primary hover:bg-page-bg/50'
+          ].join(' ');
+
+          const badgeClasses = [
+            'text-xs px-1.5 py-0.5 rounded-full tabular-nums',
+            isActive 
+              ? 'bg-accent/10 text-accent' 
+              : 'bg-divider/50 text-text-tertiary'
+          ].join(' ');
           
           return (
-            <li key={section.id}>
-              {/* Navigation button - 44px minimum touch target for accessibility (Requirement 8.4) */}
+            <li key={section.id} className="relative">
+              {/* Active indicator line */}
+              <div className={indicatorClasses} />
+              
               <button
                 onClick={() => handleSectionClick(section.id)}
-                className={`
-                  w-full text-left min-h-[44px] py-2 pr-3 rounded-subtle transition-colors duration-150
-                  ${indentClass}
-                  ${isActive 
-                    ? 'text-accent bg-accent/5 font-medium' 
-                    : 'text-text-secondary hover:text-text-primary hover:bg-black/[0.02]'
-                  }
-                  ${section.indent ? 'text-body-small' : 'text-body-small'}
-                `}
+                className={buttonClasses}
                 aria-current={isActive ? 'location' : undefined}
               >
-                {section.label}
+                <span className={`text-sm ${isActive ? 'font-medium' : ''}`}>
+                  {section.label}
+                </span>
+                
+                {/* Badge (e.g., round progress) */}
+                {section.badge && (
+                  <span className={badgeClasses}>
+                    {section.badge}
+                  </span>
+                )}
               </button>
             </li>
           );

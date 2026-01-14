@@ -1,5 +1,4 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { useRouter, useLocation } from '@tanstack/react-router';
 
 /**
  * Storage key prefix for scroll positions
@@ -12,12 +11,41 @@ const SCROLL_STORAGE_KEY = 'scroll-positions';
 const MAX_STORED_POSITIONS = 50;
 
 /**
+ * Default debounce delay in milliseconds
+ */
+const DEFAULT_DEBOUNCE_MS = 100;
+
+/**
  * Interface for stored scroll position data
  */
 interface ScrollPosition {
   x: number;
   y: number;
   timestamp: number;
+}
+
+/**
+ * Options for useScrollRestoration hook
+ */
+export interface UseScrollRestorationOptions {
+  /** Unique key for storing scroll position */
+  key: string;
+  /** Whether scroll restoration is enabled (default: true) */
+  enabled?: boolean;
+  /** Debounce delay in ms for saving scroll position (default: 100) */
+  debounceMs?: number;
+}
+
+/**
+ * Return type for useScrollRestoration hook
+ */
+export interface UseScrollRestorationResult {
+  /** Ref to attach to the scrollable container */
+  scrollRef: React.RefObject<HTMLDivElement>;
+  /** Manually save current scroll position */
+  savePosition: () => void;
+  /** Manually restore saved scroll position */
+  restorePosition: () => void;
 }
 
 /**
@@ -46,156 +74,148 @@ function savePositions(positions: Record<string, ScrollPosition>): void {
     }
     sessionStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(positions));
   } catch {
-    // Ignore storage errors
+    // Ignore storage errors (e.g., quota exceeded, private browsing)
   }
 }
 
 /**
- * Hook for preserving and restoring scroll position across navigation.
- * Saves scroll position before navigation and restores on back navigation.
- * 
- * Requirements: 10.1
- * 
- * @param key - Optional unique key for the scroll position. Defaults to current pathname.
- * @returns Object with scrollRef, restoreScroll function, and saveScroll function
+ * Simple debounce function
  */
-export function useScrollRestoration(key?: string) {
-  const location = useLocation();
-  const router = useRouter();
-  const scrollRef = useRef<HTMLElement | null>(null);
-  const isRestoringRef = useRef(false);
+function debounce<T extends (...args: unknown[]) => void>(
+  fn: T,
+  delay: number
+): T & { cancel: () => void } {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
   
-  // Use provided key or default to pathname
-  const scrollKey = key || location.pathname;
+  const debounced = ((...args: Parameters<T>) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      fn(...args);
+      timeoutId = null;
+    }, delay);
+  }) as T & { cancel: () => void };
+  
+  debounced.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+  
+  return debounced;
+}
+
+/**
+ * Hook for preserving and restoring scroll position.
+ * 
+ * Saves scroll position to sessionStorage on scroll (debounced).
+ * Restores position on component mount.
+ * 
+ * Requirements: 1.4, 1.5
+ * - 1.4: Maintain scroll position when new content loads
+ * - 1.5: Restore scroll position when returning to feed
+ * 
+ * @param options - Configuration options
+ * @returns Object with scrollRef, savePosition, and restorePosition
+ */
+export function useScrollRestoration(
+  options: UseScrollRestorationOptions
+): UseScrollRestorationResult {
+  const { key, enabled = true, debounceMs = DEFAULT_DEBOUNCE_MS } = options;
+  
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const hasRestoredRef = useRef(false);
   
   /**
-   * Save current scroll position
+   * Save current scroll position to sessionStorage
    */
-  const saveScroll = useCallback(() => {
+  const savePosition = useCallback(() => {
+    if (!enabled) return;
+    
     const positions = getStoredPositions();
-    positions[scrollKey] = {
+    positions[key] = {
       x: window.scrollX,
       y: window.scrollY,
       timestamp: Date.now(),
     };
     savePositions(positions);
-  }, [scrollKey]);
+  }, [key, enabled]);
   
   /**
-   * Restore scroll position for current key
+   * Restore saved scroll position
    */
-  const restoreScroll = useCallback(() => {
+  const restorePosition = useCallback(() => {
+    if (!enabled) return;
+    
     const positions = getStoredPositions();
-    const position = positions[scrollKey];
+    const position = positions[key];
     
     if (position) {
-      isRestoringRef.current = true;
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
         window.scrollTo(position.x, position.y);
-        isRestoringRef.current = false;
       });
     }
-  }, [scrollKey]);
+  }, [key, enabled]);
   
-  /**
-   * Clear scroll position for current key
-   */
-  const clearScroll = useCallback(() => {
-    const positions = getStoredPositions();
-    delete positions[scrollKey];
-    savePositions(positions);
-  }, [scrollKey]);
+  // Create debounced save function
+  const debouncedSaveRef = useRef<ReturnType<typeof debounce> | null>(null);
   
-  // Save scroll position before navigation
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      saveScroll();
-    };
+    if (!enabled) return;
     
-    // Save on page unload
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    // Create debounced save function
+    debouncedSaveRef.current = debounce(savePosition, debounceMs);
     
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      debouncedSaveRef.current?.cancel();
     };
-  }, [saveScroll]);
+  }, [savePosition, debounceMs, enabled]);
   
-  // Subscribe to router events to save scroll before navigation
+  // Save scroll position on scroll (debounced)
   useEffect(() => {
-    // Save scroll position when navigating away
-    const unsubscribe = router.subscribe('onBeforeNavigate', () => {
-      if (!isRestoringRef.current) {
-        saveScroll();
-      }
-    });
+    if (!enabled) return;
+    
+    const handleScroll = () => {
+      debouncedSaveRef.current?.();
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => {
-      unsubscribe();
+      window.removeEventListener('scroll', handleScroll);
+      // Save final position on cleanup
+      savePosition();
     };
-  }, [router, saveScroll]);
+  }, [enabled, savePosition]);
   
-  // Restore scroll on back/forward navigation
+  // Restore scroll position on mount
   useEffect(() => {
-    const handlePopState = () => {
-      // Small delay to let the route change complete
-      setTimeout(() => {
-        restoreScroll();
-      }, 0);
-    };
+    if (!enabled || hasRestoredRef.current) return;
     
-    window.addEventListener('popstate', handlePopState);
+    // Small delay to ensure content is rendered
+    const timeoutId = setTimeout(() => {
+      restorePosition();
+      hasRestoredRef.current = true;
+    }, 0);
     
     return () => {
-      window.removeEventListener('popstate', handlePopState);
+      clearTimeout(timeoutId);
     };
-  }, [restoreScroll]);
+  }, [enabled, restorePosition]);
+  
+  // Reset restoration flag when key changes
+  useEffect(() => {
+    hasRestoredRef.current = false;
+  }, [key]);
   
   return {
     scrollRef,
-    restoreScroll,
-    saveScroll,
-    clearScroll,
+    savePosition,
+    restorePosition,
   };
-}
-
-/**
- * Hook that automatically manages scroll restoration for a route.
- * Call this at the top of route components to enable scroll restoration.
- * 
- * Requirements: 10.1
- */
-export function useAutoScrollRestoration() {
-  const location = useLocation();
-  const { restoreScroll, saveScroll } = useScrollRestoration();
-  const hasRestoredRef = useRef(false);
-  const prevPathnameRef = useRef(location.pathname);
-  
-  // Restore scroll on mount if this is a back navigation
-  useEffect(() => {
-    // Check if this is a new navigation or back navigation
-    const isBackNavigation = window.history.state?.idx !== undefined;
-    
-    if (isBackNavigation && !hasRestoredRef.current) {
-      restoreScroll();
-      hasRestoredRef.current = true;
-    }
-  }, [restoreScroll]);
-  
-  // Reset restoration flag when pathname changes
-  useEffect(() => {
-    if (location.pathname !== prevPathnameRef.current) {
-      hasRestoredRef.current = false;
-      prevPathnameRef.current = location.pathname;
-    }
-  }, [location.pathname]);
-  
-  // Save scroll on unmount
-  useEffect(() => {
-    return () => {
-      saveScroll();
-    };
-  }, [saveScroll]);
 }
 
 export default useScrollRestoration;

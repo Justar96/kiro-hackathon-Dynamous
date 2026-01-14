@@ -95,10 +95,7 @@ export { useSSERound } from './useSSERound';
 export { useSSESteelman } from './useSSESteelman';
 
 // Scroll restoration hooks
-export { 
-  useScrollRestoration, 
-  useAutoScrollRestoration,
-} from './useScrollRestoration';
+export { useScrollRestoration } from './useScrollRestoration';
 
 // Deep link navigation hooks
 export {
@@ -138,3 +135,8 @@ export type {
   UseIndexPollingOptions,
   UseIndexPollingResult,
 } from './useIndexPolling';
+
+// Infinite debates hook for Reddit-style feed
+export { useInfiniteDebates } from './useInfiniteDebates';
+export type { UseInfiniteDebatesResult } from './useInfiniteDebates';
+export type { UseInfiniteDebatesOptions } from './queries';

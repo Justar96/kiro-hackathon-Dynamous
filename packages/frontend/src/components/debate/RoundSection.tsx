@@ -1,8 +1,6 @@
 /**
  * RoundSection is the main container component that orchestrates round display and navigation.
  * It composes RoundProgressIndicator, RoundHistory, and ActiveRoundView.
- * 
- * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 3.1, 3.2, 3.3, 3.4, 3.5, 5.4, 5.5, 7.1, 7.2, 7.3, 7.4, 7.5
  */
 
 import { useCallback, useMemo, useEffect, useRef, useReducer, useState } from 'react';
@@ -26,10 +24,8 @@ export interface RoundSectionProps {
   citations?: { [argumentId: string]: Citation[] };
   /** Controls whether to show card styling or seamless integration */
   variant?: 'card' | 'seamless';
-  /** Enable sticky progress bar on scroll (Requirement 3.5) */
+  /** Enable sticky progress bar on scroll */
   sticky?: boolean;
-  /** Winner side when debate is concluded (Requirement 6.5) */
-  winnerSide?: 'support' | 'oppose' | 'tie' | null;
   /** Argument ID to highlight (for real-time SSE updates) */
   highlightArgumentId?: string | null;
   onCitationHover?: (citation: Citation | null, position: { top: number }) => void;
@@ -115,7 +111,6 @@ export function RoundSection({
   citations,
   variant = 'card',
   sticky = false,
-  // winnerSide is available in props for future use (Requirement 6.5)
   highlightArgumentId,
   onCitationHover,
   onMindChanged,
@@ -136,12 +131,12 @@ export function RoundSection({
   const prevRoundsRef = useRef<Round[]>(rounds);
   const prevDebateRef = useRef<Debate>(debate);
 
-  // Sticky progress bar state (Requirement 3.5)
+  // Sticky progress bar state
   const [isSticky, setIsSticky] = useState(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
-  // Intersection Observer for sticky detection (Requirement 3.5)
+  // Intersection Observer for sticky detection
   useEffect(() => {
     if (!sticky || !progressBarRef.current) return;
 
@@ -219,8 +214,7 @@ export function RoundSection({
   const handleRoundSelect = useCallback((round: RoundNumber) => {
     dispatch({ type: 'VIEW_ROUND', round });
     
-    // Smooth scroll to the round header after state update (Requirement 4.4)
-    // Use requestAnimationFrame to ensure DOM has updated
+    // Smooth scroll to the round header after state update
     requestAnimationFrame(() => {
       const headerElement = document.getElementById(`round-${round}-header`);
       if (headerElement) {
@@ -240,11 +234,6 @@ export function RoundSection({
 
   const isActiveRound = viewedRound === debate.currentRound && debate.status === 'active';
 
-  // Note: The following functionality is planned for future implementation:
-  // - isUserTurn: Turn highlighting (Requirement 6.3) 
-  // - argumentCounts: Activity indicator per round (Requirement 6.4)
-  // - handleSubmitClick: Scroll to submission form when CTA is clicked (Requirement 6.3)
-
   if (!currentRoundData) {
     return <div className="p-4 text-text-tertiary text-center">Round data not available</div>;
   }
@@ -253,20 +242,18 @@ export function RoundSection({
   const roundConfig = getEnhancedRoundConfig(currentRoundData.roundType, viewedRound);
   const isRoundComplete = currentRoundData.completedAt !== null;
 
-  // Variant-based styling (Requirements: 3.1, 3.2, 3.4)
+  // Variant-based styling
   const containerClasses = variant === 'seamless'
-    ? 'bg-paper border border-hairline rounded-lg shadow-sm overflow-hidden'
-    : 'rounded-lg border border-hairline bg-paper shadow-sm overflow-hidden';
+    ? 'bg-paper border border-divider rounded-lg shadow-paper overflow-hidden'
+    : 'rounded-lg border border-divider bg-paper shadow-paper overflow-hidden';
 
   const progressBarClasses = variant === 'seamless'
-    ? 'bg-page-bg/80 backdrop-blur-sm'
-    : 'bg-page-bg/50';
+    ? 'bg-page-bg/95 backdrop-blur-sm'
+    : 'bg-page-bg/80';
 
-  // Sticky progress bar classes (Requirement 3.5)
-  // When sticky, add solid background to prevent content showing through
-  // Only sticky on large screens (lg:) to prevent overlaps on mobile
+  // Sticky progress bar classes
   const stickyClasses = sticky
-    ? `lg:sticky top-0 z-10 transition-all duration-200 ${isSticky ? 'shadow-lg bg-paper/98 backdrop-blur-md border-b border-hairline' : ''}`
+    ? `lg:sticky top-0 z-10 transition-all duration-200 ${isSticky ? 'shadow-elevated bg-paper/98 backdrop-blur-md border-b border-divider' : ''}`
     : '';
 
   return (
@@ -276,12 +263,12 @@ export function RoundSection({
       className={containerClasses}
       aria-label="Debate Rounds"
     >
-      {/* Sentinel element for intersection observer (Requirement 3.5) */}
+      {/* Sentinel element for intersection observer */}
       {sticky && <div ref={progressBarRef} className="h-0 w-full" aria-hidden="true" />}
 
-      {/* Integrated Progress Bar + Header (Requirements: 1.1, 1.2, 3.3, 3.4, 3.5, 4.4) */}
-      <div 
-        className={`${progressBarClasses} ${variant === 'seamless' ? '' : 'border-b border-hairline'} ${stickyClasses}`}
+      {/* Integrated Progress Bar + Header */}
+      <div
+        className={`${progressBarClasses} ${variant === 'seamless' ? '' : 'border-b border-divider'} ${stickyClasses}`}
         id={`round-${viewedRound}-progress`}
         data-sticky={sticky && isSticky}
       >
@@ -298,7 +285,7 @@ export function RoundSection({
         </div>
       </div>
 
-      {/* Round Header - Positioned directly below progress bar (Requirements: 3.3, 3.4, 4.4, 7.1, 7.2, 7.3, 7.4, 7.5) */}
+      {/* Round Header */}
       <header 
         id={`round-${viewedRound}-header`}
         className={`scroll-mt-16 ${variant === 'seamless' ? 'px-6 pt-5 pb-0' : 'px-5 pt-4 pb-0'}`}
@@ -307,7 +294,7 @@ export function RoundSection({
           <h2 className="font-heading text-heading-2 text-text-primary leading-tight">
             {roundConfig.fullTitle}
           </h2>
-          {/* Subtle completion indicator (Requirement 7.4) */}
+          {/* Completion indicator */}
           {isRoundComplete && (
             <span className="small-caps text-xs text-text-tertiary flex items-center gap-1.5 flex-shrink-0">
               <CheckCircleIcon 
@@ -319,15 +306,15 @@ export function RoundSection({
             </span>
           )}
         </div>
-        {/* Muted description text (Requirement 7.2) */}
+        {/* Description */}
         <p className="text-body-small text-text-secondary mt-1.5 leading-relaxed">
           {roundConfig.description}
         </p>
-        {/* Subtle divider below header - only in card mode (Requirement 3.4) */}
+        {/* Divider - only in card mode */}
         {variant === 'card' && <HorizontalDivider spacing="md" />}
       </header>
 
-      {/* Card Body - Round Content (Requirement 4.4 - smooth scroll targets) */}
+      {/* Round Content */}
       <div 
         id={`round-${viewedRound}-content`}
         className={`scroll-mt-8 ${variant === 'seamless' ? 'px-6 pb-6 pt-5' : 'px-5 pb-5'}`}

@@ -818,3 +818,62 @@ export const pendingSteelmansQueryOptions = (debateId: string, token?: string) =
     ...CACHE_STRATEGIES.realtime,
     enabled: !!debateId && !!token,
   });
+
+// ============================================================================
+// Infinite Debates Query (Reddit-Style Feed)
+// Requirements: 1.1, 1.2, 1.3 - Cursor-based pagination for infinite scroll
+// ============================================================================
+
+import type { 
+  PaginatedDebatesResponse 
+} from '@debate-platform/shared';
+
+export interface UseInfiniteDebatesOptions {
+  pageSize?: number;
+  filter?: 'all' | 'my-debates';
+  userId?: string;
+}
+
+/**
+ * Infinite query options for fetching paginated debates with market data.
+ * TanStack Query v5 Best Practice: Use infiniteQueryOptions for paginated data.
+ * 
+ * This enables infinite scroll functionality for the Reddit-style feed.
+ * Uses cursor-based pagination for efficient loading.
+ * 
+ * @param options - Configuration options for the query
+ * @param options.pageSize - Number of debates per page (default: 20)
+ * @param options.filter - Filter type: 'all' or 'my-debates'
+ * @param options.userId - User ID for 'my-debates' filter
+ */
+export const infiniteDebatesQueryOptions = (options: UseInfiniteDebatesOptions = {}) => {
+  const { pageSize = 20, filter = 'all', userId } = options;
+  
+  return infiniteQueryOptions({
+    queryKey: [...queryKeys.debates.all, 'infinite', filter, userId ?? 'none'] as const,
+    queryFn: async ({ pageParam }): Promise<PaginatedDebatesResponse> => {
+      const params = new URLSearchParams({
+        limit: String(pageSize),
+        includeMarket: 'true',
+      });
+      
+      if (pageParam) {
+        params.set('cursor', pageParam);
+      }
+      
+      if (filter === 'my-debates' && userId) {
+        params.set('filter', 'my-debates');
+        params.set('userId', userId);
+      }
+      
+      const response = await fetchApi<PaginatedDebatesResponse>(
+        `/api/debates?${params.toString()}`
+      );
+      
+      return response;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    ...CACHE_STRATEGIES.frequent,
+  });
+};

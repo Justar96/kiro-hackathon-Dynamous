@@ -167,13 +167,18 @@ export {
   DebateTabs, 
   getPersistedTab, 
   TrendingDebatesCard,
+  TrendingRail,
   QuickStanceWidget,
   SeekingOpponentsSection,
   OnboardingBanner,
   resetOnboardingBanner,
   SandboxProgress,
+  CompactDebateCard,
+  CARD_CONFIG,
+  InfiniteFeed,
+  VIRTUALIZATION_CONFIG,
 } from './index-list';
-export type { DebateTabType } from './index-list';
+export type { DebateTabType, TrendingRailProps, CompactDebateCardProps, InfiniteFeedProps } from './index-list';
 
 // ============================================
 // Layout Components

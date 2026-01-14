@@ -407,3 +407,28 @@ export interface QueueFilter {
   maxReputationDiff?: number;
   userId?: string; // For filtering by user's reputation
 }
+
+// ============================================
+// Pagination Types (Reddit-Style Feed)
+// ============================================
+
+export interface DebateWithMarket {
+  debate: Debate;
+  marketPrice?: MarketPrice | null;
+}
+
+export interface PaginatedDebatesResponse {
+  debates: DebateWithMarket[];
+  nextCursor?: string;
+  hasMore: boolean;
+  totalCount: number;
+  includesMarket?: boolean;
+}
+
+export interface PaginatedDebatesParams {
+  cursor?: string;
+  limit?: number;
+  filter?: 'all' | 'my-debates';
+  userId?: string;
+  includeMarket?: boolean;
+}

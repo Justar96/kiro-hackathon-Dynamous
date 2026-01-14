@@ -233,23 +233,77 @@ app.post('/api/debates', authMiddleware, async (c) => {
   return c.json(result, 201);
 });
 
-// GET /api/debates - List debates with optional market data
+// GET /api/debates - List debates with optional market data and cursor-based pagination
+// Requirements: Reddit-Style Feed 1.1, 5.4 - Cursor-based pagination for infinite scroll
 app.get('/api/debates', async (c) => {
   const includeMarket = c.req.query('includeMarket') === 'true';
+  const cursor = c.req.query('cursor'); // debate ID to start after
+  const limitParam = c.req.query('limit');
+  const limit = limitParam ? Math.min(parseInt(limitParam, 10), 50) : 20;
+  const filter = c.req.query('filter'); // 'all' or 'my-debates'
+  const userId = c.req.query('userId'); // for 'my-debates' filter
   
   const { db } = await import('./db');
   const { debates } = await import('./db/schema');
-  const { desc } = await import('drizzle-orm');
+  const { desc, lt, or, eq, and, count, sql } = await import('drizzle-orm');
   
-  const allDebates = await db.query.debates.findMany({
+  // Build where clause based on cursor and filter
+  let whereClause = undefined;
+  
+  // If cursor provided, get debates created before the cursor debate
+  if (cursor) {
+    const cursorDebate = await db.query.debates.findFirst({
+      where: eq(debates.id, cursor),
+    });
+    
+    if (cursorDebate) {
+      whereClause = lt(debates.createdAt, cursorDebate.createdAt);
+    }
+  }
+  
+  // Apply 'my-debates' filter if specified
+  if (filter === 'my-debates' && userId) {
+    const userFilter = or(
+      eq(debates.supportDebaterId, userId),
+      eq(debates.opposeDebaterId, userId)
+    );
+    whereClause = whereClause ? and(whereClause, userFilter) : userFilter;
+  }
+  
+  // Fetch debates with limit + 1 to check if there are more
+  const fetchedDebates = await db.query.debates.findMany({
+    where: whereClause,
     orderBy: [desc(debates.createdAt)],
-    limit: 50,
+    limit: limit + 1,
   });
+  
+  // Check if there are more debates
+  const hasMore = fetchedDebates.length > limit;
+  const debatesToReturn = hasMore ? fetchedDebates.slice(0, limit) : fetchedDebates;
+  
+  // Get next cursor (ID of the last debate in the current page)
+  const nextCursor = hasMore && debatesToReturn.length > 0 
+    ? debatesToReturn[debatesToReturn.length - 1].id 
+    : undefined;
+  
+  // Get total count for the filter
+  let totalCountResult;
+  if (filter === 'my-debates' && userId) {
+    totalCountResult = await db.select({ count: count() })
+      .from(debates)
+      .where(or(
+        eq(debates.supportDebaterId, userId),
+        eq(debates.opposeDebaterId, userId)
+      ));
+  } else {
+    totalCountResult = await db.select({ count: count() }).from(debates);
+  }
+  const totalCount = totalCountResult[0]?.count ?? 0;
   
   // If market data requested, fetch it in parallel for all debates
   if (includeMarket) {
     const debatesWithMarket = await Promise.all(
-      allDebates.map(async (debate) => {
+      debatesToReturn.map(async (debate) => {
         try {
           const marketPrice = await marketService.calculateMarketPrice(debate.id);
           return { debate, marketPrice };
@@ -258,10 +312,21 @@ app.get('/api/debates', async (c) => {
         }
       })
     );
-    return c.json({ debates: debatesWithMarket, includesMarket: true });
+    return c.json({ 
+      debates: debatesWithMarket, 
+      nextCursor,
+      hasMore,
+      totalCount,
+      includesMarket: true 
+    });
   }
   
-  return c.json({ debates: allDebates });
+  return c.json({ 
+    debates: debatesToReturn,
+    nextCursor,
+    hasMore,
+    totalCount
+  });
 });
 
 // GET /api/debates/:id - Get debate details with optional expanded data

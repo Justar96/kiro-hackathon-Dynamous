@@ -27,13 +27,8 @@ interface ArgumentBlockProps {
 
 /**
  * ArgumentBlock displays an individual argument as an essay paragraph.
- * Follows the paper-clean dossier aesthetic - not a comment bubble.
  * Shows side label (FOR/AGAINST), author+reputation, main text, footnotes, and impact badge.
- * 
  * Includes "This changed my mind" button for impact attribution.
- * 
- * Requirements: 10.3, 13.1, 13.2, 13.3
- * Paper Polish Requirements: 5.1, 5.2, 5.3, 5.4, 5.5
  */
 export function ArgumentBlock({ 
   argument, 
@@ -57,19 +52,19 @@ export function ArgumentBlock({
   );
   
   return (
-    <article 
-      className={`bg-paper border border-hairline rounded-lg shadow-sm overflow-hidden transition-all duration-500 hover:shadow-md ${
+    <article
+      className={`bg-paper border border-divider rounded-lg shadow-paper overflow-hidden transition-all duration-500 hover:shadow-md ${
         highlight ? 'ring-2 ring-accent/50 shadow-lg animate-pulse-once' : ''
       }`}
     >
-      {/* Byline Header - Author attribution in refined style (Req 5.4) */}
-      <div className="px-5 pt-4 pb-2 flex items-baseline justify-between gap-3 bg-page-bg/20">
+      {/* Byline Header */}
+      <div className="px-5 pt-4 pb-2 flex items-baseline justify-between gap-3 bg-page-bg/30 border-b border-divider">
         <div className="flex items-baseline gap-2">
-          {/* Side label with small-caps styling (Req 5.2) */}
+          {/* Side label */}
           <span className={`small-caps text-xs font-medium ${sideConfig.color}`}>
             {sideConfig.label}
           </span>
-          {/* Author byline - refined styling (Req 5.4) */}
+          {/* Author byline */}
           {author && (
             <>
               <span className="text-divider">—</span>
@@ -79,27 +74,26 @@ export function ArgumentBlock({
               <span className="text-caption text-text-tertiary">
                 ({author.reputationScore.toFixed(0)} rep)
               </span>
-            </>
-          )}
+          </>
+        )}
         </div>
         
-        {/* Impact badge - visually muted (Req 5.5) */}
+        {/* Impact badge */}
         {hasImpact && (
           <ImpactBadge score={argument.impactScore} />
         )}
       </div>
       
-      {/* Card Body - Main content with proper paragraph typography (Req 5.3) */}
+      {/* Main content */}
       <div className="px-5 pb-4">
-        {/* Main text as readable paragraph with improved line-height */}
         <div className="text-body text-text-primary leading-[1.7]">
           {contentWithCitations}
         </div>
       </div>
       
-      {/* Card Footer - Attribution button */}
+      {/* Footer - Attribution button */}
       {(onAttributeImpact || onMindChanged) && (
-        <div className="px-5 py-3 border-t border-divider/40">
+        <div className="px-5 py-3 border-t border-divider">
           <MindChangedButton 
             onClick={onMindChanged || onAttributeImpact}
             attributed={attributed}
@@ -112,8 +106,6 @@ export function ArgumentBlock({
 
 /**
  * ImpactBadge shows the net stance change attributed to an argument.
- * Visually muted (tiny, not shouting) but conceptually significant.
- * Requirements: 13.2, 13.3
  */
 export function ImpactBadge({ score }: { score: number }) {
   const sign = score >= 0 ? '+' : '';
@@ -125,9 +117,7 @@ export function ImpactBadge({ score }: { score: number }) {
 }
 
 /**
- * MindChangedButton allows users to attribute their mind-change to a specific argument.
- * This is the core interaction for impact attribution.
- * Requirements: 13.1
+ * MindChangedButton allows users to attribute their mind-change to an argument.
  */
 interface MindChangedButtonProps {
   onClick?: () => void;

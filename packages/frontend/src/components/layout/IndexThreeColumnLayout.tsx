@@ -24,80 +24,78 @@ export function IndexThreeColumnLayout({ leftRail, centerContent, rightRail }: I
 
   return (
     <div className="min-h-screen bg-page-bg">
-      {/* Mobile drawer toggle buttons - fixed bottom bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-sticky bg-paper border-t border-black/[0.08] px-4 py-2 flex items-center justify-between">
-        <button
-          onClick={toggleLeftDrawer}
-          className="flex items-center gap-2 px-3 py-2 text-text-secondary hover:text-text-primary text-sm"
-          aria-label="Open menu"
-        >
-          <MenuIcon size="md" decorative />
-          <span>Menu</span>
-        </button>
-        <button
-          onClick={toggleRightDrawer}
-          className="flex items-center gap-2 px-3 py-2 text-text-secondary hover:text-text-primary text-sm"
-          aria-label="Open stats"
-        >
-          <span>Stats</span>
-          <ChartIcon size="md" decorative />
-        </button>
+      {/* Mobile bottom bar - clean, minimal */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-sticky bg-paper/95 backdrop-blur-sm border-t border-hairline">
+        <div className="flex items-center justify-between px-2 py-1.5">
+          <button
+            onClick={toggleLeftDrawer}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-rule/50 active:bg-rule transition-colors text-sm font-medium"
+            aria-label="Open filters"
+          >
+            <MenuIcon size="md" decorative />
+            <span>Filters</span>
+          </button>
+          <button
+            onClick={toggleRightDrawer}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-text-secondary hover:text-text-primary hover:bg-rule/50 active:bg-rule transition-colors text-sm font-medium"
+            aria-label="Open stats"
+          >
+            <span>Stats</span>
+            <ChartIcon size="md" decorative />
+          </button>
+        </div>
       </div>
 
       {/* Mobile Left Drawer Overlay */}
-      {isLeftDrawerOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-overlay bg-black/30"
-          onClick={closeLeftDrawer}
-        />
-      )}
+      <div
+        className={`lg:hidden fixed inset-0 z-overlay bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 ${
+          isLeftDrawerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={closeLeftDrawer}
+        aria-hidden={!isLeftDrawerOpen}
+      />
 
-      {/* Mobile Left Drawer */}
+      {/* Mobile Left Drawer - No header, floating close button */}
       <aside
-        className={`lg:hidden fixed top-0 left-0 bottom-0 z-modal w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed top-0 left-0 bottom-0 z-modal w-72 bg-paper shadow-modal transform transition-transform duration-300 ease-out ${
           isLeftDrawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <span className="font-heading text-lg font-semibold">Menu</span>
-          <button
-            onClick={closeLeftDrawer}
-            className="p-1 text-gray-400 hover:text-gray-600"
-            aria-label="Close menu"
-          >
-            <XIcon size="md" decorative />
-          </button>
-        </div>
-        <div className="overflow-y-auto h-full pb-20 p-4">
+        <button
+          onClick={closeLeftDrawer}
+          className="absolute top-3 right-3 p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-rule/50 transition-colors z-10"
+          aria-label="Close filters"
+        >
+          <XIcon size="md" decorative />
+        </button>
+        <div className="overflow-y-auto h-full pt-4 pb-20 px-4">
           {leftRail}
         </div>
       </aside>
 
       {/* Mobile Right Drawer Overlay */}
-      {isRightDrawerOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-overlay bg-black/30"
-          onClick={closeRightDrawer}
-        />
-      )}
+      <div
+        className={`lg:hidden fixed inset-0 z-overlay bg-black/40 backdrop-blur-[2px] transition-opacity duration-300 ${
+          isRightDrawerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={closeRightDrawer}
+        aria-hidden={!isRightDrawerOpen}
+      />
 
-      {/* Mobile Right Drawer */}
+      {/* Mobile Right Drawer - No header, floating close button */}
       <aside
-        className={`lg:hidden fixed top-0 right-0 bottom-0 z-modal w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed top-0 right-0 bottom-0 z-modal w-72 bg-paper shadow-modal transform transition-transform duration-300 ease-out ${
           isRightDrawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <span className="font-heading text-lg font-semibold">Stats</span>
-          <button
-            onClick={closeRightDrawer}
-            className="p-1 text-gray-400 hover:text-gray-600"
-            aria-label="Close stats"
-          >
-            <XIcon size="md" decorative />
-          </button>
-        </div>
-        <div className="overflow-y-auto h-full pb-20 p-4">
+        <button
+          onClick={closeRightDrawer}
+          className="absolute top-3 left-3 p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-rule/50 transition-colors z-10"
+          aria-label="Close stats"
+        >
+          <XIcon size="md" decorative />
+        </button>
+        <div className="overflow-y-auto h-full pt-4 pb-20 px-4">
           {rightRail}
         </div>
       </aside>
