@@ -1,11 +1,20 @@
-import { eq, and, gte, desc } from 'drizzle-orm';
+import { eq, and, gte, desc, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db, comments, debates, users } from '../db';
 import type { 
   Comment, 
-  CreateCommentInput 
+  CreateCommentInput,
+  CommentWithReplies
 } from '@debate-platform/shared';
 import { COMMENT_RATE_LIMIT, COMMENT_RATE_WINDOW_MINUTES } from '@debate-platform/shared';
+
+/**
+ * Options for building comment trees
+ */
+export interface CommentTreeOptions {
+  maxDepth?: number;  // Default: unlimited
+  includeDeleted?: boolean;  // Default: false
+}
 
 /**
  * CommentService handles spectator comments with threading support.
@@ -202,6 +211,143 @@ export class CommentService {
   }
 
   /**
+   * Soft delete a comment by setting deletedAt timestamp
+   * Per Requirement 1.4: Preserve child comments with "deleted parent" indicator
+   * 
+   * @param commentId - The comment ID
+   * @returns True if soft deleted, false if not found
+   */
+  async softDeleteComment(commentId: string): Promise<boolean> {
+    const result = await db.update(comments)
+      .set({ deletedAt: new Date() })
+      .where(and(
+        eq(comments.id, commentId),
+        isNull(comments.deletedAt)
+      ))
+      .returning();
+
+    return result.length > 0;
+  }
+
+  /**
+   * Get comments for a debate as a hierarchical tree
+   * Per Requirements 1.1, 1.2, 1.3, 1.4:
+   * - Return comments with parent-child relationships intact
+   * - Include replyCount for each comment
+   * - Organize hierarchically with top-level comments as roots
+   * - Handle deleted parents with isParentDeleted flag
+   * 
+   * @param debateId - The debate ID
+   * @param options - Tree building options
+   * @returns Array of top-level comments with nested replies
+   */
+  async getCommentTree(debateId: string, options?: CommentTreeOptions): Promise<CommentWithReplies[]> {
+    const includeDeleted = options?.includeDeleted ?? false;
+    const maxDepth = options?.maxDepth;
+
+    // Fetch all comments for the debate
+    const allComments = await db.query.comments.findMany({
+      where: eq(comments.debateId, debateId),
+      orderBy: [desc(comments.createdAt)],
+    });
+
+    // Build lookup maps
+    const commentMap = new Map<string, typeof allComments[0]>();
+    const childrenMap = new Map<string, string[]>();
+    const deletedIds = new Set<string>();
+
+    // First pass: populate maps and identify deleted comments
+    for (const comment of allComments) {
+      commentMap.set(comment.id, comment);
+      
+      if (comment.deletedAt) {
+        deletedIds.add(comment.id);
+      }
+
+      const parentId = comment.parentId ?? 'root';
+      if (!childrenMap.has(parentId)) {
+        childrenMap.set(parentId, []);
+      }
+      childrenMap.get(parentId)!.push(comment.id);
+    }
+
+    // Helper to count direct replies (excluding deleted if not including them)
+    const countDirectReplies = (commentId: string): number => {
+      const children = childrenMap.get(commentId) ?? [];
+      if (includeDeleted) {
+        return children.length;
+      }
+      return children.filter(id => !deletedIds.has(id)).length;
+    };
+
+    // Helper to check if parent is deleted
+    const isParentDeleted = (parentId: string | null): boolean => {
+      if (!parentId) return false;
+      return deletedIds.has(parentId);
+    };
+
+    // Recursive function to build tree
+    const buildTree = (parentId: string | null, currentDepth: number): CommentWithReplies[] => {
+      const key = parentId ?? 'root';
+      const childIds = childrenMap.get(key) ?? [];
+      
+      const result: CommentWithReplies[] = [];
+
+      for (const childId of childIds) {
+        const comment = commentMap.get(childId)!;
+        
+        // Skip deleted comments unless includeDeleted is true
+        if (comment.deletedAt && !includeDeleted) {
+          // But we still need to include children of deleted comments
+          // They will have isParentDeleted = true
+          const grandchildren = buildTree(childId, currentDepth);
+          result.push(...grandchildren);
+          continue;
+        }
+
+        const replyCount = countDirectReplies(childId);
+        
+        const commentWithReplies: CommentWithReplies = {
+          ...this.mapToComment(comment),
+          replyCount,
+          isParentDeleted: isParentDeleted(comment.parentId),
+        };
+
+        // Add nested replies if not at max depth
+        if (maxDepth === undefined || currentDepth < maxDepth) {
+          const replies = buildTree(childId, currentDepth + 1);
+          if (replies.length > 0) {
+            commentWithReplies.replies = replies;
+          }
+        }
+
+        result.push(commentWithReplies);
+      }
+
+      return result;
+    };
+
+    return buildTree(null, 0);
+  }
+
+  /**
+   * Get the count of direct replies to a comment
+   * 
+   * @param commentId - The comment ID
+   * @returns Number of direct replies
+   */
+  async getReplyCount(commentId: string): Promise<number> {
+    const replies = await db.query.comments.findMany({
+      where: and(
+        eq(comments.parentId, commentId),
+        isNull(comments.deletedAt)
+      ),
+    });
+
+    return replies.length;
+  }
+
+  /**
    * Map database row to Comment type
    */
   private mapToComment(row: typeof comments.$inferSelect): Comment {
@@ -212,6 +358,7 @@ export class CommentService {
       parentId: row.parentId,
       content: row.content,
       createdAt: row.createdAt,
+      deletedAt: row.deletedAt,
     };
   }
 }

@@ -178,6 +178,65 @@ export interface Comment {
   parentId: string | null;
   content: string;
   createdAt: Date;
+  deletedAt?: Date | null;
+}
+
+// ============================================
+// Comment Reaction Types
+// ============================================
+
+export type CommentReactionType = 'support' | 'oppose';
+
+export interface CommentReaction {
+  id: string;
+  commentId: string;
+  userId: string;
+  type: CommentReactionType;
+  createdAt: Date;
+}
+
+export interface CommentReactionCounts {
+  support: number;
+  oppose: number;
+}
+
+export interface CreateCommentReactionInput {
+  commentId: string;
+  userId: string;
+  type: CommentReactionType;
+}
+
+// ============================================
+// Comment Threading Types
+// ============================================
+
+export interface CommentWithReplies extends Comment {
+  replyCount: number;
+  replies?: CommentWithReplies[];
+  isParentDeleted?: boolean;
+}
+
+// ============================================
+// Notification Types
+// ============================================
+
+export type NotificationType = 'opponent_joined' | 'debate_started' | 'your_turn';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  message: string;
+  debateId?: string | null;
+  read: boolean;
+  createdAt: Date;
+}
+
+export interface CreateNotificationInput {
+  userId: string;
+  type: NotificationType;
+  message: string;
+  debateId?: string;
 }
 
 // Steelman Gate: Anti-strawman forcefield

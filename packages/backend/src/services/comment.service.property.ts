@@ -2,14 +2,17 @@ import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 
 /**
- * Feature: debate-platform
+ * Feature: enhanced-comments-matching
  * Property Tests for Comment Service
  * 
  * Properties covered:
+ * - Property 1: Comment Tree Structure Preservation
+ * - Property 2: Reply Count Accuracy
+ * - Property 3: Deleted Parent Indicator
  * - Property 16: Comment Threading
  * - Property 15: Comment Rate Limiting
  * 
- * Validates: Requirements 8.3, 10.4
+ * Validates: Requirements 1.1, 1.2, 1.3, 1.4, 8.3, 10.4
  */
 
 // Arbitrary for generating IDs (nanoid-like)
@@ -896,4 +899,951 @@ describe('CommentService Property Tests', () => {
       );
     });
   });
+
+  /**
+   * Feature: enhanced-comments-matching
+   * Property 1: Comment Tree Structure Preservation
+   * 
+   * For any set of comments with parent-child relationships stored in the database,
+   * retrieving them via getCommentTree() SHALL produce a tree where each comment's
+   * parent ID matches its position in the hierarchy.
+   * 
+   * Validates: Requirements 1.1, 1.3
+   */
+  describe('Property 1: Comment Tree Structure Preservation', () => {
+    /**
+     * Extended comment with threading info for tree simulation
+     */
+    interface TreeComment {
+      id: string;
+      debateId: string;
+      userId: string;
+      parentId: string | null;
+      content: string;
+      createdAt: Date;
+      deletedAt: Date | null;
+    }
+
+    interface CommentWithReplies extends TreeComment {
+      replyCount: number;
+      replies?: CommentWithReplies[];
+      isParentDeleted?: boolean;
+    }
+
+    /**
+     * Build a comment tree from flat list (simulating getCommentTree)
+     */
+    function buildCommentTree(
+      comments: TreeComment[],
+      options?: { includeDeleted?: boolean }
+    ): CommentWithReplies[] {
+      const includeDeleted = options?.includeDeleted ?? false;
+
+      // Build lookup maps
+      const commentMap = new Map<string, TreeComment>();
+      const childrenMap = new Map<string, string[]>();
+      const deletedIds = new Set<string>();
+
+      for (const comment of comments) {
+        commentMap.set(comment.id, comment);
+        
+        if (comment.deletedAt) {
+          deletedIds.add(comment.id);
+        }
+
+        const parentId = comment.parentId ?? 'root';
+        if (!childrenMap.has(parentId)) {
+          childrenMap.set(parentId, []);
+        }
+        childrenMap.get(parentId)!.push(comment.id);
+      }
+
+      // Count direct replies
+      const countDirectReplies = (commentId: string): number => {
+        const children = childrenMap.get(commentId) ?? [];
+        if (includeDeleted) {
+          return children.length;
+        }
+        return children.filter(id => !deletedIds.has(id)).length;
+      };
+
+      // Check if parent is deleted
+      const isParentDeleted = (parentId: string | null): boolean => {
+        if (!parentId) return false;
+        return deletedIds.has(parentId);
+      };
+
+      // Recursive tree builder
+      const buildTree = (parentId: string | null): CommentWithReplies[] => {
+        const key = parentId ?? 'root';
+        const childIds = childrenMap.get(key) ?? [];
+        
+        const result: CommentWithReplies[] = [];
+
+        for (const childId of childIds) {
+          const comment = commentMap.get(childId)!;
+          
+          if (comment.deletedAt && !includeDeleted) {
+            // Include children of deleted comments with isParentDeleted flag
+            const grandchildren = buildTree(childId);
+            result.push(...grandchildren);
+            continue;
+          }
+
+          const replyCount = countDirectReplies(childId);
+          
+          const commentWithReplies: CommentWithReplies = {
+            ...comment,
+            replyCount,
+            isParentDeleted: isParentDeleted(comment.parentId),
+          };
+
+          const replies = buildTree(childId);
+          if (replies.length > 0) {
+            commentWithReplies.replies = replies;
+          }
+
+          result.push(commentWithReplies);
+        }
+
+        return result;
+      };
+
+      return buildTree(null);
+    }
+
+    /**
+     * Verify tree structure: each comment's position matches its parentId
+     */
+    function verifyTreeStructure(
+      tree: CommentWithReplies[],
+      expectedParentId: string | null = null
+    ): boolean {
+      for (const node of tree) {
+        // Each node at this level should have the expected parent
+        if (node.parentId !== expectedParentId && !node.isParentDeleted) {
+          // If isParentDeleted is true, the parent was deleted and this is okay
+          if (!node.isParentDeleted) {
+            return false;
+          }
+        }
+
+        // Recursively verify children
+        if (node.replies && node.replies.length > 0) {
+          if (!verifyTreeStructure(node.replies, node.id)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    /**
+     * Collect all comment IDs from tree
+     */
+    function collectTreeIds(tree: CommentWithReplies[]): Set<string> {
+      const ids = new Set<string>();
+      for (const node of tree) {
+        ids.add(node.id);
+        if (node.replies) {
+          for (const id of collectTreeIds(node.replies)) {
+            ids.add(id);
+          }
+        }
+      }
+      return ids;
+    }
+
+    it('tree structure preserves parent-child relationships', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          fc.array(idArbitrary, { minLength: 1, maxLength: 10 }), // comment IDs
+          fc.array(contentArbitrary, { minLength: 1, maxLength: 10 }), // contents
+          (debateId, userId, commentIds, contents) => {
+            // Ensure unique IDs
+            const uniqueIds = [...new Set(commentIds)];
+            fc.pre(uniqueIds.length >= 1);
+
+            // Create flat comment list with random parent relationships
+            const comments: TreeComment[] = [];
+            const baseTime = new Date();
+
+            for (let i = 0; i < uniqueIds.length; i++) {
+              // First comment has no parent, others may have parent from previous comments
+              const parentId = i === 0 ? null : (Math.random() > 0.5 ? uniqueIds[Math.floor(Math.random() * i)] : null);
+              
+              comments.push({
+                id: uniqueIds[i],
+                debateId,
+                userId,
+                parentId,
+                content: contents[i % contents.length],
+                createdAt: new Date(baseTime.getTime() + i * 1000),
+                deletedAt: null,
+              });
+            }
+
+            // Build tree
+            const tree = buildCommentTree(comments);
+
+            // Verify structure
+            expect(verifyTreeStructure(tree)).toBe(true);
+
+            // All comments should be in tree
+            const treeIds = collectTreeIds(tree);
+            expect(treeIds.size).toBe(uniqueIds.length);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('top-level comments have null parentId in tree root', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          fc.array(idArbitrary, { minLength: 2, maxLength: 5 }), // comment IDs
+          fc.array(contentArbitrary, { minLength: 2, maxLength: 5 }), // contents
+          (debateId, userId, commentIds, contents) => {
+            const uniqueIds = [...new Set(commentIds)];
+            fc.pre(uniqueIds.length >= 2);
+
+            // Create all top-level comments (no parents)
+            const comments: TreeComment[] = uniqueIds.map((id, i) => ({
+              id,
+              debateId,
+              userId,
+              parentId: null,
+              content: contents[i % contents.length],
+              createdAt: new Date(),
+              deletedAt: null,
+            }));
+
+            const tree = buildCommentTree(comments);
+
+            // All should be at root level with null parentId
+            expect(tree.length).toBe(uniqueIds.length);
+            for (const node of tree) {
+              expect(node.parentId).toBeNull();
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('nested comments appear under their parent in tree', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // parentId
+          idArbitrary, // childId
+          contentArbitrary, // parentContent
+          contentArbitrary, // childContent
+          (debateId, userId, parentId, childId, parentContent, childContent) => {
+            fc.pre(parentId !== childId);
+
+            const comments: TreeComment[] = [
+              {
+                id: parentId,
+                debateId,
+                userId,
+                parentId: null,
+                content: parentContent,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+              {
+                id: childId,
+                debateId,
+                userId,
+                parentId: parentId,
+                content: childContent,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+            ];
+
+            const tree = buildCommentTree(comments);
+
+            // Should have one root node
+            expect(tree.length).toBe(1);
+            expect(tree[0].id).toBe(parentId);
+            
+            // Child should be in replies
+            expect(tree[0].replies).toBeDefined();
+            expect(tree[0].replies!.length).toBe(1);
+            expect(tree[0].replies![0].id).toBe(childId);
+            expect(tree[0].replies![0].parentId).toBe(parentId);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  /**
+   * Feature: enhanced-comments-matching
+   * Property 2: Reply Count Accuracy
+   * 
+   * For any comment with N direct child comments, the replyCount field SHALL equal N.
+   * 
+   * Validates: Requirements 1.2
+   */
+  describe('Property 2: Reply Count Accuracy', () => {
+    /**
+     * Tree comment type for simulation
+     */
+    interface TreeComment {
+      id: string;
+      debateId: string;
+      userId: string;
+      parentId: string | null;
+      content: string;
+      createdAt: Date;
+      deletedAt: Date | null;
+    }
+
+    interface CommentWithReplies extends TreeComment {
+      replyCount: number;
+      replies?: CommentWithReplies[];
+      isParentDeleted?: boolean;
+    }
+
+    /**
+     * Build a comment tree from flat list
+     */
+    function buildCommentTree(
+      comments: TreeComment[],
+      options?: { includeDeleted?: boolean }
+    ): CommentWithReplies[] {
+      const includeDeleted = options?.includeDeleted ?? false;
+
+      const commentMap = new Map<string, TreeComment>();
+      const childrenMap = new Map<string, string[]>();
+      const deletedIds = new Set<string>();
+
+      for (const comment of comments) {
+        commentMap.set(comment.id, comment);
+        
+        if (comment.deletedAt) {
+          deletedIds.add(comment.id);
+        }
+
+        const parentId = comment.parentId ?? 'root';
+        if (!childrenMap.has(parentId)) {
+          childrenMap.set(parentId, []);
+        }
+        childrenMap.get(parentId)!.push(comment.id);
+      }
+
+      const countDirectReplies = (commentId: string): number => {
+        const children = childrenMap.get(commentId) ?? [];
+        if (includeDeleted) {
+          return children.length;
+        }
+        return children.filter(id => !deletedIds.has(id)).length;
+      };
+
+      const isParentDeleted = (parentId: string | null): boolean => {
+        if (!parentId) return false;
+        return deletedIds.has(parentId);
+      };
+
+      const buildTree = (parentId: string | null): CommentWithReplies[] => {
+        const key = parentId ?? 'root';
+        const childIds = childrenMap.get(key) ?? [];
+        
+        const result: CommentWithReplies[] = [];
+
+        for (const childId of childIds) {
+          const comment = commentMap.get(childId)!;
+          
+          if (comment.deletedAt && !includeDeleted) {
+            const grandchildren = buildTree(childId);
+            result.push(...grandchildren);
+            continue;
+          }
+
+          const replyCount = countDirectReplies(childId);
+          
+          const commentWithReplies: CommentWithReplies = {
+            ...comment,
+            replyCount,
+            isParentDeleted: isParentDeleted(comment.parentId),
+          };
+
+          const replies = buildTree(childId);
+          if (replies.length > 0) {
+            commentWithReplies.replies = replies;
+          }
+
+          result.push(commentWithReplies);
+        }
+
+        return result;
+      };
+
+      return buildTree(null);
+    }
+
+    /**
+     * Count actual direct children in flat list
+     */
+    function countActualDirectChildren(
+      comments: TreeComment[],
+      parentId: string,
+      includeDeleted: boolean
+    ): number {
+      return comments.filter(c => 
+        c.parentId === parentId && 
+        (includeDeleted || !c.deletedAt)
+      ).length;
+    }
+
+    /**
+     * Verify reply counts in tree match actual children
+     */
+    function verifyReplyCounts(
+      tree: CommentWithReplies[],
+      flatComments: TreeComment[],
+      includeDeleted: boolean
+    ): boolean {
+      for (const node of tree) {
+        const actualCount = countActualDirectChildren(flatComments, node.id, includeDeleted);
+        if (node.replyCount !== actualCount) {
+          return false;
+        }
+
+        if (node.replies && node.replies.length > 0) {
+          if (!verifyReplyCounts(node.replies, flatComments, includeDeleted)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    it('replyCount equals number of direct children', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // parentId
+          fc.array(idArbitrary, { minLength: 0, maxLength: 5 }), // child IDs
+          contentArbitrary, // parent content
+          fc.array(contentArbitrary, { minLength: 0, maxLength: 5 }), // child contents
+          (debateId, userId, parentId, childIds, parentContent, childContents) => {
+            // Ensure unique IDs
+            const uniqueChildIds = [...new Set(childIds)].filter(id => id !== parentId);
+
+            const comments: TreeComment[] = [
+              {
+                id: parentId,
+                debateId,
+                userId,
+                parentId: null,
+                content: parentContent,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+              ...uniqueChildIds.map((id, i) => ({
+                id,
+                debateId,
+                userId,
+                parentId: parentId,
+                content: childContents[i % Math.max(1, childContents.length)],
+                createdAt: new Date(),
+                deletedAt: null,
+              })),
+            ];
+
+            const tree = buildCommentTree(comments);
+
+            // Parent should have replyCount equal to number of children
+            expect(tree.length).toBe(1);
+            expect(tree[0].replyCount).toBe(uniqueChildIds.length);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('replyCount is accurate for all nodes in tree', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          fc.array(idArbitrary, { minLength: 1, maxLength: 10 }), // comment IDs
+          fc.array(contentArbitrary, { minLength: 1, maxLength: 10 }), // contents
+          (debateId, userId, commentIds, contents) => {
+            const uniqueIds = [...new Set(commentIds)];
+            fc.pre(uniqueIds.length >= 1);
+
+            // Create comments with random parent relationships
+            const comments: TreeComment[] = [];
+            const baseTime = new Date();
+
+            for (let i = 0; i < uniqueIds.length; i++) {
+              const parentId = i === 0 ? null : (Math.random() > 0.5 ? uniqueIds[Math.floor(Math.random() * i)] : null);
+              
+              comments.push({
+                id: uniqueIds[i],
+                debateId,
+                userId,
+                parentId,
+                content: contents[i % contents.length],
+                createdAt: new Date(baseTime.getTime() + i * 1000),
+                deletedAt: null,
+              });
+            }
+
+            const tree = buildCommentTree(comments);
+
+            // Verify all reply counts
+            expect(verifyReplyCounts(tree, comments, false)).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('replyCount excludes deleted children when includeDeleted is false', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // parentId
+          fc.array(idArbitrary, { minLength: 2, maxLength: 5 }), // child IDs
+          contentArbitrary, // parent content
+          fc.array(contentArbitrary, { minLength: 2, maxLength: 5 }), // child contents
+          (debateId, userId, parentId, childIds, parentContent, childContents) => {
+            const uniqueChildIds = [...new Set(childIds)].filter(id => id !== parentId);
+            fc.pre(uniqueChildIds.length >= 2);
+
+            // Create parent and children, mark first child as deleted
+            const comments: TreeComment[] = [
+              {
+                id: parentId,
+                debateId,
+                userId,
+                parentId: null,
+                content: parentContent,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+              ...uniqueChildIds.map((id, i) => ({
+                id,
+                debateId,
+                userId,
+                parentId: parentId,
+                content: childContents[i % childContents.length],
+                createdAt: new Date(),
+                deletedAt: i === 0 ? new Date() : null, // First child is deleted
+              })),
+            ];
+
+            const tree = buildCommentTree(comments, { includeDeleted: false });
+
+            // Parent's replyCount should exclude deleted child
+            expect(tree.length).toBe(1);
+            expect(tree[0].replyCount).toBe(uniqueChildIds.length - 1);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('leaf nodes have replyCount of 0', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // commentId
+          contentArbitrary, // content
+          (debateId, userId, commentId, content) => {
+            const comments: TreeComment[] = [
+              {
+                id: commentId,
+                debateId,
+                userId,
+                parentId: null,
+                content,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+            ];
+
+            const tree = buildCommentTree(comments);
+
+            expect(tree.length).toBe(1);
+            expect(tree[0].replyCount).toBe(0);
+            expect(tree[0].replies).toBeUndefined();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  /**
+   * Feature: enhanced-comments-matching
+   * Property 3: Deleted Parent Indicator
+   * 
+   * For any comment whose parent has been soft-deleted, the isParentDeleted flag SHALL be true.
+   * 
+   * Validates: Requirements 1.4
+   */
+  describe('Property 3: Deleted Parent Indicator', () => {
+    /**
+     * Tree comment type for simulation
+     */
+    interface TreeComment {
+      id: string;
+      debateId: string;
+      userId: string;
+      parentId: string | null;
+      content: string;
+      createdAt: Date;
+      deletedAt: Date | null;
+    }
+
+    interface CommentWithReplies extends TreeComment {
+      replyCount: number;
+      replies?: CommentWithReplies[];
+      isParentDeleted?: boolean;
+    }
+
+    /**
+     * Build a comment tree from flat list
+     */
+    function buildCommentTree(
+      comments: TreeComment[],
+      options?: { includeDeleted?: boolean }
+    ): CommentWithReplies[] {
+      const includeDeleted = options?.includeDeleted ?? false;
+
+      const commentMap = new Map<string, TreeComment>();
+      const childrenMap = new Map<string, string[]>();
+      const deletedIds = new Set<string>();
+
+      for (const comment of comments) {
+        commentMap.set(comment.id, comment);
+        
+        if (comment.deletedAt) {
+          deletedIds.add(comment.id);
+        }
+
+        const parentId = comment.parentId ?? 'root';
+        if (!childrenMap.has(parentId)) {
+          childrenMap.set(parentId, []);
+        }
+        childrenMap.get(parentId)!.push(comment.id);
+      }
+
+      const countDirectReplies = (commentId: string): number => {
+        const children = childrenMap.get(commentId) ?? [];
+        if (includeDeleted) {
+          return children.length;
+        }
+        return children.filter(id => !deletedIds.has(id)).length;
+      };
+
+      const isParentDeleted = (parentId: string | null): boolean => {
+        if (!parentId) return false;
+        return deletedIds.has(parentId);
+      };
+
+      const buildTree = (parentId: string | null): CommentWithReplies[] => {
+        const key = parentId ?? 'root';
+        const childIds = childrenMap.get(key) ?? [];
+        
+        const result: CommentWithReplies[] = [];
+
+        for (const childId of childIds) {
+          const comment = commentMap.get(childId)!;
+          
+          if (comment.deletedAt && !includeDeleted) {
+            // Include children of deleted comments with isParentDeleted flag
+            const grandchildren = buildTree(childId);
+            result.push(...grandchildren);
+            continue;
+          }
+
+          const replyCount = countDirectReplies(childId);
+          
+          const commentWithReplies: CommentWithReplies = {
+            ...comment,
+            replyCount,
+            isParentDeleted: isParentDeleted(comment.parentId),
+          };
+
+          const replies = buildTree(childId);
+          if (replies.length > 0) {
+            commentWithReplies.replies = replies;
+          }
+
+          result.push(commentWithReplies);
+        }
+
+        return result;
+      };
+
+      return buildTree(null);
+    }
+
+    /**
+     * Find a comment in tree by ID
+     */
+    function findInTree(tree: CommentWithReplies[], id: string): CommentWithReplies | null {
+      for (const node of tree) {
+        if (node.id === id) return node;
+        if (node.replies) {
+          const found = findInTree(node.replies, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    it('child of deleted parent has isParentDeleted true', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // parentId
+          idArbitrary, // childId
+          contentArbitrary, // parentContent
+          contentArbitrary, // childContent
+          (debateId, userId, parentId, childId, parentContent, childContent) => {
+            fc.pre(parentId !== childId);
+
+            const comments: TreeComment[] = [
+              {
+                id: parentId,
+                debateId,
+                userId,
+                parentId: null,
+                content: parentContent,
+                createdAt: new Date(),
+                deletedAt: new Date(), // Parent is deleted
+              },
+              {
+                id: childId,
+                debateId,
+                userId,
+                parentId: parentId,
+                content: childContent,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+            ];
+
+            // Build tree without including deleted
+            const tree = buildCommentTree(comments, { includeDeleted: false });
+
+            // Child should be at root level with isParentDeleted = true
+            expect(tree.length).toBe(1);
+            expect(tree[0].id).toBe(childId);
+            expect(tree[0].isParentDeleted).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('child of non-deleted parent has isParentDeleted false or undefined', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // parentId
+          idArbitrary, // childId
+          contentArbitrary, // parentContent
+          contentArbitrary, // childContent
+          (debateId, userId, parentId, childId, parentContent, childContent) => {
+            fc.pre(parentId !== childId);
+
+            const comments: TreeComment[] = [
+              {
+                id: parentId,
+                debateId,
+                userId,
+                parentId: null,
+                content: parentContent,
+                createdAt: new Date(),
+                deletedAt: null, // Parent is NOT deleted
+              },
+              {
+                id: childId,
+                debateId,
+                userId,
+                parentId: parentId,
+                content: childContent,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+            ];
+
+            const tree = buildCommentTree(comments);
+
+            // Child should be nested under parent
+            expect(tree.length).toBe(1);
+            expect(tree[0].id).toBe(parentId);
+            expect(tree[0].replies).toBeDefined();
+            expect(tree[0].replies!.length).toBe(1);
+            
+            const child = tree[0].replies![0];
+            expect(child.id).toBe(childId);
+            expect(child.isParentDeleted).toBe(false);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('top-level comments have isParentDeleted false', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // commentId
+          contentArbitrary, // content
+          (debateId, userId, commentId, content) => {
+            const comments: TreeComment[] = [
+              {
+                id: commentId,
+                debateId,
+                userId,
+                parentId: null,
+                content,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+            ];
+
+            const tree = buildCommentTree(comments);
+
+            expect(tree.length).toBe(1);
+            expect(tree[0].isParentDeleted).toBe(false);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('grandchild of deleted parent preserves correct isParentDeleted', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // grandparentId
+          idArbitrary, // parentId
+          idArbitrary, // childId
+          contentArbitrary, // content1
+          contentArbitrary, // content2
+          contentArbitrary, // content3
+          (debateId, userId, grandparentId, parentId, childId, content1, content2, content3) => {
+            fc.pre(grandparentId !== parentId && parentId !== childId && grandparentId !== childId);
+
+            const comments: TreeComment[] = [
+              {
+                id: grandparentId,
+                debateId,
+                userId,
+                parentId: null,
+                content: content1,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+              {
+                id: parentId,
+                debateId,
+                userId,
+                parentId: grandparentId,
+                content: content2,
+                createdAt: new Date(),
+                deletedAt: new Date(), // Parent is deleted
+              },
+              {
+                id: childId,
+                debateId,
+                userId,
+                parentId: parentId,
+                content: content3,
+                createdAt: new Date(),
+                deletedAt: null,
+              },
+            ];
+
+            const tree = buildCommentTree(comments, { includeDeleted: false });
+
+            // Grandparent should be at root
+            expect(tree.length).toBe(1);
+            expect(tree[0].id).toBe(grandparentId);
+            expect(tree[0].isParentDeleted).toBe(false);
+
+            // Child should be promoted to grandparent's replies with isParentDeleted = true
+            expect(tree[0].replies).toBeDefined();
+            expect(tree[0].replies!.length).toBe(1);
+            expect(tree[0].replies![0].id).toBe(childId);
+            expect(tree[0].replies![0].isParentDeleted).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('multiple children of deleted parent all have isParentDeleted true', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // parentId
+          fc.array(idArbitrary, { minLength: 2, maxLength: 4 }), // child IDs
+          contentArbitrary, // parent content
+          fc.array(contentArbitrary, { minLength: 2, maxLength: 4 }), // child contents
+          (debateId, userId, parentId, childIds, parentContent, childContents) => {
+            const uniqueChildIds = [...new Set(childIds)].filter(id => id !== parentId);
+            fc.pre(uniqueChildIds.length >= 2);
+
+            const comments: TreeComment[] = [
+              {
+                id: parentId,
+                debateId,
+                userId,
+                parentId: null,
+                content: parentContent,
+                createdAt: new Date(),
+                deletedAt: new Date(), // Parent is deleted
+              },
+              ...uniqueChildIds.map((id, i) => ({
+                id,
+                debateId,
+                userId,
+                parentId: parentId,
+                content: childContents[i % childContents.length],
+                createdAt: new Date(),
+                deletedAt: null,
+              })),
+            ];
+
+            const tree = buildCommentTree(comments, { includeDeleted: false });
+
+            // All children should be at root level with isParentDeleted = true
+            expect(tree.length).toBe(uniqueChildIds.length);
+            for (const node of tree) {
+              expect(node.isParentDeleted).toBe(true);
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
 });
+

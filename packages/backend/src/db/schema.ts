@@ -1,4 +1,4 @@
-import { pgTable, text, integer, real, timestamp, boolean, varchar, pgEnum, uuid, pgSchema } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, real, timestamp, boolean, varchar, pgEnum, uuid, pgSchema, uniqueIndex, index } from 'drizzle-orm/pg-core';
 
 // Reference to Neon Auth schema
 export const neonAuthSchema = pgSchema('neon_auth');
@@ -99,6 +99,7 @@ export const comments = pgTable('comments', {
   parentId: text('parent_id'),
   content: text('content').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
 });
 
 export const marketDataPoints = pgTable('market_data_points', {
@@ -123,6 +124,12 @@ export const stanceSpikes = pgTable('stance_spikes', {
 // Before rebuttal, debater must write a steelman of opponent's argument
 export const steelmanStatusEnum = pgEnum('steelman_status', ['pending', 'approved', 'rejected']);
 
+// Comment reaction type enum
+export const commentReactionTypeEnum = pgEnum('comment_reaction_type', ['support', 'oppose']);
+
+// Notification type enum
+export const notificationTypeEnum = pgEnum('notification_type', ['opponent_joined', 'debate_started', 'your_turn']);
+
 export const steelmans = pgTable('steelmans', {
   id: text('id').primaryKey(),
   debateId: text('debate_id').notNull().references(() => debates.id),
@@ -135,3 +142,27 @@ export const steelmans = pgTable('steelmans', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   reviewedAt: timestamp('reviewed_at'),
 });
+
+// Comment reactions table - allows users to react to comments with support/oppose
+export const commentReactions = pgTable('comment_reactions', {
+  id: text('id').primaryKey(),
+  commentId: text('comment_id').notNull().references(() => comments.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id),
+  type: commentReactionTypeEnum('type').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('comment_reactions_comment_user_type_idx').on(table.commentId, table.userId, table.type),
+]);
+
+// Notifications table - stores user notifications for debate events
+export const notifications = pgTable('notifications', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  type: notificationTypeEnum('type').notNull(),
+  message: text('message').notNull(),
+  debateId: text('debate_id').references(() => debates.id),
+  read: boolean('read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  index('notifications_user_read_created_idx').on(table.userId, table.read, table.createdAt),
+]);
