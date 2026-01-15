@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import type { Argument } from '@debate-platform/shared';
+import type { Argument } from '@thesis/shared';
 import { ClockIcon, CheckCircleIcon, XCircleIcon, LightBulbIcon, ShieldCheckIcon } from '../icons';
 
 // ============================================================================

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { renderHook, act, cleanup } from '@testing-library/react';
-import { useFormPreservation } from './useFormPreservation';
+import { useFormPreservation } from '../hooks/form/useFormPreservation';
 
 /**
  * Feature: uiux-improvements

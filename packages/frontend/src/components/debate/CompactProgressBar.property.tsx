@@ -12,7 +12,7 @@ import {
   isRoundNavigable,
   getCompactProgressText,
 } from './CompactProgressBar';
-import type { Round, RoundNumber, Side } from '@debate-platform/shared';
+import type { Round, RoundNumber, Side } from '@thesis/shared';
 
 const roundNumberArb = fc.constantFrom(1, 2, 3) as fc.Arbitrary<RoundNumber>;
 const debateStatusArb = fc.constantFrom('seeking_opponent', 'active', 'concluded') as fc.Arbitrary<'seeking_opponent' | 'active' | 'concluded'>;

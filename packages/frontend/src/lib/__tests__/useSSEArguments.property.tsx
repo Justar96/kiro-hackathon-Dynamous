@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { type ReactNode } from 'react';
-import { useSSEArguments } from './useSSEArguments';
-import { SSEProvider } from './useSSE';
+import { useSSEArguments } from '../sse/events/useSSEArguments';
+import { SSEProvider } from '../sse';
 import * as fc from 'fast-check';
 
 // Mock EventSource

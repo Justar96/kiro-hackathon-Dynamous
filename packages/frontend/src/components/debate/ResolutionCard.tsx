@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import type { Debate, Argument, MarketPrice } from '@debate-platform/shared';
+import type { Debate, Argument, MarketPrice } from '@thesis/shared';
 import { DeltaIcon, MindChangeIcon, VoteIcon, ImpactIcon } from '../icons';
 
 interface ResolutionCardProps {

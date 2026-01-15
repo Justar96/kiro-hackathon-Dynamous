@@ -53,7 +53,7 @@ const expiredSessionArbitrary = fc.record({
 const mockGetSession = vi.fn();
 const mockSignOut = vi.fn();
 
-vi.mock('../auth', () => ({
+vi.mock('../../auth', () => ({
   authClient: {
     getSession: () => mockGetSession(),
     signOut: () => mockSignOut(),
@@ -61,7 +61,7 @@ vi.mock('../auth', () => ({
 }));
 
 // Import after mocking
-import { useSession, useSignOut, hadActiveSession } from './useSession';
+import { useSession, useSignOut, hadActiveSession } from '../auth/useSession';
 
 // Wrapper with QueryClient for useSignOut
 function createWrapper() {

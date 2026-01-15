@@ -1,9 +1,9 @@
+/* Neon Auth UI styles - must be first */
+@import '@neondatabase/neon-js/ui/css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Neon Auth UI styles */
-@import '@neondatabase/neon-js/auth/react/ui/styles.css';
 
 /**
  * Neon Auth UI CSS Overrides

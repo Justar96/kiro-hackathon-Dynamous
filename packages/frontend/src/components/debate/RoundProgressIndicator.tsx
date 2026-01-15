@@ -5,7 +5,7 @@
  * Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 6.2
  */
 
-import type { Round, RoundNumber } from '@debate-platform/shared';
+import type { Round, RoundNumber } from '@thesis/shared';
 import type { RoundStep } from './RoundSection.types';
 import { deriveRoundStates, canNavigateToRound } from './RoundSection.utils';
 

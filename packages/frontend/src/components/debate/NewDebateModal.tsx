@@ -106,6 +106,7 @@ function NewDebateModalContent({ isOpen, onClose }: NewDebateModalContentProps) 
         required('Resolution is required'),
         maxLength(500, 'Resolution must be 500 characters or less'),
       ],
+      validateOnBlur: false,
     },
   });
 

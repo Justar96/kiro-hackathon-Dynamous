@@ -346,12 +346,13 @@ describe('ReactionDisplay Property Tests', () => {
               </TestWrapper>
             );
             
-            // Should display the counts
-            const agreeElement = screen.getByText(agreeCount.toString());
-            const strongReasoningElement = screen.getByText(strongReasoningCount.toString());
+            // Should display the counts - use getAllByText since counts might be equal
+            const agreeElements = screen.getAllByText(agreeCount.toString());
+            const strongReasoningElements = screen.getAllByText(strongReasoningCount.toString());
             
-            expect(agreeElement).toBeDefined();
-            expect(strongReasoningElement).toBeDefined();
+            // At least one element should exist for each count
+            expect(agreeElements.length).toBeGreaterThanOrEqual(1);
+            expect(strongReasoningElements.length).toBeGreaterThanOrEqual(1);
             
             // Should NOT display any user identifiers in the DOM
             const container = document.body;

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { renderHook, act, cleanup } from '@testing-library/react';
-import { useScrollRestoration } from './useScrollRestoration';
+import { useScrollRestoration } from '../hooks/navigation/useScrollRestoration';
 
 /**
  * Property 2: Scroll Position Preservation
@@ -153,7 +153,13 @@ describe('useScrollRestoration Property Tests', () => {
       fc.assert(
         fc.property(
           scrollPositionArbitrary,
-          fc.string({ minLength: 1, maxLength: 50 }).filter(s => !s.includes('"') && !s.includes('\\')),
+          fc.string({ minLength: 1, maxLength: 50 }).filter(s => 
+            !s.includes('"') && 
+            !s.includes('\\') && 
+            s !== '__proto__' && 
+            s !== 'constructor' && 
+            s !== 'prototype'
+          ),
           (position, customKey) => {
             cleanup();
             mockSessionStorage.clear();

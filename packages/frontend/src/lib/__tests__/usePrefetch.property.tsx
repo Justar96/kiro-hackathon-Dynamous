@@ -15,7 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
  */
 
 // Import the hook
-import { usePrefetch } from './usePrefetch';
+import { usePrefetch } from '../hooks/navigation/usePrefetch';
 
 // Arbitrary for delay values (50ms to 500ms)
 const delayArbitrary = fc.integer({ min: 50, max: 500 });

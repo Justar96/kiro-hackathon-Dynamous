@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import type { StanceValue } from '@debate-platform/shared';
-import { STANCE_LEVELS, valueToStanceLevel } from '@debate-platform/shared';
+import type { StanceValue } from '@thesis/shared';
+import { STANCE_LEVELS, valueToStanceLevel } from '@thesis/shared';
 
 interface SimpleStanceInputProps {
   type: 'pre' | 'post';

@@ -80,12 +80,12 @@ describe('CompactDebateCard Property Tests - Debate Card Data Display', () => {
         expect(supportBar).not.toBeNull();
         expect(opposeBar).not.toBeNull();
 
-        // Check that the widths are set correctly
-        const supportWidth = supportBar?.getAttribute('style');
-        const opposeWidth = opposeBar?.getAttribute('style');
+        // Check that the widths are set correctly in the style attribute
+        const supportStyle = supportBar?.getAttribute('style');
+        const opposeStyle = opposeBar?.getAttribute('style');
 
-        expect(supportWidth).toContain(`width: ${marketPrice.supportPrice}%`);
-        expect(opposeWidth).toContain(`width: ${marketPrice.opposePrice}%`);
+        expect(supportStyle).toContain(`width: ${marketPrice.supportPrice}%`);
+        expect(opposeStyle).toContain(`width: ${marketPrice.opposePrice}%`);
       }),
       { numRuns: 100 }
     );
@@ -212,7 +212,7 @@ describe('CompactDebateCard Property Tests - Debate Card Data Display', () => {
 
           const roundInfo = container.querySelector('[data-testid="round-info"]');
           expect(roundInfo).not.toBeNull();
-          expect(roundInfo?.textContent).toContain(`Round ${debate.currentRound}/3`);
+          expect(roundInfo?.textContent).toBe(`Round ${debate.currentRound}/3`);
         }
       ),
       { numRuns: 100 }
@@ -304,7 +304,7 @@ describe('CompactDebateCard Property Tests - Debate Card Data Display', () => {
     );
   });
 
-  it('Property 3.11: Card has max-height constraint for feed density (Requirement 2.7)', () => {
+  it('Property 3.11: Card has min-height constraint for feed density (Requirement 2.7)', () => {
     fc.assert(
       fc.property(debateArb, (debate) => {
         const { container } = render(
@@ -315,8 +315,9 @@ describe('CompactDebateCard Property Tests - Debate Card Data Display', () => {
         expect(card).not.toBeNull();
         
         const style = card?.getAttribute('style');
-        expect(style).toContain(`max-height: ${CARD_CONFIG.maxHeight}px`);
+        // Check for min-height and max-height constraints
         expect(style).toContain(`min-height: ${CARD_CONFIG.minHeight}px`);
+        expect(style).toContain(`max-height: ${CARD_CONFIG.maxHeight}px`);
       }),
       { numRuns: 100 }
     );
@@ -337,8 +338,10 @@ describe('CompactDebateCard Property Tests - Debate Card Data Display', () => {
         expect(opposeBar).not.toBeNull();
 
         // Default values should be 50%
-        expect(supportBar?.getAttribute('style')).toContain('width: 50%');
-        expect(opposeBar?.getAttribute('style')).toContain('width: 50%');
+        const supportStyle = supportBar?.getAttribute('style');
+        const opposeStyle = opposeBar?.getAttribute('style');
+        expect(supportStyle).toContain('width: 50%');
+        expect(opposeStyle).toContain('width: 50%');
       }),
       { numRuns: 100 }
     );

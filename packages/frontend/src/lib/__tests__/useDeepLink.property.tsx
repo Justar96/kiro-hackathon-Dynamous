@@ -26,7 +26,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 // Import after mocking
-import { useDeepLink } from './useDeepLink';
+import { useDeepLink } from '../hooks/navigation/useDeepLink';
 
 // Arbitrary for valid element IDs (alphanumeric with hyphens)
 const elementIdArbitrary = fc.stringMatching(/^[a-zA-Z][a-zA-Z0-9-]*$/)

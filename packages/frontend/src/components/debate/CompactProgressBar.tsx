@@ -6,7 +6,7 @@
  */
 
 import { useCallback, useRef, useState, useEffect, type TouchEvent, type KeyboardEvent } from 'react';
-import type { Round, RoundNumber, Side } from '@debate-platform/shared';
+import type { Round, RoundNumber, Side } from '@thesis/shared';
 
 // ============================================
 // Types

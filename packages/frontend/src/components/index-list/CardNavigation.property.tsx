@@ -32,12 +32,16 @@ vi.mock('@tanstack/react-router', () => ({
   },
 }));
 
-// Mock the usePrefetch hook
-vi.mock('../../lib/usePrefetch', () => ({
-  useDebateLinkPrefetch: (debateId: string) => ({
-    'data-prefetch-id': debateId,
-  }),
-}));
+// Mock the usePrefetch hook - must match the actual import path
+vi.mock('../../lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib')>();
+  return {
+    ...actual,
+    useDebateLinkPrefetch: (debateId: string) => ({
+      'data-prefetch-id': debateId,
+    }),
+  };
+});
 
 afterEach(() => {
   cleanup();

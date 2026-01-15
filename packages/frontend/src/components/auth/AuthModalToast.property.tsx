@@ -31,17 +31,22 @@ const MockSessionContext = React.createContext<{
   setUser: () => {},
 });
 
-// Mock useSession hook
-vi.mock('../../lib/useSession', () => ({
-  useSession: () => {
-    const context = React.useContext(MockSessionContext);
-    return {
-      user: context.user,
-      session: context.user ? { id: 'session-1', userId: context.user.id, expiresAt: '' } : null,
-      isLoading: false,
-    };
-  },
-}));
+// Mock useSession hook - must match the import path used by AuthModal.tsx
+vi.mock('../../lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib')>();
+  return {
+    ...actual,
+    useSession: () => {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const context = React.useContext(MockSessionContext);
+      return {
+        user: context.user,
+        session: context.user ? { id: 'session-1', userId: context.user.id, expiresAt: '' } : null,
+        isLoading: false,
+      };
+    },
+  };
+});
 
 // Mock useOnboardingToast hook - always return hasShownOnboarding as true to skip onboarding
 vi.mock('./OnboardingToast', () => ({

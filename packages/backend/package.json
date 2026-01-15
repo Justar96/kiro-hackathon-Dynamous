@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist",
+    "dev": "bun run --watch src/index.ts --watch ../shared/src",
+    "build": "bun build src/index.ts --outdir dist --target bun",
     "start": "bun run dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",

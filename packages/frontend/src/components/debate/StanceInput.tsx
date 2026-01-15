@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { StanceValue } from '@debate-platform/shared';
+import type { StanceValue } from '@thesis/shared';
 import { SpinnerIcon } from '../icons';
 
 interface StanceInputProps {

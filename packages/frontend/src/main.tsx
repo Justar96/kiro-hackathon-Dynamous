@@ -7,50 +7,60 @@ import { routeTree } from './routeTree.gen';
 import type { RouterContext } from './routes/__root';
 import './index.css';
 
+// Create QueryClient with optimized defaults
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60, // 1 minute default
+      staleTime: 1000 * 60, // 1 minute
       gcTime: 1000 * 60 * 10, // 10 minutes garbage collection
       retry: 1,
-      refetchOnWindowFocus: false, // Prevent excessive refetches on tab switch
-      refetchOnReconnect: true, // Refetch when network reconnects
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
     },
     mutations: {
-      retry: 0, // Don't retry mutations by default
+      retry: 0,
     },
   },
 });
 
+// Create router instance with TanStack best practices
 const router = createRouter({
   routeTree,
   context: {
     queryClient,
   } satisfies RouterContext,
   defaultPreload: 'intent',
+  // Since we're using React Query, we don't want loader calls to ever be stale
+  // This ensures the loader is always called when the route is preloaded or visited
   defaultPreloadStaleTime: 0,
+  scrollRestoration: true,
 });
 
+// Register router for type safety
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <AuthProvider>
-        <QueryClientProvider client={queryClient}>
-          <ToastProvider>
-            <AuthModalProvider>
-              <NewDebateModalProvider>
-                <RouterProvider router={router} />
-              </NewDebateModalProvider>
-            </AuthModalProvider>
-          </ToastProvider>
-        </QueryClientProvider>
-      </AuthProvider>
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+const rootElement = document.getElementById('root')!;
+
+if (!rootElement.innerHTML) {
+  ReactDOM.createRoot(rootElement).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <AuthProvider>
+          <QueryClientProvider client={queryClient}>
+            <ToastProvider>
+              <AuthModalProvider>
+                <NewDebateModalProvider>
+                  <RouterProvider router={router} />
+                </NewDebateModalProvider>
+              </AuthModalProvider>
+            </ToastProvider>
+          </QueryClientProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
+}

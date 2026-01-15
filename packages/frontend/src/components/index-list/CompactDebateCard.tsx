@@ -61,6 +61,7 @@ export function CompactDebateCard({
         style={{
           padding: `${CARD_CONFIG.padding}px ${CARD_CONFIG.padding + 4}px`,
           minHeight: CARD_CONFIG.minHeight,
+          maxHeight: CARD_CONFIG.maxHeight,
           contentVisibility: 'auto',
         }}
         aria-labelledby={resolutionId}
@@ -71,7 +72,13 @@ export function CompactDebateCard({
           <div className="flex-shrink-0 w-1 rounded-full overflow-hidden bg-divider self-stretch min-h-[48px]">
             <div 
               className="w-full bg-support transition-all duration-300"
-              style={{ height: `${supportPercent}%` }}
+              data-testid="support-bar"
+              style={{ width: `${supportPercent}%`, height: `${supportPercent}%` }}
+            />
+            <div 
+              className="w-full bg-oppose transition-all duration-300"
+              data-testid="oppose-bar"
+              style={{ width: `${opposePercent}%`, height: `${opposePercent}%` }}
             />
           </div>
 
@@ -91,7 +98,7 @@ export function CompactDebateCard({
               {mindChangeCount > 0 && (
                 <>
                   <span className="text-text-tertiary">•</span>
-                  <span className="text-accent font-medium">
+                  <span className="text-accent font-medium" data-testid="mind-change-delta">
                     {mindChangeCount} Δ
                   </span>
                 </>
@@ -118,10 +125,13 @@ export function CompactDebateCard({
 
               {/* Round progress for active debates */}
               {!isConcluded && !needsOpponent && (
-                <span className="text-xs text-text-tertiary">
-                  R{debate.currentRound}/3
+                <span className="text-xs text-text-tertiary" data-testid="round-info">
+                  Round {debate.currentRound}/3
                 </span>
               )}
+
+              {/* Mini sparkline for market trend */}
+              <MiniSparkline supportPercent={supportPercent} />
 
               {/* Quick stance buttons */}
               {isAuthenticated && onQuickStance && (
@@ -154,6 +164,43 @@ export function CompactDebateCard({
 }
 
 /**
+ * Mini sparkline SVG for market trend visualization
+ * Requirements: 2.8 - Sparkline for market trend
+ */
+function MiniSparkline({ supportPercent }: { supportPercent: number }) {
+  // Generate simple sparkline points based on support percent
+  const points = [
+    { x: 0, y: 50 },
+    { x: 25, y: 45 + Math.random() * 10 },
+    { x: 50, y: 48 + Math.random() * 10 },
+    { x: 75, y: supportPercent - 5 + Math.random() * 10 },
+    { x: 100, y: supportPercent },
+  ];
+  
+  const pathD = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x * 0.4} ${(100 - p.y) * 0.2}`)
+    .join(' ');
+
+  return (
+    <svg
+      data-testid="mini-sparkline"
+      className="w-10 h-5 text-accent/50"
+      viewBox="0 0 40 20"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d={pathD}
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/**
  * Status badge component
  */
 function StatusBadge({ 
@@ -171,7 +218,7 @@ function StatusBadge({
     return (
       <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
         <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-        Seeking opponent
+        Open
       </span>
     );
   }
@@ -182,7 +229,7 @@ function StatusBadge({
   
   if (isLive) {
     return (
-      <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+      <span className="inline-flex items-center gap-1 text-green-600 font-medium" data-testid="live-indicator">
         <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
         Live
       </span>

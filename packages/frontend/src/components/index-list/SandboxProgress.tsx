@@ -1,4 +1,4 @@
-import { SANDBOX_DEBATES_REQUIRED } from '@debate-platform/shared';
+import { SANDBOX_DEBATES_REQUIRED } from '@thesis/shared';
 
 interface SandboxProgressProps {
   debatesParticipated: number;

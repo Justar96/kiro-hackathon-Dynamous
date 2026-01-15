@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { MarketDataPoint, StanceSpike, MarketPrice } from '@debate-platform/shared';
+import type { MarketDataPoint, StanceSpike, MarketPrice } from '@thesis/shared';
 import { useSSE } from '../../lib';
 
 interface MarketChartProps {

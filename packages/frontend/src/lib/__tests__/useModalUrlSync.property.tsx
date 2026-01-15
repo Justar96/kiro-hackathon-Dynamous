@@ -28,7 +28,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 // Import after mocking
-import { useModalUrlState } from './useModalUrlSync';
+import { useModalUrlState } from '../hooks/navigation/useModalUrlSync';
 
 // Arbitrary for modal IDs (alphanumeric)
 const modalIdArbitrary = fc.stringMatching(/^[a-z][a-z0-9]*$/)

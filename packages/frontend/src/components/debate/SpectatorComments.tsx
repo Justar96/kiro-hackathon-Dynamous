@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { Comment, User } from '@debate-platform/shared';
+import type { Comment, User } from '@thesis/shared';
 import { HorizontalDivider } from '../ui/HorizontalDivider';
 import { SkeletonParagraph, SkeletonText } from '../common/Skeleton';
 

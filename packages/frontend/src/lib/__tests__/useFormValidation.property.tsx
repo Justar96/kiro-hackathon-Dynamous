@@ -9,8 +9,8 @@ import {
   email, 
   minLength,
   FieldConfig,
-} from './useFormValidation';
-import { FormField } from '../components/common/FormField';
+} from '../hooks/form/useFormValidation';
+import { FormField } from '../../components/common/FormField';
 
 /**
  * Feature: uiux-improvements

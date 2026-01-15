@@ -15,23 +15,23 @@ import * as fc from 'fast-check';
 import { render, cleanup, act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { ToastProvider } from '../components/common/Toast';
+import { ToastProvider } from '../../components/common/Toast';
 import { 
   useOptimisticStance, 
   useOptimisticReaction, 
   useOptimisticComment 
-} from './optimistic';
-import type { Stance, Comment } from '@debate-platform/shared';
+} from '../hooks/optimistic';
+import type { Stance, Comment } from '@thesis/shared';
 
 // ============================================================================
 // Test Utilities
 // ============================================================================
 
-vi.mock('./hooks', () => ({
+vi.mock('../hooks/data/useAuthToken', () => ({
   useAuthToken: () => 'test-user-id',
 }));
 
-vi.mock('./mutations', () => ({
+vi.mock('../api/mutations', () => ({
   recordPreStance: vi.fn(),
   recordPostStance: vi.fn(),
   addReaction: vi.fn(),
@@ -39,7 +39,7 @@ vi.mock('./mutations', () => ({
   addComment: vi.fn(),
 }));
 
-import * as mutations from './mutations';
+import * as mutations from '../api/mutations';
 
 function createTestQueryClient() {
   return new QueryClient({

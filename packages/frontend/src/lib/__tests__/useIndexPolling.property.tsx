@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as fc from 'fast-check';
-import { useIndexPolling, POLLING_CONSTANTS } from './useIndexPolling';
+import { useIndexPolling, POLLING_CONSTANTS } from '../hooks/ui/useIndexPolling';
 import type { ReactNode } from 'react';
 
 // Mock document.visibilityState

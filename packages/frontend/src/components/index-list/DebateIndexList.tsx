@@ -1,4 +1,4 @@
-import type { Debate, MarketPrice } from '@debate-platform/shared';
+import type { Debate, MarketPrice } from '@thesis/shared';
 import { DebateIndexRow } from './DebateIndexRow';
 
 interface DebateWithMarket {
