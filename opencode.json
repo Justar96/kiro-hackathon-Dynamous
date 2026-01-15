@@ -1,0 +1,28 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "mcp": {
+        "Ref": {
+            "type": "local",
+            "command": ["npx", "ref-tools-mcp@latest"],
+            "enabled": true,
+            "environment": {
+                "REF_API_KEY": "ref-eb800e4dc8d1f435ce88"
+            }
+        },
+        "morph-mcp": {
+            "type": "local",
+            "command": ["npx", "-y", "@morphllm/morphmcp"],
+            "environment": {
+                "MORPH_API_KEY": "sk-QY2H_mvPyGGz1fXxb0coMEyFnD3fF9vkztp4yNeyC2zwZEfV",
+                "ENABLED_TOOLS": "warpgrep_codebase_search"
+            }
+        },
+        "firecrawl": {
+            "type": "local",
+            "command": ["npx", "-y", "firecrawl-mcp"],
+            "environment": {
+                "FIRECRAWL_API_KEY": "fc-1b432f90ee684997afcaacff7b7ba7cc"
+            }
+        }
+    }
+}
