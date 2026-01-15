@@ -208,115 +208,115 @@ This implementation transforms Thesis from a centralized debate platform into a 
     - Subscribe to Transfer events for real-time updates
     - _Requirements: 6.5_
 
-- [ ] 11. Implement market interaction hooks
-  - [ ] 11.1 Create useMarket hook for market state
+- [x] 11. Implement market interaction hooks
+  - [x] 11.1 Create useMarket hook for market state
     - Read market state, outcome, end time from contract
     - Cache with TanStack Query (5 minute stale time for static data)
     - Subscribe to StateChanged events
     - _Requirements: 10.1, 10.4, 10.5_
   
-  - [ ] 11.2 Create useMarketActions hook for write operations
+  - [x] 11.2 Create useMarketActions hook for write operations
     - Implement mintTokens with USDC approval flow
     - Implement redeemTokens for equal YES/NO redemption
     - Implement redeemWinnings for settlement
     - Handle transaction states and errors
     - _Requirements: 10.2, 10.3, 6.4, 6.6_
   
-  - [ ] 11.3 Create useMarketFactory hook
+  - [x] 11.3 Create useMarketFactory hook
     - Implement createMarket with validation
     - Read all markets list
     - Subscribe to MarketCreated events
     - _Requirements: 1.1, 1.4, 10.5_
 
-- [ ] 12. Implement order book hooks
-  - [ ] 12.1 Create useOrderBook hook for order book state
+- [x] 12. Implement order book hooks
+  - [x] 12.1 Create useOrderBook hook for order book state
     - Read bids and asks with depth
     - Calculate mid-price and spread
     - Subscribe to Trade events for price updates
     - _Requirements: 8.1, 8.2, 8.3, 8.5, 10.5_
   
-  - [ ] 12.2 Write property test for mid-price calculation
+  - [x] 12.2 Write property test for mid-price calculation
     - **Property 9: Mid-Price Calculation**
     - **Validates: Requirements 8.1**
   
-  - [ ] 12.3 Create useOrderBookActions hook
+  - [x] 12.3 Create useOrderBookActions hook
     - Implement placeBuyOrder with collateral approval
     - Implement placeSellOrder with token approval
     - Implement cancelOrder
     - _Requirements: 3.1, 3.2, 3.6, 10.2_
 
-- [ ] 13. Implement position management hooks
-  - [ ] 13.1 Create usePositions hook
+- [x] 13. Implement position management hooks
+  - [x] 13.1 Create usePositions hook
     - Aggregate user positions across all markets
     - Calculate unrealized P&L per position
     - Calculate portfolio totals
     - _Requirements: 7.1, 7.3, 7.6_
   
-  - [ ] 13.2 Write property test for P&L calculation
+  - [x] 13.2 Write property test for P&L calculation
     - **Property 10: P&L Calculation**
     - **Validates: Requirements 7.3**
   
-  - [ ] 13.3 Write property test for position aggregation
+  - [x] 13.3 Write property test for position aggregation
     - **Property 18: Position Aggregation**
     - **Validates: Requirements 7.6**
   
-  - [ ] 13.4 Create useOpenOrders hook
+  - [x] 13.4 Create useOpenOrders hook
     - Read user's active orders from OrderBook
     - Subscribe to OrderFilled and OrderCancelled events
     - _Requirements: 7.4, 10.5_
 
-- [ ] 14. Checkpoint - All hooks implemented
+- [x] 14. Checkpoint - All hooks implemented
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 15. Create utility functions and error handling
-  - [ ] 15.1 Create price conversion utilities
+- [x] 15. Create utility functions and error handling
+  - [x] 15.1 Create price conversion utilities
     - Implement priceToBasisPoints and basisPointsToPrice
     - Implement toUsdcUnits and fromUsdcUnits
     - Add implied probability calculation
     - _Requirements: 8.4_
   
-  - [ ] 15.2 Create contract error parser
+  - [x] 15.2 Create contract error parser
     - Parse Solidity revert reasons to user-friendly messages
     - Handle common error cases (insufficient balance, invalid price, etc.)
     - _Requirements: 6.6_
   
-  - [ ] 15.3 Create transaction state hook
+  - [x] 15.3 Create transaction state hook
     - Track pending_signature, pending_confirmation, confirmed, failed states
     - Provide transaction hash for block explorer links
     - _Requirements: 10.3_
 
-- [ ] 16. Update frontend components for on-chain integration
-  - [ ] 16.1 Update market creation flow
+- [x] 16. Update frontend components for on-chain integration
+  - [x] 16.1 Update market creation flow
     - Replace backend API calls with useMarketFactory hook
     - Add USDC approval step before market creation
     - Display transaction confirmation UI
     - _Requirements: 1.1, 6.4_
   
-  - [ ] 16.2 Update market view components
+  - [x] 16.2 Update market view components
     - Replace backend data fetching with useMarket hook
     - Display order book using useOrderBook
     - Show real-time price updates from events
     - _Requirements: 8.3, 8.6_
   
-  - [ ] 16.3 Update trading interface
+  - [x] 16.3 Update trading interface
     - Replace backend order submission with useOrderBookActions
     - Add token approval flow before sell orders
     - Display order status and fill progress
     - _Requirements: 3.1, 3.2_
   
-  - [ ] 16.4 Update portfolio/positions view
+  - [x] 16.4 Update portfolio/positions view
     - Replace backend position data with usePositions
     - Display open orders with cancel functionality
     - Show P&L calculations
     - _Requirements: 7.1, 7.4, 7.5_
   
-  - [ ] 16.5 Update settlement flow
+  - [x] 16.5 Update settlement flow
     - Add resolution status display
     - Implement claim winnings button using useMarketActions
     - Display payout amount with fee breakdown
     - _Requirements: 5.1, 5.2, 5.4_
 
-- [ ] 17. Final checkpoint - Full integration complete
+- [x] 17. Final checkpoint - Full integration complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
