@@ -1,6 +1,6 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { db, users, stances, debates, arguments_, rounds } from '../db';
-import type { User, DebateResult } from '@debate-platform/shared';
+import type { User, DebateResult } from '@thesis/shared';
 
 // Reputation change constants
 export const CORRECT_PREDICTION_BONUS = 5;

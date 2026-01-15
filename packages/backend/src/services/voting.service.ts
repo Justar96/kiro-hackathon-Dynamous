@@ -6,7 +6,7 @@ import type {
   StanceValue, 
   PersuasionDelta,
   CreateStanceInput 
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * VotingService handles stance recording and persuasion calculation.

@@ -12,7 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import { render, cleanup } from '@testing-library/react';
 import { InfiniteFeed, VIRTUALIZATION_CONFIG } from './InfiniteFeed';
-import type { DebateWithMarket, Debate, MarketPrice } from '@debate-platform/shared';
+import type { DebateWithMarket, Debate, MarketPrice } from '@thesis/shared';
 
 // Mock TanStack Router's Link component
 vi.mock('@tanstack/react-router', () => ({
@@ -21,10 +21,14 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
-// Mock the usePrefetch hook
-vi.mock('../../lib/usePrefetch', () => ({
-  useDebateLinkPrefetch: () => ({}),
-}));
+// Mock the usePrefetch hook - must match the actual import path
+vi.mock('../../lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib')>();
+  return {
+    ...actual,
+    useDebateLinkPrefetch: () => ({}),
+  };
+});
 
 // Mock IntersectionObserver
 class MockIntersectionObserver {

@@ -10,13 +10,16 @@ interface ThreeColumnLayoutProps {
     forPercent: number;
     againstPercent: number;
   };
+  /** Whether market data should be hidden (blind voting - Requirement 3.6) */
+  marketBlocked?: boolean;
 }
 
 export function ThreeColumnLayout({ 
   leftRail, 
   centerPaper, 
   rightMargin,
-  marketPreview 
+  marketPreview,
+  marketBlocked = false,
 }: ThreeColumnLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
@@ -39,8 +42,8 @@ export function ThreeColumnLayout({
             <MenuIcon size="lg" decorative />
           </button>
           
-          {/* Mini market indicator in header */}
-          {marketPreview && (
+          {/* Mini market indicator in header - hidden when market is blocked (Requirement 3.6) */}
+          {marketPreview && !marketBlocked && (
             <button
               onClick={toggleBottomSheet}
               className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-rule/30 hover:bg-rule/50 transition-colors"
@@ -61,7 +64,7 @@ export function ThreeColumnLayout({
             </button>
           )}
           
-          {!marketPreview && (
+          {(!marketPreview || marketBlocked) && (
             <button
               onClick={toggleBottomSheet}
               className="p-2.5 -mr-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-rule/50 active:bg-rule transition-colors"
@@ -182,7 +185,7 @@ export function ThreeColumnLayout({
             onClick={toggleBottomSheet}
             className="w-full px-4 py-3 flex items-center justify-between active:bg-rule/30 transition-colors"
           >
-            {marketPreview ? (
+            {marketPreview && !marketBlocked ? (
               <>
                 {/* Market bar preview */}
                 <div className="flex items-center gap-3 flex-1">
@@ -203,7 +206,9 @@ export function ThreeColumnLayout({
               </>
             ) : (
               <>
-                <span className="text-sm text-text-secondary">View Market & Stance</span>
+                <span className="text-sm text-text-secondary">
+                  {marketBlocked ? 'Record stance to see market' : 'View Market & Stance'}
+                </span>
                 <ChevronUpIcon size="md" className="text-text-tertiary" decorative />
               </>
             )}

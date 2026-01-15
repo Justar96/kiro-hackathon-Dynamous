@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This specification covers UI/UX improvements and enhanced frontend-backend wiring for the Debate Platform. The focus areas include:
+This specification covers UI/UX improvements and enhanced frontend-backend wiring for Thesis. The focus areas include:
 
 1. Sign-in modal experience - replacing full-page auth with a modal overlay for seamless authentication
 2. Improved authentication patterns - better loading states, error handling, and user feedback

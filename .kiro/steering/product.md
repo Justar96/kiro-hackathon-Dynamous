@@ -1,6 +1,6 @@
 # Product Overview
 
-A structured debate platform where every post is a resolution and outcomes are determined by measured mind-changes rather than raw upvotes.
+Thesis is a structured debate platform where every post is a resolution and outcomes are determined by measured mind-changes rather than raw upvotes.
 
 ## Core Concept
 - Users create debates with resolutions and take support/oppose sides

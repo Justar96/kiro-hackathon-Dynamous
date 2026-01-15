@@ -113,7 +113,8 @@ export function ToastProvider({
 }
 
 /**
- * Hook to use toast notifications
+ * Hook to use toast notifications.
+ * Throws if used outside ToastProvider.
  */
 export function useToast() {
   const context = useContext(ToastContext);
@@ -121,6 +122,14 @@ export function useToast() {
     throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
+}
+
+/**
+ * Optional hook that returns null if ToastProvider is not present.
+ * Use this when toast notifications are optional (e.g., in SSE event handlers).
+ */
+export function useToastOptional() {
+  return useContext(ToastContext);
 }
 
 // Legacy support - simple addToast function

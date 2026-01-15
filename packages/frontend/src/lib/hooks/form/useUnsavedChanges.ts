@@ -60,10 +60,10 @@ export function useUnsavedChanges(
   
   // Handle browser refresh/close
   useEffect(() => {
-    if (!mergedOptions.warnOnUnload) {
+    if (!mergedOptions.warnOnUnload || !hasChanges) {
       return;
     }
-    
+
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (hasChangesRef.current) {
         event.preventDefault();
@@ -72,13 +72,13 @@ export function useUnsavedChanges(
         return mergedOptions.message;
       }
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [mergedOptions.warnOnUnload, mergedOptions.message]);
+  }, [mergedOptions.warnOnUnload, mergedOptions.message, hasChanges]);
 }
 
 /**
@@ -122,10 +122,10 @@ export function useUnsavedChangesControl(
   
   // Handle browser refresh/close
   useEffect(() => {
-    if (!mergedOptions.warnOnUnload) {
+    if (!mergedOptions.warnOnUnload || !hasChanges) {
       return;
     }
-    
+
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (hasChangesRef.current) {
         event.preventDefault();
@@ -133,13 +133,13 @@ export function useUnsavedChangesControl(
         return mergedOptions.message;
       }
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [mergedOptions.warnOnUnload, mergedOptions.message]);
+  }, [mergedOptions.warnOnUnload, mergedOptions.message, hasChanges]);
   
   return {
     hasChanges,

@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db, users, neonAuthUsers } from '../db';
-import type { User, NeonAuthUser } from '@debate-platform/shared';
+import type { User, NeonAuthUser } from '@thesis/shared';
 
 /**
  * AuthService handles authentication and user synchronization

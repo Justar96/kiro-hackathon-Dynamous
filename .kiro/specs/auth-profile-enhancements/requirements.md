@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This specification covers enhancements to the authentication experience and user profile dropdown menu for the Debate Platform. The focus areas include:
+This specification covers enhancements to the authentication experience and user profile dropdown menu for Thesis. The focus areas include:
 
 1. Custom profile dropdown menu - replacing the default Neon Auth UserButton with a custom dropdown that includes platform-specific links and actions
 2. Sign-up flow improvements - adding username collection during registration and better onboarding

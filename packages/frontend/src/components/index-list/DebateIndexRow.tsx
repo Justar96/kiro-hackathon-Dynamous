@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import type { Debate, MarketPrice } from '@debate-platform/shared';
+import type { Debate, MarketPrice } from '@thesis/shared';
 import { useDebateLinkPrefetch } from '../../lib';
 import { InlineQuickStance } from './InlineQuickStance';
 

@@ -1,11 +1,11 @@
 import { eq, desc, sql } from 'drizzle-orm';
 import { db, users, arguments_ } from '../db';
-import type { User } from '@debate-platform/shared';
+import type { User } from '@thesis/shared';
 import { 
   SANDBOX_DEBATES_REQUIRED, 
   SANDBOX_VOTE_WEIGHT, 
   FULL_VOTE_WEIGHT 
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * UserService handles user-related operations including

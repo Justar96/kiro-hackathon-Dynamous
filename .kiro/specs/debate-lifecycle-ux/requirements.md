@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This specification defines enhancements to the debate platform's lifecycle and user experience to make debates more accessible, intuitive, and engaging. The goal is to transform the platform into a world-class research-grade debate experience where users can debate any topic (movies, music, AI, tech, products, etc.) with rich media support, private voting, and intelligent reputation scoring.
+This specification defines enhancements to Thesis's lifecycle and user experience to make debates more accessible, intuitive, and engaging. The goal is to transform the platform into a world-class research-grade debate experience where users can debate any topic (movies, music, AI, tech, products, etc.) with rich media support, private voting, and intelligent reputation scoring.
 
 Key improvements include:
 - Simplified debate creation and participation flow
@@ -118,7 +118,7 @@ Key improvements include:
 
 ### Requirement 8: Accessibility and Responsiveness
 
-**User Story:** As a user on any device, I want the debate platform to be fully accessible and responsive, so that I can participate from anywhere.
+**User Story:** As a user on any device, I want Thesis to be fully accessible and responsive, so that I can participate from anywhere.
 
 #### Acceptance Criteria
 

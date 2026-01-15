@@ -11,12 +11,12 @@ export { useAuthToken } from './useAuthToken';
 // Debate hooks
 export {
   useDebates,
-  useDebate,
-  useDebateDetail,
   useDebateFull,
   useCreateDebate,
   useJoinDebate,
   useSubmitArgument,
+  useInfiniteDebates,
+  type UseInfiniteDebatesResult,
 } from './useDebates';
 
 // Market hooks
@@ -56,6 +56,7 @@ export {
   useCurrentUser,
   useUserProfile,
   useUserStats,
+  useReputationBreakdown,
 } from './useUsers';
 
 // Health check hooks
@@ -69,3 +70,9 @@ export {
   useReviewSteelman,
   useDeleteSteelman,
 } from './useSteelman';
+
+// Media hooks
+export {
+  useMediaUpload,
+  useUrlPreview,
+} from './useMedia';

@@ -234,6 +234,62 @@ export interface MutateApiOptions {
 }
 
 // ============================================================================
+// Internal Helpers
+// ============================================================================
+
+/** Merge headers safely (supports Headers, arrays, and objects). */
+function mergeHeaders(
+  base: HeadersInit,
+  extra?: HeadersInit
+): Headers {
+  const headers = new Headers(base);
+  if (extra) {
+    new Headers(extra).forEach((value, key) => headers.set(key, value));
+  }
+  return headers;
+}
+
+/** Parse a response body safely into JSON or text, without double-reading. */
+async function parseResponseBody<T>(
+  response: Response,
+  skipJsonParse?: boolean
+): Promise<T> {
+  if (response.status === 204 || skipJsonParse) {
+    return undefined as T;
+  }
+
+  const text = await response.text().catch(() => '');
+  if (!text) {
+    return undefined as T;
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json')) {
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      // Fall through to return raw text
+    }
+  }
+
+  return text as unknown as T;
+}
+
+/** Parse error response body safely into a standard shape. */
+async function parseErrorBody(response: Response): Promise<ApiErrorBody> {
+  const text = await response.text().catch(() => '');
+  if (!text) {
+    return { error: response.statusText };
+  }
+
+  try {
+    return JSON.parse(text) as ApiErrorBody;
+  } catch {
+    return { error: text };
+  }
+}
+
+// ============================================================================
 // API Fetch Utilities
 // ============================================================================
 
@@ -283,11 +339,13 @@ export async function fetchApi<T>(
     response = await fetch(`${API_BASE}${endpoint}`, {
       ...fetchOptions,
       signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...fetchOptions?.headers,
-      },
+      headers: mergeHeaders(
+        {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        fetchOptions.headers
+      ),
     });
   } catch (error) {
     clearTimeout(timeoutId);
@@ -308,16 +366,11 @@ export async function fetchApi<T>(
   }
   
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({ error: response.statusText }));
+    const errorBody = await parseErrorBody(response);
     throw ApiError.fromResponse(response.status, errorBody);
   }
-  
-  // Handle empty responses (204 No Content)
-  if (response.status === 204 || skipJsonParse) {
-    return undefined as T;
-  }
-  
-  return response.json();
+
+  return parseResponseBody<T>(response, skipJsonParse);
 }
 
 /**
@@ -362,14 +415,13 @@ export async function mutateApi<T, TInput = unknown>(
     ? combineAbortSignals(externalSignal, timeoutController.signal)
     : timeoutController.signal;
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+  const headers = mergeHeaders(
+    {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    token ? getAuthHeader(token) : undefined
+  );
 
   let response: Response;
   
@@ -398,16 +450,11 @@ export async function mutateApi<T, TInput = unknown>(
   }
   
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({ error: response.statusText }));
+    const errorBody = await parseErrorBody(response);
     throw ApiError.fromResponse(response.status, errorBody);
   }
-  
-  // Handle empty responses (204 No Content)
-  if (response.status === 204) {
-    return undefined as T;
-  }
-  
-  return response.json();
+
+  return parseResponseBody<T>(response);
 }
 
 // ============================================================================
@@ -428,6 +475,17 @@ export async function mutateApi<T, TInput = unknown>(
 export function getAuthHeader(token?: string | null): Record<string, string> {
   if (!token) return {};
   return { Authorization: `Bearer ${token}` };
+}
+
+/**
+ * Require an auth token for protected operations.
+ * Throws ApiError with UNAUTHORIZED to keep error handling consistent.
+ */
+export function requireAuthToken(token?: string | null): string {
+  if (!token) {
+    throw new ApiError('Authentication required', 'UNAUTHORIZED', 401);
+  }
+  return token;
 }
 
 /**

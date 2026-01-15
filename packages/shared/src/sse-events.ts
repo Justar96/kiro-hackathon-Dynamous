@@ -20,7 +20,7 @@ export interface SSEEventBase {
 // Event Type Definitions
 // ============================================================================
 
-export type SSEEventType = 'market' | 'comment' | 'argument' | 'reaction' | 'round' | 'steelman' | 'debate-join' | 'comment-reaction' | 'notification';
+export type SSEEventType = 'market' | 'comment' | 'argument' | 'reaction' | 'round' | 'steelman' | 'debate-join' | 'comment-reaction' | 'notification' | 'reputation';
 
 // ============================================================================
 // Market Event (Requirement 2.6)
@@ -168,6 +168,26 @@ export interface NotificationEvent {
 }
 
 // ============================================================================
+// Reputation Event (Requirement 4.1)
+// ============================================================================
+
+export interface ReputationEventData {
+  userId: string;
+  previousScore: number;
+  newScore: number;
+  changeAmount: number;
+  reason: string;
+  debateId?: string;
+}
+
+export interface ReputationEvent {
+  event: 'reputation';
+  timestamp: string;
+  userId: string;
+  data: ReputationEventData;
+}
+
+// ============================================================================
 // Union Type for All SSE Events
 // ============================================================================
 
@@ -180,7 +200,8 @@ export type SSEEvent =
   | SteelmanEvent
   | DebateJoinEvent
   | CommentReactionEvent
-  | NotificationEvent;
+  | NotificationEvent
+  | ReputationEvent;
 
 // ============================================================================
 // Type Guards
@@ -222,6 +243,10 @@ export function isNotificationEvent(event: SSEEvent): event is NotificationEvent
   return event.event === 'notification';
 }
 
+export function isReputationEvent(event: SSEEvent): event is ReputationEvent {
+  return event.event === 'reputation';
+}
+
 // ============================================================================
 // Validation Helpers
 // ============================================================================
@@ -239,6 +264,7 @@ export const SSE_EVENT_REQUIRED_FIELDS: Record<SSEEventType, string[]> = {
   'debate-join': ['opposeDebaterId', 'opposeDebaterUsername'],
   'comment-reaction': ['commentId', 'reactionType', 'counts'],
   notification: ['id', 'type', 'message', 'createdAt'],
+  reputation: ['userId', 'previousScore', 'newScore', 'changeAmount', 'reason'],
 };
 
 /**

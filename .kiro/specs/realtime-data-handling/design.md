@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design document outlines the architecture for comprehensive real-time data handling in the Debate Platform. The solution integrates Server-Sent Events (SSE) with TanStack Query cache management to provide live updates across all platform features.
+This design document outlines the architecture for comprehensive real-time data handling in Thesis. The solution integrates Server-Sent Events (SSE) with TanStack Query cache management to provide live updates across all platform features.
 
 The architecture follows a unified broadcast pattern on the backend and a hook-based subscription pattern on the frontend, ensuring consistent behavior across all real-time features while maintaining compatibility with existing optimistic update patterns.
 

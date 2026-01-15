@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import type { StanceValue, PersuasionDelta } from '@debate-platform/shared';
+import type { StanceValue, PersuasionDelta } from '@thesis/shared';
 
 /**
  * Feature: debate-platform

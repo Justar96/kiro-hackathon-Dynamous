@@ -1,5 +1,6 @@
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { db, users, stances, debates, arguments_, rounds, reputationFactors, reputationHistory } from '../db';
+import { broadcastReputationUpdate } from '../broadcast';
 import type { 
   ReputationScore, 
   ReputationBreakdown, 
@@ -11,14 +12,14 @@ import type {
   REPUTATION_DECAY_THRESHOLD_DAYS,
   REPUTATION_DECAY_RATE_PER_WEEK,
   LOW_IMPACT_THRESHOLD
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 import { 
   REPUTATION_WEIGHTS as WEIGHTS,
   calculateDiminishingReturns as calcDiminishing,
   REPUTATION_DECAY_THRESHOLD_DAYS as DECAY_THRESHOLD,
   REPUTATION_DECAY_RATE_PER_WEEK as DECAY_RATE,
   LOW_IMPACT_THRESHOLD as IMPACT_THRESHOLD
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * ReputationEngineV2 - Enhanced reputation calculation with multi-factor scoring
@@ -381,7 +382,8 @@ export class ReputationEngineV2 {
   }
 
   /**
-   * Record a reputation change in history
+   * Record a reputation change in history and broadcast to user
+   * Requirement 4.1: Broadcast reputation changes to affected users
    */
   private async recordReputationChange(
     userId: string,
@@ -402,6 +404,16 @@ export class ReputationEngineV2 {
       debateId,
       createdAt: new Date(),
     });
+
+    // Broadcast reputation update to the affected user via SSE
+    broadcastReputationUpdate(
+      userId,
+      previousScore,
+      newScore,
+      changeAmount,
+      reason,
+      debateId ?? undefined
+    );
   }
 
   /**

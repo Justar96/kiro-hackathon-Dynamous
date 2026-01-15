@@ -1,6 +1,6 @@
-import { useRef, useEffect, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { DebateWithMarket } from '@debate-platform/shared';
+import type { DebateWithMarket } from '@thesis/shared';
 import { CompactDebateCard, CARD_CONFIG } from './CompactDebateCard';
 import { Skeleton } from '../common/Skeleton';
 
@@ -96,14 +96,15 @@ function SkeletonDebateCard() {
  */
 function LoadingSpinner() {
   return (
-    <div 
-      className="flex justify-center py-6"
-      data-testid="loading-spinner"
-      role="status"
-      aria-label="Loading more debates"
-    >
-      <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
-    </div>
+      <div 
+        className="flex justify-center py-6"
+        data-testid="loading-spinner"
+        role="status"
+        aria-label="Loading more debates"
+      >
+        <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+        <span className="sr-only">Loading more debates</span>
+      </div>
   );
 }
 
@@ -189,7 +190,12 @@ export function InfiniteFeed({
     enabled: shouldVirtualize,
   });
 
-  const virtualItems = virtualizer.getVirtualItems();
+  useEffect(() => {
+    if (!shouldVirtualize) return;
+    virtualizer.measure();
+  }, [shouldVirtualize, debates.length, virtualizer]);
+
+  const virtualItems = useMemo(() => virtualizer.getVirtualItems(), [virtualizer, debates.length, shouldVirtualize]);
 
   /**
    * Intersection Observer callback

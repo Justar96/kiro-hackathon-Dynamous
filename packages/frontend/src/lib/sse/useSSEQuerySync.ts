@@ -11,7 +11,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useSSE } from './useSSE';
 import type { SSEConnectionStatus } from './types';
-import type { SSEEventType } from '@debate-platform/shared';
+import type { SSEEventType } from '@thesis/shared';
 
 // ============================================================================
 // Types

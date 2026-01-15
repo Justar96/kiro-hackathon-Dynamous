@@ -29,6 +29,11 @@ export function SSEProvider({ children, debateId, onReconnect }: SSEProviderProp
   const reconnectAttemptsRef = useRef(0);
   const consecutiveErrorsRef = useRef(0);
   const isUnmountedRef = useRef(false);
+  
+  // Fix: Use ref to track circuit breaker state to avoid dependency loop
+  const isCircuitBreakerActiveRef = useRef(false);
+  // Track circuit breaker reset count for extended backoff
+  const circuitBreakerResetCountRef = useRef(0);
 
   // Clean up function for EventSource
   const cleanup = useCallback(() => {
@@ -50,8 +55,8 @@ export function SSEProvider({ children, debateId, onReconnect }: SSEProviderProp
   const connect = useCallback(() => {
     if (!debateId || isUnmountedRef.current) return;
 
-    // Check if circuit breaker is active (Requirement 12.3)
-    if (connectionStatus === 'circuit-breaker') {
+    // Fix: Check ref instead of state to avoid dependency loop (Requirement 12.3)
+    if (isCircuitBreakerActiveRef.current) {
       return;
     }
 
@@ -74,6 +79,8 @@ export function SSEProvider({ children, debateId, onReconnect }: SSEProviderProp
       reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
       reconnectAttemptsRef.current = 0;
       consecutiveErrorsRef.current = 0;
+      // Reset circuit breaker count on successful connection
+      circuitBreakerResetCountRef.current = 0;
       setErrorCount(0);
       
       // Fire onReconnect callback if this was a reconnection
@@ -95,19 +102,36 @@ export function SSEProvider({ children, debateId, onReconnect }: SSEProviderProp
 
       // Check if circuit breaker should activate (Requirement 12.3)
       if (consecutiveErrorsRef.current >= CIRCUIT_BREAKER_THRESHOLD) {
+        // Fix: Set ref to track circuit breaker state
+        isCircuitBreakerActiveRef.current = true;
+        circuitBreakerResetCountRef.current += 1;
         setConnectionStatus('circuit-breaker');
+        
+        // Calculate extended wait time based on reset count (progressive backoff)
+        const extendedResetTime = Math.min(
+          CIRCUIT_BREAKER_RESET_TIME * Math.pow(2, circuitBreakerResetCountRef.current - 1),
+          5 * 60 * 1000 // Cap at 5 minutes
+        );
         
         // Schedule circuit breaker reset
         circuitBreakerTimeoutRef.current = setTimeout(() => {
           if (!isUnmountedRef.current) {
+            // Fix: Clear circuit breaker ref
+            isCircuitBreakerActiveRef.current = false;
             consecutiveErrorsRef.current = 0;
             reconnectAttemptsRef.current = 0;
             reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
             setConnectionStatus('disconnected');
-            // Auto-reconnect after circuit breaker reset
-            connect();
+            
+            // Apply initial backoff delay before reconnecting
+            const initialDelay = calculateBackoffDelay(1);
+            setTimeout(() => {
+              if (!isUnmountedRef.current) {
+                connect();
+              }
+            }, initialDelay);
           }
-        }, CIRCUIT_BREAKER_RESET_TIME);
+        }, extendedResetTime);
         
         return;
       }
@@ -172,7 +196,7 @@ export function SSEProvider({ children, debateId, onReconnect }: SSEProviderProp
         // Not JSON or doesn't have expected structure, ignore
       }
     };
-  }, [debateId, cleanup, connectionStatus, onReconnect]);
+  }, [debateId, cleanup, onReconnect]);
 
   // Subscribe to specific event types
   const subscribe = useCallback(<T,>(event: string, handler: (data: T) => void): (() => void) => {
@@ -215,6 +239,8 @@ export function SSEProvider({ children, debateId, onReconnect }: SSEProviderProp
     consecutiveErrorsRef.current = 0;
     reconnectAttemptsRef.current = 0;
     reconnectDelayRef.current = INITIAL_RECONNECT_DELAY;
+    // Fix: Reset circuit breaker ref
+    isCircuitBreakerActiveRef.current = false;
     setErrorCount(0);
     
     // Clear any pending timeouts

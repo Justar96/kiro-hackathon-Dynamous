@@ -8,8 +8,6 @@
 export {
   debatesQueryOptions,
   debatesWithMarketQueryOptions,
-  debateQueryOptions,
-  debateDetailQueryOptions,
   debateFullQueryOptions,
   infiniteDebatesQueryOptions,
   type UseInfiniteDebatesOptions,
@@ -33,6 +31,8 @@ export {
   userQueryOptions,
   userStatsQueryOptions,
   userDebatesQueryOptions,
+  votingHistoryQueryOptions,
+  reputationBreakdownQueryOptions,
 } from './users';
 
 // Steelman queries

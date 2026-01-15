@@ -1,15 +1,10 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { useState, useMemo, useCallback } from 'react';
-import { 
-  debatesWithMarketQueryOptions,
-  useQuickStance,
-  useSession,
-  useInfiniteDebates,
-} from '../lib';
-import { 
-  SkeletonDebateRow, 
-  SkeletonHeading, 
-  SkeletonText, 
+import { debatesWithMarketQueryOptions, useQuickStance, useSession, useInfiniteDebates } from '../lib';
+import {
+  SkeletonDebateRow,
+  SkeletonHeading,
+  SkeletonText,
   MindChangeLeaderboard,
   DebateTabs,
   getPersistedTab,
@@ -44,7 +39,7 @@ function HomePage() {
   const { showToast } = useToast();
   const { openSignIn } = useAuthModal();
   const isAuthenticated = !!user;
-  
+
   // Tab state with persistence
   const [activeTab, setActiveTab] = useState<DebateTabType>(() => {
     const persisted = getPersistedTab();
@@ -277,24 +272,54 @@ function IndexCenterContent({
     refetch,
   } = useInfiniteDebates({
     filter: infiniteFilter,
+    pageSize: 12,
   });
 
   // Use infinite debates if available, otherwise fall back to filtered debates
   const displayDebates = infiniteDebates.length > 0 ? infiniteDebates : filteredDebates;
+  const showHero = !isAuthenticated && activeTab === 'all';
   
   return (
     <div>
       {/* Header - Compact and prominent */}
-      <header className="mb-4 flex items-baseline gap-3 border-b border-border-subtle pb-3">
-        <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
-          Debate Index
-        </h1>
-        <p className="text-xs text-text-tertiary hidden sm:block">
-          Take a position • See what others think • Track mind changes
-        </p>
+      <header className="mb-4 flex flex-col gap-3 border-b border-border-subtle pb-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="font-heading text-xl sm:text-2xl font-bold text-text-primary tracking-tight">
+            Debate Index
+          </h1>
+          <p className="text-xs text-text-tertiary hidden sm:block">
+            Take a position • See what others think • Track mind changes
+          </p>
+        </div>
+        <button
+          onClick={openNewDebate}
+          className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-accent text-white text-sm font-medium rounded-small hover:bg-accent-hover transition-colors shadow-paper"
+        >
+          <PlusIcon size="sm" decorative />
+          Start a Debate
+        </button>
       </header>
 
-      {/* Trending section relocated to right rail - Requirements: 4.1 */}
+      {showHero && (
+        <section className="mb-4 rounded-small border border-divider bg-paper p-4 shadow-paper">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-text-primary">
+                See which arguments actually change minds.
+              </p>
+              <p className="text-xs text-text-tertiary">
+                Record a stance, read both sides, and watch the persuasion delta shift.
+              </p>
+            </div>
+            <button
+              onClick={openNewDebate}
+              className="inline-flex items-center justify-center px-3 py-2 bg-text-primary text-white text-xs font-medium rounded-small hover:bg-text-primary/90 transition-colors"
+            >
+              Create your first debate
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Tabs */}
       <DebateTabs

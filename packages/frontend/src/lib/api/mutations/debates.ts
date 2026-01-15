@@ -5,7 +5,7 @@
  */
 
 import { mutateApi } from '../client';
-import type { Debate } from '@debate-platform/shared';
+import type { Debate } from '@thesis/shared';
 import type {
   CreateDebateInput,
   CreateDebateResponse,

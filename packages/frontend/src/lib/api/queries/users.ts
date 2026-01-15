@@ -8,12 +8,14 @@ import { queryOptions, keepPreviousData } from '@tanstack/react-query';
 import { fetchApi, getAuthHeader } from '../client';
 import { queryKeys } from '../queryKeys';
 import { CACHE_STRATEGIES } from '../cache';
-import type { Debate, User } from '@debate-platform/shared';
+import type { Debate, User, ReputationBreakdown } from '@thesis/shared';
 import type {
   CurrentUserResponse,
   UserResponse,
   UserStatsResponse,
   UserDebatesResponse,
+  VotingHistoryResponse,
+  VotingHistoryEntry,
 } from '../types';
 
 /**
@@ -102,4 +104,55 @@ export const userDebatesQueryOptions = (userId: string) =>
       const bTime = new Date(b.createdAt).getTime();
       return bTime - aTime;
     }),
+  });
+
+
+/**
+ * Query options for fetching user's private voting history (self-access only)
+ * Per Requirement 3.4: Users can view their own voting history privately
+ * Uses 'static' cache strategy for user history
+ */
+export const votingHistoryQueryOptions = (userId: string, token?: string) =>
+  queryOptions({
+    queryKey: queryKeys.users.votingHistory(userId),
+    queryFn: async (): Promise<VotingHistoryEntry[]> => {
+      if (!userId || !token) return [];
+      try {
+        const response = await fetchApi<VotingHistoryResponse>(
+          `/api/users/${userId}/voting-history`,
+          { headers: getAuthHeader(token) }
+        );
+        return response.votingHistory;
+      } catch {
+        // Return empty array if unauthorized or error
+        return [];
+      }
+    },
+    ...CACHE_STRATEGIES.static,
+    enabled: !!userId && !!token,
+    placeholderData: keepPreviousData,
+  });
+
+
+/**
+ * Query options for fetching user reputation breakdown
+ * Requirement 4.1 - Return ReputationBreakdown for user profile
+ * Uses 'static' cache strategy for reputation data
+ */
+export const reputationBreakdownQueryOptions = (userId: string) =>
+  queryOptions({
+    queryKey: queryKeys.users.reputation(userId),
+    queryFn: async (): Promise<ReputationBreakdown | null> => {
+      if (!userId) return null;
+      try {
+        const response = await fetchApi<{ breakdown: ReputationBreakdown }>(
+          `/api/users/${userId}/reputation`
+        );
+        return response.breakdown;
+      } catch {
+        return null;
+      }
+    },
+    ...CACHE_STRATEGIES.static,
+    enabled: !!userId,
   });

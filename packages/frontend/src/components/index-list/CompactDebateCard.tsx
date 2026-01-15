@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import type { Debate, MarketPrice } from '@debate-platform/shared';
+import type { Debate, MarketPrice } from '@thesis/shared';
 import { useDebateLinkPrefetch } from '../../lib';
 import { InlineQuickStance } from './InlineQuickStance';
 
@@ -44,7 +44,7 @@ export function CompactDebateCard({
   const isLive = debate.status === 'active' && debate.opposeDebaterId !== null;
   const isConcluded = debate.status === 'concluded';
 
-  const prefetchProps = useDebateLinkPrefetch(debate.id);
+  const prefetchProps = useDebateLinkPrefetch(debate.id, { delay: 200 });
   const timeAgo = formatTimeAgo(debate.createdAt);
 
   const resolutionId = `compact-resolution-${debate.id}`;
@@ -60,6 +60,8 @@ export function CompactDebateCard({
         className="relative bg-paper border-b border-divider hover:bg-page-bg/50 active:bg-page-bg transition-colors duration-150"
         style={{
           padding: `${CARD_CONFIG.padding}px ${CARD_CONFIG.padding + 4}px`,
+          minHeight: CARD_CONFIG.minHeight,
+          contentVisibility: 'auto',
         }}
         aria-labelledby={resolutionId}
         data-testid="compact-debate-card"

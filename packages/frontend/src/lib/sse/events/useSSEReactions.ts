@@ -11,7 +11,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSSE } from '../useSSE';
 import { queryKeys } from '../../api/queryKeys';
-import type { ReactionEventData, ReactionCounts } from '@debate-platform/shared';
+import type { ReactionEventData, ReactionCounts } from '@thesis/shared';
 
 interface ReactionsResponse {
   counts: ReactionCounts;

@@ -177,8 +177,7 @@ export function useFormValidation<TFields extends Record<string, FieldConfig>>(
       if (!config.rules) return undefined;
 
       for (const rule of config.rules) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const error = (rule as ValidationRule<any>)(value, values as Record<string, unknown>);
+        const error = (rule as ValidationRule<unknown>)(value, values as Record<string, unknown>);
         if (error) return error;
       }
       return undefined;

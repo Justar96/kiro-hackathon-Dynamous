@@ -3,7 +3,7 @@ import * as fc from 'fast-check';
 import { 
   SANDBOX_VOTE_WEIGHT, 
   FULL_VOTE_WEIGHT 
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * Feature: debate-platform
@@ -213,8 +213,9 @@ describe('MarketService Property Tests', () => {
             const result = calculateMarketPrice(postStances, userMap);
 
             // Single voter's stance should be the market price
-            expect(result.supportPrice).toBe(supportValue);
-            expect(result.opposePrice).toBe(100 - supportValue);
+            // Use toEqual to handle -0 vs +0 edge case
+            expect(result.supportPrice).toEqual(supportValue);
+            expect(result.opposePrice).toEqual(100 - supportValue);
           }
         ),
         { numRuns: 100 }

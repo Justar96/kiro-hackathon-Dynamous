@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { MarketDataPoint, StanceValue } from '@debate-platform/shared';
+import type { MarketDataPoint, StanceValue } from '@thesis/shared';
 import { AudienceStats } from '../debate/AudienceStats';
 import { Skeleton } from '../common/Skeleton';
 
@@ -19,6 +19,8 @@ interface RightMarginRailProps {
   isAuthenticated?: boolean;
   /** Whether market data is still loading */
   isLoadingMarketData?: boolean;
+  /** Whether market data should be hidden (blind voting - Requirement 3.6) */
+  marketBlocked?: boolean;
 }
 
 /**
@@ -30,6 +32,7 @@ interface RightMarginRailProps {
  * - Compact market meter with improved readability
  * - Better progress visualization
  * - Cleaner stance input UI
+ * - Blind voting: hides market price until pre-stance recorded (Requirement 3.6)
  */
 export function RightMarginRail({
   debateId,
@@ -45,6 +48,7 @@ export function RightMarginRail({
   isSubmitting = false,
   isAuthenticated = false,
   isLoadingMarketData = false,
+  marketBlocked = false,
 }: RightMarginRailProps) {
   const [beforeValue, setBeforeValue] = useState(userStance?.before ?? 50);
   const [afterValue, setAfterValue] = useState(userStance?.after ?? 50);
@@ -92,47 +96,78 @@ export function RightMarginRail({
       </div>
 
       {/* Stance Breakdown - Redesigned */}
+      {/* Requirement 3.6: Hide market price from users who have not recorded a pre-stance (blind voting) */}
       <div className="bg-page-bg/80 rounded-small border border-divider p-4 space-y-3 shadow-paper">
         <div className="flex items-center justify-between pb-2 border-b border-divider">
           <h3 className="small-caps text-label text-text-secondary">Stance</h3>
           {isLoadingMarketData && <Skeleton className="h-3 w-12" />}
         </div>
         
-        {/* Support/Oppose Bar */}
-        <div className="space-y-2">
-          <div className="flex justify-between items-baseline">
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-semibold text-support tabular-nums">{supportPrice}</span>
-              <span className="text-xs text-support">%</span>
+        {/* Blind voting: show message if market is blocked */}
+        {marketBlocked ? (
+          <div className="py-4 text-center">
+            <div className="mb-2">
+              <svg 
+                className="w-8 h-8 mx-auto text-text-tertiary" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={1.5} 
+                  d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" 
+                />
+              </svg>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-semibold text-oppose tabular-nums">{opposePrice}</span>
-              <span className="text-xs text-oppose">%</span>
+            <p className="text-sm text-text-secondary font-medium mb-1">
+              Market Hidden
+            </p>
+            <p className="text-xs text-text-tertiary">
+              Record your initial stance to see the market
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Support/Oppose Bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-baseline">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-semibold text-support tabular-nums">{supportPrice}</span>
+                  <span className="text-xs text-support">%</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-semibold text-oppose tabular-nums">{opposePrice}</span>
+                  <span className="text-xs text-oppose">%</span>
+                </div>
+              </div>
+              
+              <div className="relative h-2.5 bg-divider rounded-full overflow-hidden">
+                <div 
+                  className="absolute left-0 top-0 h-full bg-support transition-all duration-500 ease-out"
+                  style={{ width: `${supportPrice}%` }}
+                />
+                <div 
+                  className="absolute right-0 top-0 h-full bg-oppose transition-all duration-500 ease-out"
+                  style={{ width: `${opposePrice}%` }}
+                />
+              </div>
+              
+              <div className="flex justify-between text-xs text-text-tertiary">
+                <span>Support</span>
+                <span>Oppose</span>
+              </div>
             </div>
-          </div>
-          
-          <div className="relative h-2.5 bg-divider rounded-full overflow-hidden">
-            <div 
-              className="absolute left-0 top-0 h-full bg-support transition-all duration-500 ease-out"
-              style={{ width: `${supportPrice}%` }}
-            />
-            <div 
-              className="absolute right-0 top-0 h-full bg-oppose transition-all duration-500 ease-out"
-              style={{ width: `${opposePrice}%` }}
-            />
-          </div>
-          
-          <div className="flex justify-between text-xs text-text-tertiary">
-            <span>Support</span>
-            <span>Oppose</span>
-          </div>
-        </div>
 
-        {/* Sparkline Chart */}
-        {!isLoadingMarketData && dataPoints.length > 1 && (
-          <div className="pt-2 border-t border-divider">
-            <MiniSparkline dataPoints={dataPoints} />
-          </div>
+            {/* Sparkline Chart */}
+            {!isLoadingMarketData && dataPoints.length > 1 && (
+              <div className="pt-2 border-t border-divider">
+                <MiniSparkline dataPoints={dataPoints} />
+              </div>
+            )}
+          </>
         )}
       </div>
 

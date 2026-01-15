@@ -2,7 +2,7 @@
 
 ## Introduction
 
-A debate platform where every post is a resolution, every debate is structured, and outcomes are determined by measured mind-changes—not raw upvotes. The platform combines Reddit's thread energy with Polymarket-style momentum UI (using virtual points, not blockchain) to create a unique "Persuasion Market" experience.
+Thesis is a debate platform where every post is a resolution, every debate is structured, and outcomes are determined by measured mind-changes—not raw upvotes. Thesis combines Reddit's thread energy with Polymarket-style momentum UI (using virtual points, not blockchain) to create a unique "Persuasion Market" experience.
 
 The core differentiator: tracking pre-read vs post-read stance changes to measure actual persuasion, not just agreement.
 

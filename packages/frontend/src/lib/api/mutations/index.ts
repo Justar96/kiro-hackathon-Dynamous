@@ -8,7 +8,7 @@
 export { createDebate, joinDebate } from './debates';
 
 // Argument mutations
-export { submitArgument, markMindChanged } from './arguments';
+export { submitArgument, markMindChanged, uploadArgumentMedia, getUrlPreview } from './arguments';
 
 // Stance mutations
 export {

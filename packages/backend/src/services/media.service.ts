@@ -9,7 +9,7 @@ import {
   ACCEPTED_FILE_TYPES,
   MAX_FILE_SIZE,
   AcceptedFileType,
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 // Validation result type
 export interface ValidationResult {

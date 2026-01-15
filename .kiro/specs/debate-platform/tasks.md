@@ -1,8 +1,8 @@
-# Implementation Plan: Debate Platform
+# Implementation Plan: Thesis
 
 ## Overview
 
-This plan implements a "Persuasion Market" debate platform using TanStack React, Bun runtime, Hono backend, and Neon PostgreSQL with Drizzle ORM. Authentication is handled via Neon Auth (Stack Auth SDK). Tasks are ordered to build incrementally, with core data models first, then services, then UI components.
+This plan implements Thesis using TanStack React, Bun runtime, Hono backend, and Neon PostgreSQL with Drizzle ORM. Authentication is handled via Neon Auth (Stack Auth SDK). Tasks are ordered to build incrementally, with core data models first, then services, then UI components.
 
 ## Tasks
 

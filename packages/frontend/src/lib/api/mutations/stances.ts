@@ -5,7 +5,7 @@
  */
 
 import { mutateApi } from '../client';
-import type { Stance } from '@debate-platform/shared';
+import type { Stance } from '@thesis/shared';
 import type {
   RecordStanceInput,
   QuickStanceInput,

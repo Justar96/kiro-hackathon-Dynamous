@@ -8,7 +8,7 @@ import { queryOptions, infiniteQueryOptions } from '@tanstack/react-query';
 import { fetchApi, ApiError } from '../client';
 import { queryKeys } from '../queryKeys';
 import { CACHE_STRATEGIES } from '../cache';
-import type { Comment } from '@debate-platform/shared';
+import type { Comment } from '@thesis/shared';
 import type { CommentsResponse, PaginatedCommentsResponse } from '../types';
 
 /**

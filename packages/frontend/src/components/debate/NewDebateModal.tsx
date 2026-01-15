@@ -276,8 +276,9 @@ function NewDebateModalContent({ isOpen, onClose }: NewDebateModalContentProps) 
               }`}
             >
               <div className="overflow-hidden">
-                <div className="p-3 bg-page-bg rounded-lg border border-black/[0.05] max-h-40 overflow-y-auto">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="p-3 bg-page-bg rounded-lg border border-black/[0.05] max-h-64 overflow-y-auto">
+                  {/* Header with Random button */}
+                  <div className="flex items-center justify-between mb-3">
                     <span className="text-caption text-text-secondary font-medium">
                       Topic Ideas
                     </span>
@@ -288,25 +289,39 @@ function NewDebateModalContent({ isOpen, onClose }: NewDebateModalContentProps) 
                         resolutionProps.onChange(topic);
                         setShowSuggestions(false);
                       }}
-                      className="text-caption text-accent hover:text-accent-hover transition-all duration-200 hover:scale-105 active:scale-95"
+                      className="flex items-center gap-1 text-caption text-accent hover:text-accent-hover transition-all duration-200 hover:scale-105 active:scale-95 px-2 py-1 rounded bg-accent/10 hover:bg-accent/20"
                     >
-                      Random
+                      🎲 Random topic
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {DEBATE_TEMPLATES.flatMap(cat => cat.topics.slice(0, 1)).slice(0, 6).map((topic, index) => (
-                      <button
-                        key={topic}
-                        type="button"
-                        onClick={() => {
-                          resolutionProps.onChange(topic);
-                          setShowSuggestions(false);
-                        }}
-                        className="text-caption text-text-primary bg-paper px-2 py-1 rounded border border-black/[0.08] hover:border-accent hover:text-accent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 text-left active:scale-95"
-                        style={{ animationDelay: `${index * 30}ms` }}
-                      >
-                        {topic.length > 40 ? topic.slice(0, 40) + '...' : topic}
-                      </button>
+                  
+                  {/* Category-based suggestions */}
+                  <div className="space-y-3">
+                    {DEBATE_TEMPLATES.map((category, catIndex) => (
+                      <div key={category.category}>
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <span className="text-sm">{category.icon}</span>
+                          <span className="text-caption font-medium text-text-primary">
+                            {category.category}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {category.topics.slice(0, 2).map((topic, index) => (
+                            <button
+                              key={topic}
+                              type="button"
+                              onClick={() => {
+                                resolutionProps.onChange(topic);
+                                setShowSuggestions(false);
+                              }}
+                              className="text-caption text-text-primary bg-paper px-2 py-1 rounded border border-black/[0.08] hover:border-accent hover:text-accent hover:shadow-sm hover:-translate-y-0.5 transition-all duration-200 text-left active:scale-95"
+                              style={{ animationDelay: `${(catIndex * 2 + index) * 30}ms` }}
+                            >
+                              {topic.length > 45 ? topic.slice(0, 45) + '...' : topic}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>

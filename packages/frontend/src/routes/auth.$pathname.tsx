@@ -13,9 +13,9 @@ function AuthPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-text-primary">
-            {pathname === 'sign-up' ? 'Create your account' : 'Sign in to Debate Platform'}
+            {pathname === 'sign-up' ? 'Create your account' : 'Sign in to Thesis'}
           </h2>
-          <p className="mt-2 text-text-secondary">Join the Persuasion Market</p>
+          <p className="mt-2 text-text-secondary">Join Thesis</p>
         </div>
         <AuthView pathname={pathname} />
       </div>

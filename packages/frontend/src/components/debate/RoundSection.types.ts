@@ -2,7 +2,7 @@
  * Types and interfaces for the RoundSection component and its children.
  */
 
-import type { Debate, Round, Argument, User, RoundNumber, RoundType, Side } from '@debate-platform/shared';
+import type { Debate, Round, Argument, User, RoundNumber, RoundType, Side } from '@thesis/shared';
 import type { Citation } from './ArgumentBlock';
 
 /** Visual states for each round step */
@@ -52,13 +52,6 @@ export interface RoundProgressIndicatorProps {
   viewedRound: RoundNumber;
   rounds: Round[];
   onRoundSelect?: (round: RoundNumber) => void;
-}
-
-export interface RoundNavigatorProps {
-  rounds: Round[];
-  currentRound: RoundNumber;
-  viewedRound: RoundNumber;
-  onRoundSelect: (round: RoundNumber) => void;
 }
 
 export interface RoundHistoryProps {

@@ -5,7 +5,7 @@
  */
 
 import { mutateApi } from '../client';
-import type { Comment } from '@debate-platform/shared';
+import type { Comment } from '@thesis/shared';
 import type {
   AddCommentInput,
   AddCommentResponse,

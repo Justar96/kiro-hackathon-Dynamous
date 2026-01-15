@@ -5,7 +5,7 @@ import type {
   QueuedDebate, 
   MatchResult, 
   QueueFilter 
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * MatchingService handles opponent matching and queue management.
@@ -53,10 +53,10 @@ export class MatchingService {
 
     // Filter by keywords in resolution
     if (filter?.keywords && filter.keywords.length > 0) {
-      const lowerKeywords = filter.keywords.map(k => k.toLowerCase());
+      const lowerKeywords = filter.keywords.map((keyword: string) => keyword.toLowerCase());
       filtered = filtered.filter(r => {
         const resolution = r.debate.resolution.toLowerCase();
-        return lowerKeywords.some(keyword => resolution.includes(keyword));
+        return lowerKeywords.some((keyword: string) => resolution.includes(keyword));
       });
     }
 

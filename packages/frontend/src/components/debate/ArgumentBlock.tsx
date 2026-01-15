@@ -1,5 +1,6 @@
-import type { Argument, User } from '@debate-platform/shared';
+import type { Argument, User } from '@thesis/shared';
 import { CheckIcon, LightBulbIcon } from '../icons';
+import { ReactionDisplay } from './ReactionDisplay';
 
 export interface Citation {
   number: number;
@@ -23,6 +24,8 @@ interface ArgumentBlockProps {
   onMindChanged?: () => void;
   /** Whether this argument has been attributed as "changed my mind" */
   attributed?: boolean;
+  /** Whether to show reaction buttons (Requirement 6.3) */
+  showReactions?: boolean;
 }
 
 /**
@@ -40,6 +43,7 @@ export function ArgumentBlock({
   onCitationHover,
   onMindChanged,
   attributed = false,
+  showReactions = true,
 }: ArgumentBlockProps) {
   const sideConfig = getSideConfig(side);
   const hasImpact = argument.impactScore > 0;
@@ -91,15 +95,27 @@ export function ArgumentBlock({
         </div>
       </div>
       
-      {/* Footer - Attribution button */}
-      {(onAttributeImpact || onMindChanged) && (
-        <div className="px-5 py-3 border-t border-divider">
-          <MindChangedButton 
-            onClick={onMindChanged || onAttributeImpact}
-            attributed={attributed}
-          />
+      {/* Footer - Reactions and Attribution button */}
+      <div className="px-5 py-3 border-t border-divider">
+        <div className="flex items-center justify-between gap-4">
+          {/* Reactions - Aggregate counts only (Requirement 6.3) */}
+          {showReactions && (
+            <ReactionDisplay 
+              argumentId={argument.id} 
+              interactive={true}
+              compact={false}
+            />
+          )}
+          
+          {/* Mind Changed button */}
+          {(onAttributeImpact || onMindChanged) && (
+            <MindChangedButton 
+              onClick={onMindChanged || onAttributeImpact}
+              attributed={attributed}
+            />
+          )}
         </div>
-      )}
+      </div>
     </article>
   );
 }

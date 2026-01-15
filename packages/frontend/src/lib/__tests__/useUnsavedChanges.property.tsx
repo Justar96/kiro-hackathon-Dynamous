@@ -18,7 +18,7 @@ vi.mock('@tanstack/react-router', () => ({
 }));
 
 // Import after mocking
-import { useUnsavedChangesControl } from './useUnsavedChanges';
+import { useUnsavedChangesControl } from '../hooks/form/useUnsavedChanges';
 
 // Arbitrary for custom messages
 const messageArbitrary = fc.string({ minLength: 1, maxLength: 200 })
@@ -119,7 +119,7 @@ describe('useUnsavedChanges Property Tests', () => {
       );
     });
 
-    it('should register beforeunload handler when warnOnUnload is true', () => {
+    it('should register beforeunload handler when warnOnUnload is true and has changes', () => {
       fc.assert(
         fc.property(fc.boolean(), () => {
           addEventListenerSpy.mockClear();
@@ -133,6 +133,26 @@ describe('useUnsavedChanges Property Tests', () => {
             'beforeunload',
             expect.any(Function)
           );
+          
+          unmount();
+        }),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should not register beforeunload handler when warnOnUnload is true but no changes', () => {
+      fc.assert(
+        fc.property(fc.boolean(), () => {
+          addEventListenerSpy.mockClear();
+          
+          const { unmount } = renderHook(() => 
+            useUnsavedChangesControl(false, { warnOnUnload: true })
+          );
+          
+          const beforeUnloadCalls = addEventListenerSpy.mock.calls.filter(
+            call => call[0] === 'beforeunload'
+          );
+          expect(beforeUnloadCalls.length).toBe(0);
           
           unmount();
         }),
@@ -161,7 +181,7 @@ describe('useUnsavedChanges Property Tests', () => {
       );
     });
 
-    it('should cleanup beforeunload handler on unmount', () => {
+    it('should cleanup beforeunload handler on unmount when registered', () => {
       fc.assert(
         fc.property(fc.boolean(), () => {
           removeEventListenerSpy.mockClear();

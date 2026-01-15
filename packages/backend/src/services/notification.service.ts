@@ -6,7 +6,7 @@ import type {
   Notification, 
   CreateNotificationInput,
   NotificationType
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * NotificationService handles user notifications for debate events.

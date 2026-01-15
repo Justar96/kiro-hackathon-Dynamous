@@ -1,4 +1,4 @@
-import type { MarketPrice } from '@debate-platform/shared';
+import type { MarketPrice } from '@thesis/shared';
 
 interface InlineQuickStanceProps {
   debateId: string;

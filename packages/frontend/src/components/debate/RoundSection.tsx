@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useMemo, useEffect, useRef, useReducer, useState } from 'react';
-import type { Debate, Round, Argument, User, RoundNumber } from '@debate-platform/shared';
+import type { Debate, Round, Argument, User, RoundNumber } from '@thesis/shared';
 import type { Citation } from './ArgumentBlock';
 import type { SteelmanData, PendingReview } from './ActiveRoundView';
 import { RoundProgressIndicator } from './RoundProgressIndicator';

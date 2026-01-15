@@ -6,7 +6,7 @@ import type {
   CreateSteelmanInput, 
   ReviewSteelmanInput,
   RoundNumber,
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * SteelmanService handles the Steelman Gate feature.

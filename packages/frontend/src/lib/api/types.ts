@@ -17,7 +17,7 @@ import type {
   StanceSpike,
   ReactionCounts,
   PersuasionDelta,
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 // ============================================================================
 // Debate Response Types
@@ -173,6 +173,24 @@ export interface StanceStats {
   avgPostStance: number;
   avgDelta: number;
   mindChangedCount: number;
+}
+
+// ============================================================================
+// Voting History Response Types (Requirement 3.4)
+// ============================================================================
+
+export interface VotingHistoryEntry {
+  debateId: string;
+  resolution: string;
+  debateStatus: 'active' | 'concluded';
+  preStance: number | null;
+  postStance: number | null;
+  delta: number | null;
+  votedAt: string;
+}
+
+export interface VotingHistoryResponse {
+  votingHistory: VotingHistoryEntry[];
 }
 
 // ============================================================================

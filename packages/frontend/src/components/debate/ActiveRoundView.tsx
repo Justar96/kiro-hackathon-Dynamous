@@ -4,7 +4,7 @@
  * Includes Steelman Gate for rounds 2 and 3.
  */
 
-import type { Round, Argument, User } from '@debate-platform/shared';
+import type { Round, Argument, User } from '@thesis/shared';
 import { ArgumentBlock, type Citation } from './ArgumentBlock';
 import { ArgumentSubmissionForm } from './ArgumentSubmissionForm';
 import { SteelmanForm, SteelmanReview } from './SteelmanGate';

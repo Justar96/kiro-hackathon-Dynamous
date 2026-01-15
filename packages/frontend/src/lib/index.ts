@@ -24,8 +24,6 @@
 export {
   queryKeys,
   debatesQueryOptions,
-  debateQueryOptions,
-  debateDetailQueryOptions,
   debateFullQueryOptions,
   marketQueryOptions,
   userStanceQueryOptions,
@@ -37,6 +35,7 @@ export {
   userQueryOptions,
   userStatsQueryOptions,
   userDebatesQueryOptions,
+  votingHistoryQueryOptions,
   healthCheckQueryOptions,
   steelmanStatusQueryOptions,
   pendingSteelmansQueryOptions,
@@ -67,6 +66,17 @@ export {
 // Cache strategies
 export { CACHE_STRATEGIES, mutationKeys } from './api';
 
+// Query client configuration (TanStack Query v5)
+export {
+  createQueryClient,
+  defaultQueryOptions,
+  defaultMutationOptions,
+  isApiError,
+  getErrorMessage,
+  requiresReauth,
+  isRetryableError,
+} from './api';
+
 // ============================================================================
 // Data Hooks
 // ============================================================================
@@ -76,12 +86,11 @@ export {
   useAuthToken,
   // Debates
   useDebates,
-  useDebate,
-  useDebateDetail,
   useDebateFull,
   useCreateDebate,
   useJoinDebate,
   useSubmitArgument,
+  useInfiniteDebates,
   // Market
   useMarket,
   // Stances
@@ -114,6 +123,7 @@ export {
   useReviewSteelman,
   useDeleteSteelman,
 } from './hooks/data';
+export type { UseInfiniteDebatesResult } from './hooks/data';
 
 // ============================================================================
 // Optimistic Update Hooks
@@ -125,6 +135,9 @@ export {
   useOptimisticComment,
 } from './hooks/optimistic';
 export type { StanceResponse, ReactionsResponse, OptimisticContext } from './hooks/optimistic';
+
+// Mutation helpers
+export { getMutationErrorMessage, normalizeMutationError } from './hooks/mutationHelpers';
 
 // ============================================================================
 // Auth Hooks
@@ -254,12 +267,12 @@ export type {
 // Utils
 // ============================================================================
 
-export { DEBATE_TEMPLATES, getRandomTopic, getTopicsByCategory } from './utils';
-
-// ============================================================================
-// Legacy Exports (for backward compatibility)
-// ============================================================================
-
-// Infinite debates hook
-export { useInfiniteDebates } from './useInfiniteDebates';
-export type { UseInfiniteDebatesResult } from './useInfiniteDebates';
+export { 
+  DEBATE_TEMPLATES, 
+  getRandomTopic, 
+  getTopicsByCategory,
+  getCategories,
+  getRandomTopicFromCategory,
+  getAllTopics,
+} from './utils';
+export type { DebateCategory } from './utils';

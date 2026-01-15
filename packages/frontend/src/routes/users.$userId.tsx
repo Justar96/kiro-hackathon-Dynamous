@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useSession, userQueryOptions, userDebatesQueryOptions } from '../lib';
-import { SkeletonStatCard, Skeleton } from '../components';
-import type { Debate } from '@debate-platform/shared';
+import { useSession, useAuthToken, userQueryOptions, userDebatesQueryOptions, votingHistoryQueryOptions } from '../lib';
+import { SkeletonStatCard, Skeleton, ReputationBreakdown } from '../components';
+import type { Debate } from '@thesis/shared';
+import type { VotingHistoryEntry } from '../lib/api/types';
 
 export const Route = createFileRoute('/users/$userId')({
   loader: async ({ context, params }) => {
@@ -24,11 +25,16 @@ function UserProfile() {
   const { user } = Route.useLoaderData();
   const { userId } = Route.useParams();
   const { user: currentUser } = useSession();
+  const token = useAuthToken();
   
   // Fetch debate history
   const { data: debates = [] } = useQuery(userDebatesQueryOptions(userId));
   
+  // Fetch voting history (only for own profile - Requirement 3.4)
   const isOwnProfile = currentUser?.id === user?.authUserId;
+  const { data: votingHistory = [] } = useQuery(
+    votingHistoryQueryOptions(userId, token)
+  );
 
   if (!user) {
     return (
@@ -145,6 +151,15 @@ function UserProfile() {
           )}
         </section>
 
+        {/* Reputation Breakdown - Requirements: 4.1, 7.4 */}
+        <ReputationBreakdown
+          userId={userId}
+          showRecentChanges={true}
+          showRank={true}
+          className="mb-4 sm:mb-6"
+          data-testid="user-reputation-breakdown"
+        />
+
         {/* Debate History */}
         <section className="bg-paper rounded-small border border-black/[0.08] shadow-paper p-4 sm:p-6">
           <h2 className="text-label uppercase tracking-wider text-text-secondary mb-4">Debate History</h2>
@@ -169,6 +184,30 @@ function UserProfile() {
             </div>
           )}
         </section>
+
+        {/* Private Voting History - Only visible on own profile (Requirement 3.4) */}
+        {isOwnProfile && (
+          <section className="bg-paper rounded-small border border-black/[0.08] shadow-paper p-4 sm:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-label uppercase tracking-wider text-text-secondary">Your Voting History</h2>
+              <span className="px-2 py-0.5 bg-page-bg text-text-tertiary text-caption rounded-subtle">
+                Private
+              </span>
+            </div>
+            
+            {votingHistory.length === 0 ? (
+              <p className="text-body-small text-text-tertiary">
+                You haven't voted on any debates yet. Browse debates and record your stance to see your voting history here.
+              </p>
+            ) : (
+              <div className="space-y-2 sm:space-y-3">
+                {votingHistory.map((entry) => (
+                  <VotingHistoryRow key={entry.debateId} entry={entry} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );
@@ -236,6 +275,67 @@ function DebateHistoryRow({ debate, userId }: DebateHistoryRowProps) {
   );
 }
 
+/**
+ * VotingHistoryRow displays a single voting history entry
+ * Per Requirement 3.4: Private voting history for user profile
+ */
+interface VotingHistoryRowProps {
+  entry: VotingHistoryEntry;
+}
+
+function VotingHistoryRow({ entry }: VotingHistoryRowProps) {
+  const delta = entry.delta;
+  const deltaSign = delta !== null && delta > 0 ? '+' : '';
+  const deltaColor = delta !== null 
+    ? delta > 0 
+      ? 'text-support' 
+      : delta < 0 
+        ? 'text-oppose' 
+        : 'text-text-secondary'
+    : 'text-text-tertiary';
+
+  return (
+    <Link
+      to="/debates/$debateId"
+      params={{ debateId: entry.debateId }}
+      className="block p-3 -mx-3 rounded-subtle hover:bg-page-bg transition-colors"
+    >
+      <div className="flex items-start gap-3">
+        {/* Delta indicator */}
+        <div className="w-12 text-center flex-shrink-0">
+          {delta !== null ? (
+            <span className={`text-sm font-medium ${deltaColor}`}>
+              Δ {deltaSign}{delta}
+            </span>
+          ) : (
+            <span className="text-caption text-text-tertiary">—</span>
+          )}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <p className="text-body text-text-primary truncate">
+            {entry.resolution}
+          </p>
+          <div className="flex items-center gap-3 mt-1">
+            {/* Pre/Post stance values */}
+            <span className="text-caption text-text-tertiary">
+              {entry.preStance !== null ? `${entry.preStance}%` : '—'} → {entry.postStance !== null ? `${entry.postStance}%` : '—'}
+            </span>
+            <span className={`text-caption ${
+              entry.debateStatus === 'concluded' ? 'text-text-tertiary' : 'text-support'
+            }`}>
+              {entry.debateStatus === 'concluded' ? 'Concluded' : 'Active'}
+            </span>
+            <span className="text-caption text-text-tertiary">
+              {new Date(entry.votedAt).toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function UserProfilePending() {
   return (
     <div className="min-h-screen bg-page-bg">
@@ -258,6 +358,34 @@ function UserProfilePending() {
           {[1, 2, 3].map((i) => (
             <SkeletonStatCard key={i} />
           ))}
+        </section>
+
+        {/* Vote Weight Skeleton */}
+        <section className="bg-paper rounded-small border border-black/[0.08] shadow-paper p-4 sm:p-6 mb-4 sm:mb-6">
+          <Skeleton className="h-4 w-24 mb-3" />
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-8 w-12" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+        </section>
+
+        {/* Reputation Breakdown Skeleton */}
+        <section className="bg-paper rounded-small border border-black/[0.08] shadow-paper mb-4 sm:mb-6">
+          <div className="p-4 sm:p-6 border-b border-hairline">
+            <Skeleton className="h-4 w-36 mb-4" />
+            <Skeleton className="h-10 w-20" />
+          </div>
+          <div className="p-4 sm:p-6 border-b border-hairline">
+            <Skeleton className="h-3 w-24 mb-4" />
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="space-y-1">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-2 w-full" />
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section className="bg-paper rounded-small border border-black/[0.08] shadow-paper p-4 sm:p-6">

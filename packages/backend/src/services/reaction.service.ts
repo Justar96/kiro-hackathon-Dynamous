@@ -9,7 +9,7 @@ import type {
   CreateCommentReactionInput,
   CommentReactionCounts,
   CommentReactionType
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * ReactionService handles the dual reaction system for arguments.

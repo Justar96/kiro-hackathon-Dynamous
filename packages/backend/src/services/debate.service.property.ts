@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import type { Debate, Round, CreateDebateInput } from '@debate-platform/shared';
-import { RESOLUTION_MAX_LENGTH } from '@debate-platform/shared';
+import type { Debate, Round, CreateDebateInput } from '@thesis/shared';
+import { RESOLUTION_MAX_LENGTH } from '@thesis/shared';
 
 /**
  * Feature: debate-platform

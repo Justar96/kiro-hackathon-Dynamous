@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import type { User } from '@debate-platform/shared';
+import type { User } from '@thesis/shared';
 
 /**
  * Feature: debate-platform, Property 12: New User Reputation Initialization

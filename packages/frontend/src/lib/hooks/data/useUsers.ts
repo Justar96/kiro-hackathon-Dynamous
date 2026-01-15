@@ -6,7 +6,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useAuthToken } from './useAuthToken';
-import { currentUserQueryOptions, userQueryOptions, userStatsQueryOptions } from '../../api';
+import { 
+  currentUserQueryOptions, 
+  userQueryOptions, 
+  userStatsQueryOptions,
+  reputationBreakdownQueryOptions,
+} from '../../api';
 
 /**
  * Fetch current authenticated user with stats
@@ -28,4 +33,12 @@ export function useUserProfile(userId: string) {
  */
 export function useUserStats(userId: string) {
   return useQuery(userStatsQueryOptions(userId));
+}
+
+/**
+ * Fetch user reputation breakdown
+ * Requirement 4.1 - Return ReputationBreakdown for user profile
+ */
+export function useReputationBreakdown(userId: string) {
+  return useQuery(reputationBreakdownQueryOptions(userId));
 }

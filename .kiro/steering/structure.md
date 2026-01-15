@@ -1,7 +1,7 @@
 # Project Structure
 
 ```
-debate-platform/
+thesis/
 ├── packages/
 │   ├── backend/           # Hono API server
 │   │   ├── src/
@@ -62,4 +62,4 @@ Each service handles a specific domain (debates, voting, market, etc.) and is im
 - `use*.ts` — React hooks
 
 ### Shared Types
-All domain types live in `packages/shared/src/types.ts`. Import from `@debate-platform/shared` in both frontend and backend.
+All domain types live in `packages/shared/src/types.ts`. Import from `@thesis/shared` in both frontend and backend.

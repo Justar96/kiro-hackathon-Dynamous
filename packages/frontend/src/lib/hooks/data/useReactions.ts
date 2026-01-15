@@ -6,7 +6,7 @@
 
 import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from './useAuthToken';
-import { queryKeys, reactionsQueryOptions } from '../../api';
+import { queryKeys, reactionsQueryOptions, mutationKeys, requireAuthToken } from '../../api';
 import { addReaction, removeReaction } from '../../api';
 
 /**
@@ -86,7 +86,7 @@ export function useAddReaction() {
   const token = useAuthToken();
 
   return useMutation({
-    mutationKey: ['mutations', 'reactions', 'add'] as const,
+    mutationKey: mutationKeys.reactions.add(),
     mutationFn: ({
       argumentId,
       type
@@ -94,8 +94,8 @@ export function useAddReaction() {
       argumentId: string;
       type: 'agree' | 'strong_reasoning';
     }) => {
-      if (!token) throw new Error('Authentication required');
-      return addReaction(argumentId, { type }, token);
+      const authToken = requireAuthToken(token);
+      return addReaction(argumentId, { type }, authToken);
     },
     onSuccess: (_, { argumentId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });
@@ -112,7 +112,7 @@ export function useRemoveReaction() {
   const token = useAuthToken();
 
   return useMutation({
-    mutationKey: ['mutations', 'reactions', 'remove'] as const,
+    mutationKey: mutationKeys.reactions.remove(),
     mutationFn: ({
       argumentId,
       type
@@ -120,8 +120,8 @@ export function useRemoveReaction() {
       argumentId: string;
       type: 'agree' | 'strong_reasoning';
     }) => {
-      if (!token) throw new Error('Authentication required');
-      return removeReaction(argumentId, type, token);
+      const authToken = requireAuthToken(token);
+      return removeReaction(argumentId, type, authToken);
     },
     onSuccess: (_, { argumentId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });

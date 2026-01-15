@@ -4,7 +4,7 @@
  * Requirements: 2.1, 2.3, 3.5, 4.3
  */
 
-import type { Debate, Round } from '@debate-platform/shared';
+import type { Debate, Round } from '@thesis/shared';
 import type { RoundStep, RoundStepState } from './RoundSection.types';
 
 /**
@@ -123,13 +123,14 @@ export function toRomanNumeral(num: 1 | 2 | 3): string {
 }
 
 /**
- * Gets the round configuration (title and description) for a round type.
- * 
+ * Gets the display configuration (title and description) for a round type.
+ * Note: This is distinct from shared/types.ts getRoundConfig which returns { number, type, charLimit }
+ *
  * @param roundType - The type of round
- * @returns Object with title and description
+ * @returns Object with display title and description
  */
-export function getRoundConfig(roundType: Round['roundType']): { 
-  title: string; 
+export function getRoundDisplayConfig(roundType: Round['roundType']): {
+  title: string;
   description: string;
 } {
   switch (roundType) {
@@ -168,13 +169,13 @@ export function getRoundConfig(roundType: Round['roundType']): {
 export function getEnhancedRoundConfig(
   roundType: Round['roundType'],
   roundNumber: 1 | 2 | 3
-): { 
-  title: string; 
+): {
+  title: string;
   description: string;
   romanNumeral: string;
   fullTitle: string;
 } {
-  const baseConfig = getRoundConfig(roundType);
+  const baseConfig = getRoundDisplayConfig(roundType);
   const romanNumeral = toRomanNumeral(roundNumber);
   
   return {

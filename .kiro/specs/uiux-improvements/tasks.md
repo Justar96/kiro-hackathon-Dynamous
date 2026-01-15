@@ -2,7 +2,7 @@
 
 ## Overview
 
-This plan implements UI/UX improvements for the Debate Platform, focusing on modal-based authentication, optimistic updates, toast notifications, and enhanced error handling. Tasks build incrementally on the existing codebase.
+This plan implements UI/UX improvements for Thesis, focusing on modal-based authentication, optimistic updates, toast notifications, and enhanced error handling. Tasks build incrementally on the existing codebase.
 
 ## Tasks
 

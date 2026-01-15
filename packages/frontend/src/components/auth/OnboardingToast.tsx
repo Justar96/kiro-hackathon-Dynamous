@@ -3,7 +3,7 @@ import { useToast } from '../common/Toast';
 import { useSession } from '../../lib';
 
 // Storage key to track if onboarding has been shown
-const ONBOARDING_SHOWN_KEY = 'debate-platform-onboarding-shown';
+const ONBOARDING_SHOWN_KEY = 'thesis-onboarding-shown';
 
 // Reading time for the onboarding message (in milliseconds)
 // Approximately 15 seconds for the full message
@@ -33,7 +33,7 @@ export function OnboardingToast({ username, onDismiss }: OnboardingToastProps) {
     shownRef.current = true;
 
     // Show the onboarding toast
-    const message = `Welcome to Persuasion, ${username}! 🎉\n\nYou're starting in sandbox mode with 0.5× vote weight. Participate in 5 debates to unlock full voting power and build your reputation.`;
+    const message = `Welcome to Thesis, ${username}! 🎉\n\nYou're starting in sandbox mode with 0.5× vote weight. Participate in 5 debates to unlock full voting power and build your reputation.`;
 
     toastIdRef.current = showToast({
       type: 'info',
@@ -86,7 +86,7 @@ export function useOnboardingToast() {
     // Don't show if already shown
     if (hasShownOnboarding) return;
 
-    const message = `Welcome to Persuasion, ${username}! 🎉\n\nYou're starting in sandbox mode with 0.5× vote weight. Participate in 5 debates to unlock full voting power and build your reputation.`;
+    const message = `Welcome to Thesis, ${username}! 🎉\n\nYou're starting in sandbox mode with 0.5× vote weight. Participate in 5 debates to unlock full voting power and build your reputation.`;
 
     showToast({
       type: 'info',

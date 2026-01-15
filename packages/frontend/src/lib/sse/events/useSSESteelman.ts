@@ -12,7 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSSE } from '../useSSE';
 import { queryKeys } from '../../api/queryKeys';
 import type { SteelmanStatus } from '../../api/types';
-import type { SteelmanEventData } from '@debate-platform/shared';
+import type { SteelmanEventData } from '@thesis/shared';
 
 /**
  * Hook for subscribing to real-time steelman status updates.

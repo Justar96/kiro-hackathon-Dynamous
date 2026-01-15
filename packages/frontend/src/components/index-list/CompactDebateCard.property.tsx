@@ -9,7 +9,7 @@ import { describe, it, expect, vi } from 'vitest';
 import * as fc from 'fast-check';
 import { render } from '@testing-library/react';
 import { CompactDebateCard, CARD_CONFIG } from './CompactDebateCard';
-import type { Debate, MarketPrice } from '@debate-platform/shared';
+import type { Debate, MarketPrice } from '@thesis/shared';
 
 // Mock TanStack Router's Link component
 vi.mock('@tanstack/react-router', () => ({
@@ -18,10 +18,14 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }));
 
-// Mock the usePrefetch hook
-vi.mock('../../lib/usePrefetch', () => ({
-  useDebateLinkPrefetch: () => ({}),
-}));
+// Mock the usePrefetch hook - must match the actual import path
+vi.mock('../../lib', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib')>();
+  return {
+    ...actual,
+    useDebateLinkPrefetch: () => ({}),
+  };
+});
 
 // Arbitraries for generating test data
 const roundNumberArb = fc.constantFrom(1, 2, 3) as fc.Arbitrary<1 | 2 | 3>;
@@ -48,12 +52,6 @@ const marketPriceArb: fc.Arbitrary<MarketPrice> = fc.record({
   totalVotes: fc.integer({ min: 0, max: 10000 }),
   mindChangeCount: fc.integer({ min: 0, max: 1000 }),
 });
-
-// Generate debate with market price (for combined tests)
-// const debateWithMarketArb = fc.record({
-//   debate: debateArb,
-//   marketPrice: fc.option(marketPriceArb, { nil: null }),
-// });
 
 describe('CompactDebateCard Property Tests - Debate Card Data Display', () => {
   /**

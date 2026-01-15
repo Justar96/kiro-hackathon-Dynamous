@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import type { Debate, MarketPrice } from '@debate-platform/shared';
+import type { Debate, MarketPrice } from '@thesis/shared';
 import { useDebateLinkPrefetch } from '../../lib';
 
 interface DebateWithMarket {
@@ -59,7 +59,7 @@ interface SeekingOpponentCardProps {
 
 function SeekingOpponentCard({ item }: SeekingOpponentCardProps) {
   const { debate } = item;
-  const prefetchProps = useDebateLinkPrefetch(debate.id);
+  const prefetchProps = useDebateLinkPrefetch(debate.id, { delay: 200 });
   
   // Calculate time waiting
   const createdAt = new Date(debate.createdAt);

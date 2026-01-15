@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design covers two major feature sets for the debate platform:
+This design covers two major feature sets for Thesis:
 
 1. **Enhanced Comment System** - Extends the existing comment functionality with threaded display, comment reactions (support/oppose), and real-time updates via SSE.
 

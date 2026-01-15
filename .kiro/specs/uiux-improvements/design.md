@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the technical design for UI/UX improvements to the Debate Platform, focusing on:
+This document describes the technical design for UI/UX improvements to Thesis, focusing on:
 
 1. **Sign-in modal experience** - A modal-based authentication flow that keeps users in context
 2. **Enhanced state management** - Optimistic updates, better caching, and real-time synchronization

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { MediaService, type FileInfo } from './media.service';
-import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE } from '@debate-platform/shared';
+import { ACCEPTED_FILE_TYPES, MAX_FILE_SIZE } from '@thesis/shared';
 
 /**
  * Feature: debate-lifecycle-ux, Property 4: File Upload Size Validation

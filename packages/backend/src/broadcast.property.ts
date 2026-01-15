@@ -12,7 +12,7 @@ import {
   SSE_EVENT_REQUIRED_FIELDS,
   validateEventPayload,
   type SSEEventType,
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 import { 
   broadcastDebateEvent, 
   broadcastMarketUpdate,

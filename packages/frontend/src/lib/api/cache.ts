@@ -60,6 +60,20 @@ export const CACHE_STRATEGIES = {
     staleTime: 10 * 60 * 1000,   // 10 minutes
     gcTime: 60 * 60 * 1000,      // 1 hour
   },
+
+  /**
+   * Data updated via SSE - no window focus refetch needed
+   * Use for: Debate detail page data (market prices, arguments, round status)
+   *
+   * Fix: SSE keeps this data fresh, so we disable refetchOnWindowFocus
+   * to avoid redundant fetches when users switch browser tabs
+   */
+  sseUpdated: {
+    staleTime: 5 * 60 * 1000,    // 5 minutes - SSE keeps it fresh
+    gcTime: 10 * 60 * 1000,      // 10 minutes
+    refetchOnWindowFocus: false, // SSE handles updates, no need to refetch on focus
+    refetchOnReconnect: true,    // Do refetch on network reconnect for consistency
+  },
 } as const;
 
 /**
@@ -93,43 +107,99 @@ export const mutationKeys = {
   // Debate mutations
   debates: {
     create: () => ['mutations', 'debates', 'create'] as const,
-    join: (debateId: string) => ['mutations', 'debates', 'join', debateId] as const,
+    join: (debateId?: string) =>
+      debateId
+        ? (['mutations', 'debates', 'join', debateId] as const)
+        : (['mutations', 'debates', 'join'] as const),
   },
 
   // Argument mutations
   arguments: {
-    submit: (debateId: string) => ['mutations', 'arguments', 'submit', debateId] as const,
-    react: (argumentId: string) => ['mutations', 'arguments', 'react', argumentId] as const,
-    mindChanged: (argumentId: string) => ['mutations', 'arguments', 'mindChanged', argumentId] as const,
+    submit: (debateId?: string) =>
+      debateId
+        ? (['mutations', 'arguments', 'submit', debateId] as const)
+        : (['mutations', 'arguments', 'submit'] as const),
+    react: (argumentId?: string) =>
+      argumentId
+        ? (['mutations', 'arguments', 'react', argumentId] as const)
+        : (['mutations', 'arguments', 'react'] as const),
+    mindChanged: (argumentId?: string) =>
+      argumentId
+        ? (['mutations', 'arguments', 'mindChanged', argumentId] as const)
+        : (['mutations', 'arguments', 'mindChanged'] as const),
   },
 
   // Stance mutations
   stances: {
-    record: (debateId: string) => ['mutations', 'stances', 'record', debateId] as const,
-    quick: (debateId: string) => ['mutations', 'stances', 'quick', debateId] as const,
+    record: (debateId?: string) =>
+      debateId
+        ? (['mutations', 'stances', 'record', debateId] as const)
+        : (['mutations', 'stances', 'record'] as const),
+    pre: (debateId?: string) =>
+      debateId
+        ? (['mutations', 'stances', 'pre', debateId] as const)
+        : (['mutations', 'stances', 'pre'] as const),
+    post: (debateId?: string) =>
+      debateId
+        ? (['mutations', 'stances', 'post', debateId] as const)
+        : (['mutations', 'stances', 'post'] as const),
+    quick: (debateId?: string) =>
+      debateId
+        ? (['mutations', 'stances', 'quick', debateId] as const)
+        : (['mutations', 'stances', 'quick'] as const),
   },
 
   // Reaction mutations
   reactions: {
-    add: (argumentId: string) => ['mutations', 'reactions', 'add', argumentId] as const,
-    remove: (argumentId: string) => ['mutations', 'reactions', 'remove', argumentId] as const,
+    add: (argumentId?: string) =>
+      argumentId
+        ? (['mutations', 'reactions', 'add', argumentId] as const)
+        : (['mutations', 'reactions', 'add'] as const),
+    remove: (argumentId?: string) =>
+      argumentId
+        ? (['mutations', 'reactions', 'remove', argumentId] as const)
+        : (['mutations', 'reactions', 'remove'] as const),
   },
 
   // Comment mutations
   comments: {
-    add: (debateId: string) => ['mutations', 'comments', 'add', debateId] as const,
+    add: (debateId?: string) =>
+      debateId
+        ? (['mutations', 'comments', 'add', debateId] as const)
+        : (['mutations', 'comments', 'add'] as const),
   },
 
   // Impact attribution mutations
   impact: {
-    attribute: (debateId: string) => ['mutations', 'impact', 'attribute', debateId] as const,
+    attribute: (debateId?: string) =>
+      debateId
+        ? (['mutations', 'impact', 'attribute', debateId] as const)
+        : (['mutations', 'impact', 'attribute'] as const),
   },
 
   // Steelman mutations
   steelman: {
-    submit: (debateId: string) => ['mutations', 'steelman', 'submit', debateId] as const,
-    review: (steelmanId: string) => ['mutations', 'steelman', 'review', steelmanId] as const,
-    delete: (steelmanId: string) => ['mutations', 'steelman', 'delete', steelmanId] as const,
+    submit: (debateId?: string) =>
+      debateId
+        ? (['mutations', 'steelman', 'submit', debateId] as const)
+        : (['mutations', 'steelman', 'submit'] as const),
+    review: (steelmanId?: string) =>
+      steelmanId
+        ? (['mutations', 'steelman', 'review', steelmanId] as const)
+        : (['mutations', 'steelman', 'review'] as const),
+    delete: (steelmanId?: string) =>
+      steelmanId
+        ? (['mutations', 'steelman', 'delete', steelmanId] as const)
+        : (['mutations', 'steelman', 'delete'] as const),
+  },
+
+  // Media mutations
+  media: {
+    upload: (argumentId?: string) =>
+      argumentId
+        ? (['mutations', 'media', 'upload', argumentId] as const)
+        : (['mutations', 'media', 'upload'] as const),
+    preview: () => ['mutations', 'media', 'preview'] as const,
   },
 } as const;
 

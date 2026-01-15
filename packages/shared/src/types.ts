@@ -1,4 +1,4 @@
-// Core data model types for the Debate Platform
+// Core data model types for Thesis
 
 // ============================================
 // Round Configuration (Single Source of Truth)
@@ -344,6 +344,129 @@ export const ARGUMENT_CHAR_LIMITS = {
 
 export const getCharLimit = (roundType: RoundType): number => getRoundByType(roundType).charLimit;
 
+// Minimum character limit for arguments (Requirement 7.5)
+export const ARGUMENT_MIN_CHAR_LIMIT = 100;
+
+// ============================================
+// Argument Validation Feedback Types (Requirement 7.5)
+// ============================================
+
+export interface ArgumentValidationError {
+  code: 'TOO_SHORT' | 'TOO_LONG' | 'EMPTY';
+  message: string;
+  details: {
+    currentLength: number;
+    requiredLength: number;
+    roundType: RoundType;
+    suggestions: string[];
+  };
+}
+
+/**
+ * Validates argument content and returns detailed feedback if invalid.
+ * Per Requirement 7.5: Provides specific character count requirements and improvement suggestions.
+ * 
+ * @param content - The argument content to validate
+ * @param roundType - The type of round (opening, rebuttal, closing)
+ * @returns null if valid, ArgumentValidationError if invalid
+ */
+export function validateArgumentContent(
+  content: string,
+  roundType: RoundType
+): ArgumentValidationError | null {
+  const trimmedContent = content.trim();
+  const currentLength = trimmedContent.length;
+  const maxLength = getCharLimit(roundType);
+  const minLength = ARGUMENT_MIN_CHAR_LIMIT;
+
+  if (currentLength === 0) {
+    return {
+      code: 'EMPTY',
+      message: 'Argument cannot be empty',
+      details: {
+        currentLength: 0,
+        requiredLength: minLength,
+        roundType,
+        suggestions: [
+          'Start by stating your main claim clearly',
+          'Provide at least one piece of evidence or reasoning',
+          'Explain why your position matters',
+        ],
+      },
+    };
+  }
+
+  if (currentLength < minLength) {
+    return {
+      code: 'TOO_SHORT',
+      message: `Argument is too short. You wrote ${currentLength} characters, but the minimum is ${minLength} characters.`,
+      details: {
+        currentLength,
+        requiredLength: minLength,
+        roundType,
+        suggestions: getImprovementSuggestions(roundType, currentLength),
+      },
+    };
+  }
+
+  if (currentLength > maxLength) {
+    return {
+      code: 'TOO_LONG',
+      message: `Argument exceeds ${maxLength} character limit for ${roundType}. You wrote ${currentLength} characters.`,
+      details: {
+        currentLength,
+        requiredLength: maxLength,
+        roundType,
+        suggestions: [
+          'Focus on your strongest points',
+          'Remove redundant phrases',
+          'Be more concise in your explanations',
+        ],
+      },
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Get improvement suggestions based on round type and current content length.
+ * Per Requirement 7.5: Provides specific improvement suggestions for short arguments.
+ */
+function getImprovementSuggestions(roundType: RoundType, currentLength: number): string[] {
+  const basesuggestions: string[] = [];
+  
+  // Add length-specific suggestions
+  if (currentLength < 30) {
+    basesuggestions.push('Expand your main claim with more detail');
+    basesuggestions.push('Add supporting evidence or examples');
+  } else if (currentLength < 60) {
+    basesuggestions.push('Strengthen your argument with additional reasoning');
+    basesuggestions.push('Consider addressing potential counterarguments');
+  } else {
+    basesuggestions.push('Add one more supporting point to reach the minimum');
+    basesuggestions.push('Elaborate on your existing points');
+  }
+
+  // Add round-specific suggestions
+  switch (roundType) {
+    case 'opening':
+      basesuggestions.push('Clearly state your position and main supporting reasons');
+      basesuggestions.push('Set up the framework for your argument');
+      break;
+    case 'rebuttal':
+      basesuggestions.push('Address specific points from your opponent\'s argument');
+      basesuggestions.push('Explain why their reasoning is flawed or incomplete');
+      break;
+    case 'closing':
+      basesuggestions.push('Summarize your strongest points');
+      basesuggestions.push('Explain why your position should prevail');
+      break;
+  }
+
+  return basesuggestions;
+}
+
 // ============================================
 // Submission Validation Helper
 // ============================================
@@ -603,3 +726,46 @@ export interface PrivateDebateStats {
   stanceData: AggregateStanceData;
   lastUpdated: Date;
 }
+
+
+// ============================================
+// Trending Types (Requirement 6.4)
+// ============================================
+
+/**
+ * Engagement metrics for a debate used in trending calculation.
+ */
+export interface DebateEngagementMetrics {
+  debateId: string;
+  voteCount: number;
+  reactionCount: number;
+  commentCount: number;
+  createdAt: Date;
+}
+
+/**
+ * Trending score result for a debate.
+ */
+export interface TrendingScore {
+  debateId: string;
+  score: number;
+  engagementMetrics: DebateEngagementMetrics;
+}
+
+/**
+ * Weights for trending score calculation.
+ * Higher weights mean more influence on the trending score.
+ */
+export const TRENDING_WEIGHTS = {
+  votes: 1.0,        // Base weight for stance votes
+  reactions: 0.5,    // Reactions are worth half a vote
+  comments: 0.3,     // Comments are worth 0.3 of a vote
+} as const;
+
+/**
+ * Recency decay configuration for trending algorithm.
+ * Score decays over time to favor recent activity.
+ */
+export const TRENDING_RECENCY_DECAY = {
+  halfLifeHours: 24, // Score halves every 24 hours
+} as const;

@@ -8,7 +8,7 @@ import type {
   Stance, 
   ReactionCounts,
   PersuasionDelta,
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 export interface StanceResponse {
   stances: {

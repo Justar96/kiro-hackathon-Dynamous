@@ -10,6 +10,10 @@ export { DossierHeader } from './DossierHeader';
 export { ArgumentBlock, ImpactBadge, MindChangedButton } from './ArgumentBlock';
 export type { Citation } from './ArgumentBlock';
 
+// Reaction Display (Requirement 6.3 - Privacy-compliant aggregate counts)
+export { ReactionDisplay } from './ReactionDisplay';
+export type { default as ReactionDisplayProps } from './ReactionDisplay';
+
 // Evidence/Citation Components
 export { 
   EvidenceFootnote, 
@@ -47,7 +51,7 @@ export {
   deriveRoundStates,
   canNavigateToRound,
   generateExcerpt,
-  getRoundConfig,
+  getRoundDisplayConfig,
   getTurnLabel,
   getProgressText,
 } from './RoundSection.utils';
@@ -68,3 +72,37 @@ export { NewDebateModalProvider, useNewDebateModal } from './NewDebateModal';
 
 // Steelman Gate
 export { SteelmanForm, SteelmanReview, SteelmanGateBadge } from './SteelmanGate';
+
+// Media Components (Requirements 2.1, 2.2, 2.3, 2.4)
+export { MediaUploader } from './MediaUploader';
+export type { MediaUploaderProps } from './MediaUploader';
+export { MediaPreview } from './MediaPreview';
+export type { MediaPreviewProps, PendingMedia } from './MediaPreview';
+
+// Debate Lifecycle UX Components (Requirements 5.1, 5.2, 5.4, 5.5, 5.6)
+export { DebateProgressIndicator, deriveRoundSteps, isUserTurn, getTurnDisplayLabel } from './DebateProgressIndicator';
+export type { DebateProgressIndicatorProps, RoundStepInfo } from './DebateProgressIndicator';
+export { 
+  DebateResultsSummary, 
+  deriveWinnerSide, 
+  calculateNetPersuasionDelta, 
+  extractResultsData,
+  isResultsComplete,
+} from './DebateResultsSummary';
+export type { DebateResultsSummaryProps, DebateResultsData } from './DebateResultsSummary';
+export { 
+  ContextualHelpTooltip, 
+  getPhaseHelpContent, 
+  shouldShowHelp,
+} from './ContextualHelpTooltip';
+export type { ContextualHelpTooltipProps, PhaseHelpContent } from './ContextualHelpTooltip';
+export {
+  WaitingStateDisplay,
+  calculateWaitEstimate,
+  getMatchingStatusMessage,
+} from './WaitingStateDisplay';
+export type { WaitingStateDisplayProps, WaitTimeEstimate } from './WaitingStateDisplay';
+
+// Spectator Engagement Components (Requirements 6.2, 6.3)
+export { ArgumentAttributionPrompt } from './ArgumentAttributionPrompt';
+export type { ArgumentAttributionPromptProps } from './ArgumentAttributionPrompt';

@@ -1845,5 +1845,555 @@ describe('CommentService Property Tests', () => {
       );
     });
   });
-});
 
+  /**
+   * Feature: debate-lifecycle-ux
+   * Property 20: Comment Threading Integrity
+   * 
+   * For any comment with parentId P, the parent comment with id P SHALL exist in the database.
+   * For any comment retrieval, replies SHALL be correctly nested under their parent.
+   * 
+   * Validates: Requirements 6.5
+   */
+  describe('Property 20: Comment Threading Integrity', () => {
+    /**
+     * Tree comment type for simulation
+     */
+    interface TreeComment {
+      id: string;
+      debateId: string;
+      userId: string;
+      parentId: string | null;
+      content: string;
+      createdAt: Date;
+      deletedAt: Date | null;
+    }
+
+    interface CommentWithReplies extends TreeComment {
+      replyCount: number;
+      replies?: CommentWithReplies[];
+      isParentDeleted?: boolean;
+    }
+
+    /**
+     * Simulates the comment database state
+     */
+    interface CommentDatabase {
+      comments: Map<string, TreeComment>;
+      debates: Set<string>;
+      users: Set<string>;
+    }
+
+    /**
+     * Create initial empty database state
+     */
+    function createDatabase(): CommentDatabase {
+      return {
+        comments: new Map(),
+        debates: new Set(),
+        users: new Set(),
+      };
+    }
+
+    /**
+     * Add a comment to the database with parent validation
+     * Returns { success: boolean, error?: string }
+     */
+    function addCommentWithValidation(
+      db: CommentDatabase,
+      input: {
+        id: string;
+        debateId: string;
+        userId: string;
+        parentId: string | null;
+        content: string;
+        createdAt?: Date;
+      }
+    ): { success: boolean; error?: string } {
+      // Verify debate exists
+      if (!db.debates.has(input.debateId)) {
+        return { success: false, error: 'Debate not found' };
+      }
+
+      // Verify user exists
+      if (!db.users.has(input.userId)) {
+        return { success: false, error: 'User not found' };
+      }
+
+      // CRITICAL: Validate parent comment exists if parentId is provided
+      if (input.parentId !== null) {
+        const parentComment = db.comments.get(input.parentId);
+        
+        if (!parentComment) {
+          return { success: false, error: 'Parent comment not found' };
+        }
+
+        // Parent comment must belong to the same debate
+        if (parentComment.debateId !== input.debateId) {
+          return { success: false, error: 'Parent comment must belong to the same debate' };
+        }
+      }
+
+      // Create the comment
+      const comment: TreeComment = {
+        id: input.id,
+        debateId: input.debateId,
+        userId: input.userId,
+        parentId: input.parentId,
+        content: input.content,
+        createdAt: input.createdAt ?? new Date(),
+        deletedAt: null,
+      };
+
+      db.comments.set(comment.id, comment);
+      return { success: true };
+    }
+
+    /**
+     * Build a comment tree from database (simulating getCommentTree)
+     */
+    function buildCommentTree(db: CommentDatabase, debateId: string): CommentWithReplies[] {
+      // Get all comments for the debate
+      const debateComments: TreeComment[] = [];
+      for (const comment of db.comments.values()) {
+        if (comment.debateId === debateId) {
+          debateComments.push(comment);
+        }
+      }
+
+      // Build lookup maps
+      const commentMap = new Map<string, TreeComment>();
+      const childrenMap = new Map<string, string[]>();
+      const deletedIds = new Set<string>();
+
+      for (const comment of debateComments) {
+        commentMap.set(comment.id, comment);
+        
+        if (comment.deletedAt) {
+          deletedIds.add(comment.id);
+        }
+
+        const parentId = comment.parentId ?? 'root';
+        if (!childrenMap.has(parentId)) {
+          childrenMap.set(parentId, []);
+        }
+        childrenMap.get(parentId)!.push(comment.id);
+      }
+
+      // Count direct replies
+      const countDirectReplies = (commentId: string): number => {
+        const children = childrenMap.get(commentId) ?? [];
+        return children.filter(id => !deletedIds.has(id)).length;
+      };
+
+      // Check if parent is deleted
+      const isParentDeleted = (parentId: string | null): boolean => {
+        if (!parentId) return false;
+        return deletedIds.has(parentId);
+      };
+
+      // Recursive tree builder
+      const buildTree = (parentId: string | null): CommentWithReplies[] => {
+        const key = parentId ?? 'root';
+        const childIds = childrenMap.get(key) ?? [];
+        
+        const result: CommentWithReplies[] = [];
+
+        for (const childId of childIds) {
+          const comment = commentMap.get(childId)!;
+          
+          if (comment.deletedAt) {
+            // Include children of deleted comments with isParentDeleted flag
+            const grandchildren = buildTree(childId);
+            result.push(...grandchildren);
+            continue;
+          }
+
+          const replyCount = countDirectReplies(childId);
+          
+          const commentWithReplies: CommentWithReplies = {
+            ...comment,
+            replyCount,
+            isParentDeleted: isParentDeleted(comment.parentId),
+          };
+
+          const replies = buildTree(childId);
+          if (replies.length > 0) {
+            commentWithReplies.replies = replies;
+          }
+
+          result.push(commentWithReplies);
+        }
+
+        return result;
+      };
+
+      return buildTree(null);
+    }
+
+    /**
+     * Verify that all comments with parentId have existing parents in the database
+     */
+    function verifyParentExistence(db: CommentDatabase): boolean {
+      for (const comment of db.comments.values()) {
+        if (comment.parentId !== null) {
+          if (!db.comments.has(comment.parentId)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    /**
+     * Verify that replies are correctly nested under their parent in the tree
+     */
+    function verifyNestingIntegrity(
+      tree: CommentWithReplies[],
+      expectedParentId: string | null = null
+    ): boolean {
+      for (const node of tree) {
+        // For non-deleted parents, verify the node is at the correct level
+        if (!node.isParentDeleted) {
+          if (node.parentId !== expectedParentId) {
+            return false;
+          }
+        }
+
+        // Recursively verify children are nested under this node
+        if (node.replies && node.replies.length > 0) {
+          if (!verifyNestingIntegrity(node.replies, node.id)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    /**
+     * Collect all comment IDs from tree
+     */
+    function collectTreeIds(tree: CommentWithReplies[]): Set<string> {
+      const ids = new Set<string>();
+      for (const node of tree) {
+        ids.add(node.id);
+        if (node.replies) {
+          for (const id of collectTreeIds(node.replies)) {
+            ids.add(id);
+          }
+        }
+      }
+      return ids;
+    }
+
+    it('parent comment must exist before creating a reply', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // commentId
+          idArbitrary, // nonExistentParentId
+          contentArbitrary, // content
+          (debateId, userId, commentId, nonExistentParentId, content) => {
+            const db = createDatabase();
+            db.debates.add(debateId);
+            db.users.add(userId);
+
+            // Try to create a comment with a non-existent parent
+            const result = addCommentWithValidation(db, {
+              id: commentId,
+              debateId,
+              userId,
+              parentId: nonExistentParentId,
+              content,
+            });
+
+            // Should fail because parent doesn't exist
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Parent comment not found');
+
+            // Database should still have parent existence integrity
+            expect(verifyParentExistence(db)).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('reply to existing parent should succeed and maintain integrity', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // parentId
+          idArbitrary, // childId
+          contentArbitrary, // parentContent
+          contentArbitrary, // childContent
+          (debateId, userId, parentId, childId, parentContent, childContent) => {
+            fc.pre(parentId !== childId);
+
+            const db = createDatabase();
+            db.debates.add(debateId);
+            db.users.add(userId);
+
+            // Create parent comment first
+            const parentResult = addCommentWithValidation(db, {
+              id: parentId,
+              debateId,
+              userId,
+              parentId: null,
+              content: parentContent,
+            });
+            expect(parentResult.success).toBe(true);
+
+            // Create child comment
+            const childResult = addCommentWithValidation(db, {
+              id: childId,
+              debateId,
+              userId,
+              parentId: parentId,
+              content: childContent,
+            });
+            expect(childResult.success).toBe(true);
+
+            // Verify parent existence integrity
+            expect(verifyParentExistence(db)).toBe(true);
+
+            // Verify the child's parent exists
+            const child = db.comments.get(childId);
+            expect(child).toBeDefined();
+            expect(child!.parentId).toBe(parentId);
+            expect(db.comments.has(parentId)).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('replies are correctly nested under their parent in tree retrieval', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          idArbitrary, // parentId
+          fc.array(idArbitrary, { minLength: 1, maxLength: 5 }), // child IDs
+          contentArbitrary, // parentContent
+          fc.array(contentArbitrary, { minLength: 1, maxLength: 5 }), // childContents
+          (debateId, userId, parentId, childIds, parentContent, childContents) => {
+            const uniqueChildIds = [...new Set(childIds)].filter(id => id !== parentId);
+            fc.pre(uniqueChildIds.length >= 1);
+
+            const db = createDatabase();
+            db.debates.add(debateId);
+            db.users.add(userId);
+
+            // Create parent comment
+            addCommentWithValidation(db, {
+              id: parentId,
+              debateId,
+              userId,
+              parentId: null,
+              content: parentContent,
+            });
+
+            // Create child comments
+            for (let i = 0; i < uniqueChildIds.length; i++) {
+              addCommentWithValidation(db, {
+                id: uniqueChildIds[i],
+                debateId,
+                userId,
+                parentId: parentId,
+                content: childContents[i % childContents.length],
+              });
+            }
+
+            // Build tree and verify nesting
+            const tree = buildCommentTree(db, debateId);
+
+            // Should have one root node (the parent)
+            expect(tree.length).toBe(1);
+            expect(tree[0].id).toBe(parentId);
+            expect(tree[0].parentId).toBeNull();
+
+            // All children should be nested under the parent
+            expect(tree[0].replies).toBeDefined();
+            expect(tree[0].replies!.length).toBe(uniqueChildIds.length);
+
+            // Each reply should have the correct parentId
+            for (const reply of tree[0].replies!) {
+              expect(reply.parentId).toBe(parentId);
+              expect(uniqueChildIds).toContain(reply.id);
+            }
+
+            // Verify overall nesting integrity
+            expect(verifyNestingIntegrity(tree)).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('deeply nested comments maintain correct parent-child relationships', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          fc.array(idArbitrary, { minLength: 3, maxLength: 6 }), // chain of comment IDs
+          fc.array(contentArbitrary, { minLength: 3, maxLength: 6 }), // contents
+          (debateId, userId, commentIds, contents) => {
+            const uniqueIds = [...new Set(commentIds)];
+            fc.pre(uniqueIds.length >= 3);
+
+            const db = createDatabase();
+            db.debates.add(debateId);
+            db.users.add(userId);
+
+            // Create a chain of comments: each is a reply to the previous
+            for (let i = 0; i < uniqueIds.length; i++) {
+              const result = addCommentWithValidation(db, {
+                id: uniqueIds[i],
+                debateId,
+                userId,
+                parentId: i === 0 ? null : uniqueIds[i - 1],
+                content: contents[i % contents.length],
+              });
+              expect(result.success).toBe(true);
+            }
+
+            // Verify parent existence integrity
+            expect(verifyParentExistence(db)).toBe(true);
+
+            // Build tree and verify structure
+            const tree = buildCommentTree(db, debateId);
+
+            // Should have one root
+            expect(tree.length).toBe(1);
+            expect(tree[0].id).toBe(uniqueIds[0]);
+
+            // Walk down the chain and verify each level
+            let currentLevel = tree;
+            for (let i = 0; i < uniqueIds.length; i++) {
+              expect(currentLevel.length).toBe(1);
+              expect(currentLevel[0].id).toBe(uniqueIds[i]);
+              
+              if (i === 0) {
+                expect(currentLevel[0].parentId).toBeNull();
+              } else {
+                expect(currentLevel[0].parentId).toBe(uniqueIds[i - 1]);
+              }
+
+              if (i < uniqueIds.length - 1) {
+                expect(currentLevel[0].replies).toBeDefined();
+                currentLevel = currentLevel[0].replies!;
+              }
+            }
+
+            // Verify overall nesting integrity
+            expect(verifyNestingIntegrity(tree)).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('all comments in database appear in tree with correct nesting', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debateId
+          idArbitrary, // userId
+          fc.array(idArbitrary, { minLength: 1, maxLength: 8 }), // comment IDs
+          fc.array(contentArbitrary, { minLength: 1, maxLength: 8 }), // contents
+          (debateId, userId, commentIds, contents) => {
+            const uniqueIds = [...new Set(commentIds)];
+            fc.pre(uniqueIds.length >= 1);
+
+            const db = createDatabase();
+            db.debates.add(debateId);
+            db.users.add(userId);
+
+            // Create comments with random valid parent relationships
+            for (let i = 0; i < uniqueIds.length; i++) {
+              // First comment has no parent, others may have parent from previous comments
+              const parentId = i === 0 ? null : (Math.random() > 0.5 ? uniqueIds[Math.floor(Math.random() * i)] : null);
+              
+              addCommentWithValidation(db, {
+                id: uniqueIds[i],
+                debateId,
+                userId,
+                parentId,
+                content: contents[i % contents.length],
+              });
+            }
+
+            // Verify parent existence integrity
+            expect(verifyParentExistence(db)).toBe(true);
+
+            // Build tree
+            const tree = buildCommentTree(db, debateId);
+
+            // All comments should appear in the tree
+            const treeIds = collectTreeIds(tree);
+            expect(treeIds.size).toBe(uniqueIds.length);
+            for (const id of uniqueIds) {
+              expect(treeIds.has(id)).toBe(true);
+            }
+
+            // Verify nesting integrity
+            expect(verifyNestingIntegrity(tree)).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('cross-debate parent reference should be rejected', () => {
+      fc.assert(
+        fc.property(
+          idArbitrary, // debate1Id
+          idArbitrary, // debate2Id
+          idArbitrary, // userId
+          idArbitrary, // parentId
+          idArbitrary, // childId
+          contentArbitrary, // parentContent
+          contentArbitrary, // childContent
+          (debate1Id, debate2Id, userId, parentId, childId, parentContent, childContent) => {
+            fc.pre(debate1Id !== debate2Id);
+            fc.pre(parentId !== childId);
+
+            const db = createDatabase();
+            db.debates.add(debate1Id);
+            db.debates.add(debate2Id);
+            db.users.add(userId);
+
+            // Create parent in debate1
+            const parentResult = addCommentWithValidation(db, {
+              id: parentId,
+              debateId: debate1Id,
+              userId,
+              parentId: null,
+              content: parentContent,
+            });
+            expect(parentResult.success).toBe(true);
+
+            // Try to create child in debate2 referencing parent in debate1
+            const childResult = addCommentWithValidation(db, {
+              id: childId,
+              debateId: debate2Id,
+              userId,
+              parentId: parentId,
+              content: childContent,
+            });
+
+            // Should fail - parent must be in same debate
+            expect(childResult.success).toBe(false);
+            expect(childResult.error).toBe('Parent comment must belong to the same debate');
+
+            // Database integrity should still hold
+            expect(verifyParentExistence(db)).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+});

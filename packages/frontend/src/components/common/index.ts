@@ -14,7 +14,7 @@ export { BottomSheet } from './BottomSheet';
 export type { BottomSheetProps } from './BottomSheet';
 
 // Toast & Notifications
-export { ToastProvider, useToast, ToastContainer, ToastItem } from './Toast';
+export { ToastProvider, useToast, useToastOptional, ToastContainer, ToastItem } from './Toast';
 export type { ToastType, ToastAction, ToastOptions, Toast, ToastContextValue } from './Toast';
 
 // Error Handling

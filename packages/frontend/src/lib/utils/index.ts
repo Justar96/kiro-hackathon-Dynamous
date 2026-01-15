@@ -4,4 +4,12 @@
  * Utility functions and constants.
  */
 
-export { DEBATE_TEMPLATES, getRandomTopic, getTopicsByCategory } from './debateTemplates';
+export { 
+  DEBATE_TEMPLATES, 
+  getRandomTopic, 
+  getTopicsByCategory,
+  getCategories,
+  getRandomTopicFromCategory,
+  getAllTopics,
+  type DebateCategory,
+} from './debateTemplates';

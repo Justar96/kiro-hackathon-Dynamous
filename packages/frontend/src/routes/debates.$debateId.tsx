@@ -16,12 +16,11 @@ import {
   useDeleteSteelman,
   useOptimisticStance, 
   useOptimisticComment,
-  SSEProvider, 
-  useSSEComments, 
-  useSSEMarket, 
-  useSSEArguments, 
-  useSSERound, 
-  useSSEReactions, 
+  SSEProvider,
+  useSSEComments,
+  useSSEMarket,
+  useSSEArguments,
+  useSSERound,
   useSSESteelman,
 } from '../lib';
 import {
@@ -43,9 +42,10 @@ import {
   useToast,
   createUnifiedTocSections,
   HorizontalDivider,
+  ArgumentAttributionPrompt,
 } from '../components';
 import type { NavSection, Citation, SteelmanData, PendingReview } from '../components';
-import type { StanceValue, User, Argument } from '@debate-platform/shared';
+import type { StanceValue, User, Argument } from '@thesis/shared';
 
 export const Route = createFileRoute('/debates/$debateId')({
   loader: async ({ context, params }) => {
@@ -103,6 +103,10 @@ function DebateView() {
   // Active section for TOC highlighting
   const [activeSection, setActiveSection] = useState('resolution');
   
+  // Attribution prompt state (Requirement 6.2)
+  const [showAttributionPrompt, setShowAttributionPrompt] = useState(false);
+  const [lastStanceDelta, setLastStanceDelta] = useState<number | undefined>(undefined);
+  
   // Source card hover state
   const { hoveredSource, sourcePosition, handleCitationHover } = useSourceCardState();
   
@@ -141,17 +145,18 @@ function DebateView() {
 
   // Real-time SSE subscriptions for live updates
   // Requirements: 2.3, 2.4, 2.5 - Market price updates
-  useSSEMarket(debateId);
+  // Fix: Pass token to maintain auth-aware cache key consistency
+  useSSEMarket(debateId, token);
   
   // Requirements: 3.3, 3.4, 3.6 - Argument updates with highlight animation
   const { newArgumentId } = useSSEArguments(debateId, token);
   
   // Requirements: 5.3, 5.4, 5.6 - Round transition updates with toast notifications
   useSSERound(debateId, token);
-  
-  // Requirements: 4.3, 4.5 - Reaction count updates
-  useSSEReactions(debateId);
-  
+
+  // Note: useSSEReactions removed - was called with debateId instead of argumentId
+  // Reaction updates should be handled per-argument in the components that need them
+
   // Steelman Gate hooks
   const currentRound = debateData?.debate?.currentRound ?? 1;
   
@@ -184,13 +189,23 @@ function DebateView() {
   }, [recordStance]);
 
   // Handle after stance submission with optimistic update
+  // Requirement 6.2: Show attribution prompt after post-stance submission
   const handleAfterStanceSubmit = useCallback((stance: StanceValue) => {
+    // Calculate delta before recording
+    const preStanceValue = stanceData?.stances?.pre?.supportValue;
+    const delta = preStanceValue !== undefined ? stance.supportValue - preStanceValue : undefined;
+    
     recordStance('post', stance);
-  }, [recordStance]);
+    
+    // Show attribution prompt after successful submission
+    setLastStanceDelta(delta);
+    setShowAttributionPrompt(true);
+  }, [recordStance, stanceData?.stances?.pre?.supportValue]);
 
   // Handle mind changed attribution - "This changed my mind" button
+  // Fix: Pass debateId to enable targeted invalidation instead of global cascade
   const handleMindChanged = useCallback((argumentId: string) => {
-    mindChangedMutation.mutate(argumentId, {
+    mindChangedMutation.mutate({ argumentId, debateId }, {
       onSuccess: () => {
         showToast({
           type: 'success',
@@ -204,7 +219,31 @@ function DebateView() {
         });
       },
     });
-  }, [mindChangedMutation, showToast]);
+  }, [mindChangedMutation, showToast, debateId]);
+
+  // Handle attribution from prompt (Requirement 6.2)
+  const handleAttributeFromPrompt = useCallback((argumentId: string) => {
+    mindChangedMutation.mutate({ argumentId, debateId }, {
+      onSuccess: () => {
+        setShowAttributionPrompt(false);
+        showToast({
+          type: 'success',
+          message: 'Thanks for your feedback! Impact attributed.',
+        });
+      },
+      onError: (error) => {
+        showToast({
+          type: 'error',
+          message: error.message || 'Failed to attribute impact.',
+        });
+      },
+    });
+  }, [mindChangedMutation, showToast, debateId]);
+
+  // Close attribution prompt
+  const handleCloseAttributionPrompt = useCallback(() => {
+    setShowAttributionPrompt(false);
+  }, []);
 
   // Handle argument submission
   // Requirements: 7.1, 7.3 - Argument submission within unified round view
@@ -290,16 +329,34 @@ function DebateView() {
     after: stanceData?.stances?.post?.supportValue,
   }), [stanceData]);
 
+  // Collect all arguments for attribution prompt (Requirement 6.2)
+  const allArguments = useMemo(() => {
+    const args: Argument[] = [];
+    rounds.forEach((round: typeof rounds[number]) => {
+      if (round.supportArgument) args.push(round.supportArgument);
+      if (round.opposeArgument) args.push(round.opposeArgument);
+    });
+    return args;
+  }, [rounds]);
+
   // Market prices from consolidated response
   const supportPrice = market?.marketPrice?.supportPrice ?? 50;
   const opposePrice = market?.marketPrice?.opposePrice ?? 50;
+  
+  // Blind voting: market is blocked if user hasn't recorded pre-stance (Requirement 3.6)
+  // For authenticated users, check if they have a pre-stance
+  // For non-authenticated users, market is always blocked
+  const hasPreStance = stanceData?.stances?.pre !== null && stanceData?.stances?.pre !== undefined;
+  const marketBlocked = token ? (debateData?.marketBlocked ?? !hasPreStance) : true;
 
   return (
+    <>
     <ThreeColumnLayout
       marketPreview={{
         forPercent: Math.round(supportPrice),
         againstPercent: Math.round(opposePrice),
       }}
+      marketBlocked={marketBlocked}
       leftRail={
         <LeftNavRail
           sections={tocSections}
@@ -344,6 +401,7 @@ function DebateView() {
             afterUnlocked={afterUnlocked}
             isSubmitting={isStancePending}
             isAuthenticated={!!token}
+            marketBlocked={marketBlocked}
           />
           {/* Source card displayed in margin on citation hover */}
           {hoveredSource && (
@@ -354,6 +412,17 @@ function DebateView() {
         </>
       }
     />
+    
+    {/* Argument Attribution Prompt (Requirement 6.2) */}
+    <ArgumentAttributionPrompt
+      isOpen={showAttributionPrompt}
+      onClose={handleCloseAttributionPrompt}
+      arguments={allArguments}
+      onAttributeImpact={handleAttributeFromPrompt}
+      isSubmitting={mindChangedMutation.isPending}
+      stanceDelta={lastStanceDelta}
+    />
+  </>
   );
 }
 

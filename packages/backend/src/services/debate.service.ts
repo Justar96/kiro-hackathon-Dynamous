@@ -9,13 +9,15 @@ import type {
   CreateArgumentInput,
   DebateResult,
   RoundType,
-} from '@debate-platform/shared';
+  ArgumentValidationError,
+} from '@thesis/shared';
 import { 
   ROUNDS,
   RESOLUTION_MAX_LENGTH,
   getCharLimit,
   canSubmitArgument,
-} from '@debate-platform/shared';
+  validateArgumentContent,
+} from '@thesis/shared';
 
 /**
  * DebateService handles debate lifecycle including creation,
@@ -92,10 +94,11 @@ export class DebateService {
 
   /**
    * Submit an argument for a debate round
-   * Per Requirements 2.2, 2.3, 2.6:
+   * Per Requirements 2.2, 2.3, 2.6, 7.5:
    * - Validates current turn matches submitter's side
-   * - Enforces character limits per round type
+   * - Enforces character limits per round type (min and max)
    * - Rejects out-of-turn submissions
+   * - Provides specific feedback for rejected arguments
    */
   async submitArgument(input: CreateArgumentInput): Promise<Argument> {
     const debate = await db.query.debates.findFirst({
@@ -134,10 +137,14 @@ export class DebateService {
       throw new Error('This round is already complete');
     }
 
-    // Enforce character limits using centralized helper
-    const charLimit = getCharLimit(currentRound.roundType as RoundType);
-    if (input.content.length > charLimit) {
-      throw new Error(`Argument exceeds ${charLimit} character limit for ${currentRound.roundType}`);
+    // Validate argument content with detailed feedback (Requirement 7.5)
+    const roundType = currentRound.roundType as RoundType;
+    const validationError = validateArgumentContent(input.content, roundType);
+    
+    if (validationError) {
+      // Format error message with specific feedback
+      const errorMessage = this.formatArgumentValidationError(validationError);
+      throw new Error(errorMessage);
     }
 
     // Create the argument
@@ -171,6 +178,17 @@ export class DebateService {
     await this.checkAndAdvanceRound(input.debateId);
 
     return this.mapToArgument(argument);
+  }
+
+  /**
+   * Format argument validation error with detailed feedback
+   * Per Requirement 7.5: Include specific character count requirement and improvement suggestions
+   */
+  private formatArgumentValidationError(error: ArgumentValidationError): string {
+    const { message, details } = error;
+    const suggestionsText = details.suggestions.slice(0, 3).map((suggestion: string) => `• ${suggestion}`).join('\n');
+    
+    return `${message}\n\nSuggestions to improve your argument:\n${suggestionsText}`;
   }
 
 
@@ -338,12 +356,29 @@ export class DebateService {
       'concluded'
     );
 
-    // Trigger reputation updates for all participants
+    // Trigger reputation updates for all participants using both engines
+    // Legacy reputation service for backward compatibility
     const { reputationService } = await import('./reputation.service');
     await reputationService.updateAllParticipants(debateId, {
       debateId,
       ...result,
     });
+
+    // ReputationEngineV2 for enhanced multi-factor reputation (Requirements 4.2, 4.3)
+    const { reputationEngineV2 } = await import('./reputation-engine-v2.service');
+    await reputationEngineV2.processDebateConclusion(debateId, {
+      debateId,
+      ...result,
+    });
+
+    // Update sandbox completion for debaters (Requirement 7.3)
+    // Increment debates participated count for both debaters
+    // This automatically sets sandboxCompleted = true after 5 debates
+    const { userService } = await import('./user.service');
+    await userService.incrementDebatesParticipated(debate.supportDebaterId);
+    if (debate.opposeDebaterId) {
+      await userService.incrementDebatesParticipated(debate.opposeDebaterId);
+    }
 
     return {
       debateId,

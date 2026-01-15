@@ -386,6 +386,14 @@
     scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
   }
 
+  @supports (content-visibility: auto) {
+    [data-testid="compact-debate-card"],
+    [data-testid="trending-item"] {
+      content-visibility: auto;
+      contain-intrinsic-size: 140px;
+    }
+  }
+
   body {
     @apply font-body text-text-primary antialiased;
     /* Base body text line-height for optimal readability

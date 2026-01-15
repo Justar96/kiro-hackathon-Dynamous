@@ -1,8 +1,8 @@
-# Design Document: Debate Platform
+# Design Document: Thesis
 
 ## Overview
 
-This document describes the technical design for a debate platform that measures persuasion through pre/post stance tracking. The platform differentiates from Reddit by focusing on epistemics (what changes minds) rather than raw upvotes.
+This document describes the technical design for Thesis, measuring persuasion through pre/post stance tracking. Thesis differentiates from Reddit by focusing on epistemics (what changes minds) rather than raw upvotes.
 
 The system uses a "Persuasion Market" model where the collective stance on resolutions is visualized like a prediction market, but powered by virtual reputation points rather than real money or blockchain.
 

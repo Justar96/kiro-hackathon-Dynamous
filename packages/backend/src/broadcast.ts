@@ -1,17 +1,17 @@
 /**
  * Unified Broadcast Module for SSE Events
  * 
- * Centralizes all SSE broadcast functionality for the debate platform.
+ * Centralizes all SSE broadcast functionality for Thesis.
  * Requirements: 1.1, 1.2, 1.4, 3.2, 7.1, 7.2, 7.3
  */
 
-import type { MarketPrice, Comment, Side, SteelmanStatus, ReactionCounts, CommentReactionType, CommentReactionCounts, NotificationType } from '@debate-platform/shared';
+import type { MarketPrice, Comment, Side, SteelmanStatus, ReactionCounts, CommentReactionType, CommentReactionCounts, NotificationType } from '@thesis/shared';
 
 // ============================================================================
 // Event Type Definitions
 // ============================================================================
 
-export type EventType = 'market' | 'comment' | 'argument' | 'reaction' | 'round' | 'steelman' | 'debate-join' | 'comment-reaction' | 'notification';
+export type EventType = 'market' | 'comment' | 'argument' | 'reaction' | 'round' | 'steelman' | 'debate-join' | 'comment-reaction' | 'notification' | 'reputation';
 
 export interface BroadcastPayload {
   market: MarketPrice;
@@ -60,6 +60,14 @@ export interface BroadcastPayload {
     message: string;
     debateId?: string;
     createdAt: string;
+  };
+  reputation: {
+    userId: string;
+    previousScore: number;
+    newScore: number;
+    changeAmount: number;
+    reason: string;
+    debateId?: string;
   };
 }
 
@@ -289,6 +297,29 @@ export function broadcastRoundUpdate(
     currentTurn,
     previousRoundCompleted,
     status,
+  });
+}
+
+/**
+ * Broadcast reputation update to a specific user
+ * Convenience wrapper for reputation events
+ * Requirement 4.1: Broadcast reputation changes to affected users
+ */
+export function broadcastReputationUpdate(
+  userId: string,
+  previousScore: number,
+  newScore: number,
+  changeAmount: number,
+  reason: string,
+  debateId?: string
+): boolean {
+  return broadcastToUser(userId, 'reputation', {
+    userId,
+    previousScore,
+    newScore,
+    changeAmount,
+    reason,
+    debateId,
   });
 }
 

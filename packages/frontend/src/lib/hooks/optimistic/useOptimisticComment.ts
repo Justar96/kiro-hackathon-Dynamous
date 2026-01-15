@@ -12,9 +12,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { useAuthToken } from '../data/useAuthToken';
 import { useToast } from '../../../components/common/Toast';
-import { queryKeys, mutationKeys } from '../../api';
+import { queryKeys, mutationKeys, requireAuthToken } from '../../api';
+import { getMutationErrorMessage } from '../mutationHelpers';
 import { addComment } from '../../api';
-import type { Comment } from '@debate-platform/shared';
+import type { Comment } from '@thesis/shared';
 import type { OptimisticContext } from './types';
 
 interface UseOptimisticCommentOptions {
@@ -44,8 +45,8 @@ export function useOptimisticComment({ debateId, userId, onSuccess, onError }: U
   const mutation = useMutation({
     mutationKey: mutationKeys.comments.add(debateId),
     mutationFn: async (params: AddCommentParams) => {
-      if (!token) throw new Error('Authentication required');
-      return addComment(debateId, { content: params.content, parentId: params.parentId }, token);
+      const authToken = requireAuthToken(token);
+      return addComment(debateId, { content: params.content, parentId: params.parentId }, authToken);
     },
     onMutate: async (params: AddCommentParams) => {
       // Cancel any outgoing refetches
@@ -97,24 +98,32 @@ export function useOptimisticComment({ debateId, userId, onSuccess, onError }: U
       // Show error toast
       showToast({
         type: 'error',
-        message: error.message || 'Failed to post comment. Please try again.',
+        message: getMutationErrorMessage(error, 'Failed to post comment. Please try again.'),
       });
       
       onError?.(error);
     },
-    onSuccess: (_data, _params, context) => {
+    onSuccess: (serverResponse, _params, context) => {
       isPendingRef.current = false;
-      
+
       // Remove from pending comments
       if (context?.optimisticId) {
         pendingCommentsRef.current = pendingCommentsRef.current.filter(
           c => c.id !== context.optimisticId
         );
       }
-      
-      // Invalidate to reconcile with server data
-      queryClient.invalidateQueries({ queryKey: queryKeys.comments.byDebate(debateId) });
-      
+
+      // Fix: Reconcile with server data using setQueryData instead of invalidating
+      // This avoids a redundant refetch after the optimistic update
+      queryClient.setQueryData<Comment[]>(queryKeys.comments.byDebate(debateId), (oldData) => {
+        if (!oldData) return [serverResponse];
+
+        // Replace optimistic comment with server response
+        return oldData.map(comment =>
+          comment.id === context?.optimisticId ? serverResponse : comment
+        );
+      });
+
       onSuccess?.();
     },
     onSettled: () => {

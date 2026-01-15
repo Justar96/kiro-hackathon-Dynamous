@@ -11,3 +11,5 @@ export { SteelmanService, steelmanService } from './steelman.service';
 export { MatchingService, matchingService } from './matching.service';
 export { NotificationService, notificationService } from './notification.service';
 export { MediaService, mediaService, type ValidationResult, type FileInfo } from './media.service';
+export { PrivacyGuard, privacyGuard } from './privacy-guard.service';
+export { TrendingService, trendingService } from './trending.service';

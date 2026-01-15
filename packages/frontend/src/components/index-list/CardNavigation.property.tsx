@@ -11,7 +11,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import { render, cleanup } from '@testing-library/react';
 import { CompactDebateCard } from './CompactDebateCard';
-import type { Debate, MarketPrice } from '@debate-platform/shared';
+import type { Debate, MarketPrice } from '@thesis/shared';
 
 // Mock TanStack Router's Link component
 vi.mock('@tanstack/react-router', () => ({

@@ -5,11 +5,11 @@ import type {
   MarketPrice, 
   MarketDataPoint,
   StanceSpike 
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 import { 
   SANDBOX_VOTE_WEIGHT, 
   FULL_VOTE_WEIGHT 
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 // Type for user data needed for vote weight calculation
 type UserVoteData = {

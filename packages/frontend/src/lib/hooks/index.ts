@@ -18,3 +18,6 @@ export * from './navigation';
 
 // UI hooks
 export * from './ui';
+
+// Mutation helpers
+export * from './mutationHelpers';

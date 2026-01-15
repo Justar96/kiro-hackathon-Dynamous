@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design introduces a centralized icon system for the debate platform that replaces scattered inline SVGs with a unified approach using heroicons-animated for UI icons and svgl for brand logos. The system provides consistent sizing, styling, and animation capabilities while maintaining accessibility and performance.
+This design introduces a centralized icon system for Thesis that replaces scattered inline SVGs with a unified approach using heroicons-animated for UI icons and svgl for brand logos. The system provides consistent sizing, styling, and animation capabilities while maintaining accessibility and performance.
 
 The architecture follows a wrapper pattern where icon components from external libraries are re-exported through a central module with enhanced props for animation control, sizing, and accessibility.
 

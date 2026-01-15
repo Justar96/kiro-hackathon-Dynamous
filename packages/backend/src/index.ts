@@ -15,6 +15,10 @@ import {
   steelmanService,
   matchingService,
   notificationService,
+  mediaService,
+  privacyGuard,
+  reputationEngineV2,
+  trendingService,
 } from './services';
 
 import {
@@ -40,7 +44,7 @@ import type {
   CreateCommentInput,
   CreateSteelmanInput,
   ReviewSteelmanInput,
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 // Types for context variables
 type Variables = {
@@ -192,7 +196,7 @@ const optionalAuthMiddleware = async (c: any, next: () => Promise<void>) => {
 // Health Check Routes
 // ============================================================================
 
-app.get('/', (c) => c.json({ status: 'ok', message: 'Debate Platform API' }));
+app.get('/', (c) => c.json({ status: 'ok', message: 'Thesis API' }));
 app.get('/api/health', (c) => c.json({ status: 'healthy' }));
 
 // ============================================================================
@@ -212,6 +216,14 @@ app.get('/api/leaderboard/users', async (c) => {
   const limit = parseInt(c.req.query('limit') || '10', 10);
   const topUsers = await userService.getTopUsers(Math.min(limit, 50));
   return c.json({ users: topUsers });
+});
+
+// GET /api/debates/trending - Get trending debates (public)
+// Requirement 6.4: Feature high-engagement debates in trending sections
+app.get('/api/debates/trending', async (c) => {
+  const limit = parseInt(c.req.query('limit') || '10', 10);
+  const trending = await trendingService.getTrendingDebates(Math.min(limit, 50));
+  return c.json({ trending });
 });
 
 // POST /api/debates - Create new debate (requires auth)
@@ -318,6 +330,8 @@ app.get('/api/debates', async (c) => {
       hasMore,
       totalCount,
       includesMarket: true 
+    }, 200, {
+      'Cache-Control': 'private, max-age=15, stale-while-revalidate=30',
     });
   }
   
@@ -326,6 +340,8 @@ app.get('/api/debates', async (c) => {
     nextCursor,
     hasMore,
     totalCount
+  }, 200, {
+    'Cache-Control': 'public, max-age=30, stale-while-revalidate=60',
   });
 });
 
@@ -625,6 +641,7 @@ app.post('/api/arguments/:id/mind-changed', authMiddleware, async (c) => {
 
 // GET /api/debates/:id/market - Get current market price
 // Enforces blind voting: must record pre-stance before seeing market
+// Requirements: 3.6 - Use PrivacyGuard for blind voting enforcement
 app.get('/api/debates/:id/market', optionalAuthMiddleware, async (c) => {
   const debateId = c.req.param('id');
   const userId = c.get('userId');
@@ -640,7 +657,8 @@ app.get('/api/debates/:id/market', optionalAuthMiddleware, async (c) => {
   if (userId) {
     const isDebater = debate.supportDebaterId === userId || debate.opposeDebaterId === userId;
     if (!isDebater) {
-      const access = await votingService.canAccessMarketPrice(debateId, userId);
+      // Use PrivacyGuard for blind voting enforcement (Requirement 3.6)
+      const access = await privacyGuard.canAccessMarketPrice(debateId, userId);
       if (!access.canAccess) {
         return c.json({ 
           blindVoting: true, 
@@ -663,16 +681,20 @@ app.get('/api/debates/:id/stance', authMiddleware, async (c) => {
   const debateId = c.req.param('id');
   const userId = c.get('userId');
   
-  const stances = await votingService.getUserStances(debateId, userId!);
+  // Use PrivacyGuard for self-access (Requirement 3.4)
+  const ownStances = await privacyGuard.getOwnStances(debateId, userId!, userId!);
   const delta = await votingService.getPersuasionDelta(debateId, userId!);
   
-  return c.json({ stances, delta });
+  return c.json({ stances: ownStances, delta });
 });
 
 // GET /api/debates/:id/stance-stats - Get aggregate stance stats (public, for spectators)
+// Requirements: 3.1, 3.2, 3.3 - Apply PrivacyGuard to ensure no voter IDs leak
 app.get('/api/debates/:id/stance-stats', async (c) => {
   const debateId = c.req.param('id');
-  const stats = await votingService.getDebateStanceStats(debateId);
+  
+  // Use PrivacyGuard to get aggregate-only stats (no individual voter data)
+  const stats = await privacyGuard.getAggregateStats(debateId);
   return c.json(stats);
 });
 
@@ -866,6 +888,97 @@ app.get('/api/arguments/:id/reactions', optionalAuthMiddleware, async (c) => {
   }
   
   return c.json({ counts, userReactions });
+});
+
+// ============================================================================
+// Media API Routes (Requirements 2.1, 2.2, 2.3, 2.5)
+// ============================================================================
+
+// POST /api/arguments/:id/media - Upload media attachment for an argument (requires auth)
+// Requirements: 2.1, 2.5 - Validate file, store, return MediaAttachment
+app.post('/api/arguments/:id/media', authMiddleware, async (c) => {
+  const argumentId = c.req.param('id');
+  const userId = c.get('userId');
+  
+  // Verify argument exists
+  const argument = await debateService.getArgumentById(argumentId);
+  if (!argument) {
+    throw new HTTPException(404, { message: 'Argument not found' });
+  }
+  
+  // Verify user owns the argument
+  if (argument.debaterId !== userId) {
+    throw new HTTPException(403, { message: 'You can only add media to your own arguments' });
+  }
+  
+  // Parse multipart form data
+  const formData = await c.req.formData();
+  const file = formData.get('file');
+  
+  if (!file || !(file instanceof File)) {
+    throw new HTTPException(400, { message: 'No file provided' });
+  }
+  
+  // Create file info for validation
+  const fileInfo = {
+    size: file.size,
+    type: file.type,
+    name: file.name,
+  };
+  
+  // Validate file
+  const validation = mediaService.validateFile(fileInfo);
+  if (!validation.valid) {
+    throw new HTTPException(400, { message: validation.error });
+  }
+  
+  try {
+    const attachment = await mediaService.uploadFile(fileInfo, argumentId, userId!);
+    return c.json({ attachment }, 201);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Upload failed';
+    throw new HTTPException(500, { message });
+  }
+});
+
+// GET /api/arguments/:id/media - Get media attachments for an argument
+app.get('/api/arguments/:id/media', async (c) => {
+  const argumentId = c.req.param('id');
+  
+  // Verify argument exists
+  const argument = await debateService.getArgumentById(argumentId);
+  if (!argument) {
+    throw new HTTPException(404, { message: 'Argument not found' });
+  }
+  
+  const media = await mediaService.getArgumentMedia(argumentId);
+  return c.json({ media });
+});
+
+// POST /api/media/preview - Parse URL and return preview (requires auth)
+// Requirements: 2.2, 2.3 - Parse URL, return UrlPreview or YouTubePreview
+app.post('/api/media/preview', authMiddleware, async (c) => {
+  const body = await c.req.json();
+  const { url } = body;
+  
+  if (!url || typeof url !== 'string') {
+    throw new HTTPException(400, { message: 'URL is required' });
+  }
+  
+  // Check if it's a YouTube URL
+  const youtubePreview = mediaService.parseYouTubeUrl(url);
+  if (youtubePreview) {
+    return c.json({ type: 'youtube', preview: youtubePreview });
+  }
+  
+  // Try to parse as regular URL
+  try {
+    const urlPreview = await mediaService.parseUrl(url);
+    return c.json({ type: 'link', preview: urlPreview });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not fetch preview for this URL.';
+    throw new HTTPException(400, { message });
+  }
 });
 
 // POST /api/debates/:id/comments - Add spectator comment (requires auth)
@@ -1309,6 +1422,26 @@ app.get('/api/users/:id/stats', async (c) => {
   return c.json({ stats });
 });
 
+// GET /api/users/:id/reputation - Get user reputation breakdown
+// Requirement 4.1 - Return ReputationBreakdown for user profile
+app.get('/api/users/:id/reputation', async (c) => {
+  const userId = c.req.param('id');
+  
+  const user = await userService.getUserById(userId);
+  
+  if (!user) {
+    throw new HTTPException(404, { message: 'User not found' });
+  }
+  
+  try {
+    const breakdown = await reputationEngineV2.getReputationBreakdown(userId);
+    return c.json({ breakdown });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to get reputation breakdown';
+    throw new HTTPException(500, { message });
+  }
+});
+
 // GET /api/users/:id/debates - Get user's debate history
 app.get('/api/users/:id/debates', async (c) => {
   const userId = c.req.param('id');
@@ -1322,6 +1455,22 @@ app.get('/api/users/:id/debates', async (c) => {
   const debates = await debateService.getUserDebateHistory(userId);
   
   return c.json({ debates });
+});
+
+// GET /api/users/:id/voting-history - Get user's private voting history (self-access only)
+// Requirement 3.4 - Users can view their own voting history privately
+app.get('/api/users/:id/voting-history', authMiddleware, async (c) => {
+  const targetUserId = c.req.param('id');
+  const requesterId = c.get('userId');
+  
+  // Use PrivacyGuard to enforce self-access only
+  const votingHistory = await privacyGuard.getVotingHistory(targetUserId, requesterId!);
+  
+  if (votingHistory === null) {
+    throw new HTTPException(403, { message: 'You can only view your own voting history' });
+  }
+  
+  return c.json({ votingHistory });
 });
 
 // ============================================================================

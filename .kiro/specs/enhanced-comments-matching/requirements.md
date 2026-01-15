@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This specification covers the remaining features for the debate platform: an enhanced comment system with threading, comment reactions, and real-time updates (Phase 4), plus an opponent matching system with queuing and notifications (Phase 5). These features complete the platform's social interaction and matchmaking capabilities.
+This specification covers the remaining features for Thesis: an enhanced comment system with threading, comment reactions, and real-time updates (Phase 4), plus an opponent matching system with queuing and notifications (Phase 5). These features complete the platform's social interaction and matchmaking capabilities.
 
 ## Glossary
 

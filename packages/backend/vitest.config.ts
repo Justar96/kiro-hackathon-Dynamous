@@ -1,14 +1,20 @@
 import { defineConfig } from 'vitest/config';
 import { config } from 'dotenv';
+import path from 'path';
 
 // Load environment variables from .env file
 config();
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@thesis/shared': path.resolve(__dirname, '../shared/src'),
+    },
+  },
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.{test,spec}.ts', 'src/**/*.property.ts'],
+    include: ['src/**/*.{test,spec}.ts', 'src/**/*.property.ts', 'src/**/*.integration.test.ts'],
     testTimeout: 10000, // Increase timeout for integration tests
     // Run test files sequentially to avoid database conflicts
     // Tests within a file still run in parallel unless fileParallelism is also disabled

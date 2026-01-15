@@ -12,7 +12,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { useAuthToken } from '../data/useAuthToken';
 import { useToast } from '../../../components/common/Toast';
-import { queryKeys, mutationKeys } from '../../api';
+import { queryKeys, mutationKeys, requireAuthToken } from '../../api';
+import { getMutationErrorMessage } from '../mutationHelpers';
 import { addReaction, removeReaction } from '../../api';
 import type { ReactionsResponse, OptimisticContext } from './types';
 
@@ -38,8 +39,8 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
   const addMutation = useMutation({
     mutationKey: mutationKeys.reactions.add(argumentId),
     mutationFn: async (type: ReactionType) => {
-      if (!token) throw new Error('Authentication required');
-      return addReaction(argumentId, { type }, token);
+      const authToken = requireAuthToken(token);
+      return addReaction(argumentId, { type }, authToken);
     },
     onMutate: async (type: ReactionType) => {
       // Cancel any outgoing refetches
@@ -88,17 +89,16 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
       // Show error toast
       showToast({
         type: 'error',
-        message: error.message || 'Failed to add reaction. Please try again.',
+        message: getMutationErrorMessage(error, 'Failed to add reaction. Please try again.'),
       });
       
       onError?.(error);
     },
     onSuccess: () => {
       isPendingRef.current = false;
-      
-      // Invalidate to reconcile with server data
-      queryClient.invalidateQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });
-      
+      // Note: Server returns only the created reaction object, not updated counts.
+      // The optimistic update already set the correct state, so no reconciliation needed.
+      // If counts drift, the next query refetch will correct them.
       onSuccess?.();
     },
     onSettled: () => {
@@ -109,8 +109,8 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
   const removeMutation = useMutation({
     mutationKey: mutationKeys.reactions.remove(argumentId),
     mutationFn: async (type: ReactionType) => {
-      if (!token) throw new Error('Authentication required');
-      return removeReaction(argumentId, type, token);
+      const authToken = requireAuthToken(token);
+      return removeReaction(argumentId, type, authToken);
     },
     onMutate: async (type: ReactionType) => {
       // Cancel any outgoing refetches
@@ -148,17 +148,16 @@ export function useOptimisticReaction({ argumentId, onSuccess, onError }: UseOpt
       // Show error toast
       showToast({
         type: 'error',
-        message: error.message || 'Failed to remove reaction. Please try again.',
+        message: getMutationErrorMessage(error, 'Failed to remove reaction. Please try again.'),
       });
       
       onError?.(error);
     },
     onSuccess: () => {
       isPendingRef.current = false;
-      
-      // Invalidate to reconcile with server data
-      queryClient.invalidateQueries({ queryKey: queryKeys.arguments.reactions(argumentId) });
-      
+      // Note: Server returns only success boolean, not updated counts.
+      // The optimistic update already set the correct state, so no reconciliation needed.
+      // If counts drift, the next query refetch will correct them.
       onSuccess?.();
     },
     onSettled: () => {

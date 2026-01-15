@@ -5,8 +5,8 @@ import type {
   Comment, 
   CreateCommentInput,
   CommentWithReplies
-} from '@debate-platform/shared';
-import { COMMENT_RATE_LIMIT, COMMENT_RATE_WINDOW_MINUTES } from '@debate-platform/shared';
+} from '@thesis/shared';
+import { COMMENT_RATE_LIMIT, COMMENT_RATE_WINDOW_MINUTES } from '@thesis/shared';
 
 /**
  * Options for building comment trees

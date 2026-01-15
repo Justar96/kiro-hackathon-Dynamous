@@ -7,11 +7,11 @@
  * Requirements: 3.3, 3.4, 3.5
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSSE } from '../useSSE';
 import { queryKeys } from '../../api/queryKeys';
-import type { ArgumentEventData, Side, RoundNumber, Argument, Round } from '@debate-platform/shared';
+import type { ArgumentEventData, Side, RoundNumber, Argument, Round } from '@thesis/shared';
 
 interface DebateDetailResponse {
   debate: {
@@ -71,6 +71,9 @@ export function useSSEArguments(
 ) {
   const queryClient = useQueryClient();
   const [newArgumentId, setNewArgumentId] = useState<string | null>(null);
+  
+  // Fix: Add ref for timeout cleanup to prevent memory leaks
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Handle incoming argument events
   const handleArgumentEvent = useCallback((eventData: ArgumentEventData) => {
@@ -136,13 +139,27 @@ export function useSSEArguments(
     // Track the new argument ID for highlight animation (Requirement 3.6)
     setNewArgumentId(eventData.argumentId);
 
+    // Fix: Clear any existing timeout before setting new one
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+
     // Clear the new argument ID after animation duration
-    setTimeout(() => {
+    highlightTimeoutRef.current = setTimeout(() => {
       setNewArgumentId((current) => 
         current === eventData.argumentId ? null : current
       );
     }, 3000);
   }, [debateId, currentUserId, token, queryClient]);
+
+  // Fix: Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Subscribe to argument events
   const { isConnected, connectionStatus } = useSSE<ArgumentEventData>(

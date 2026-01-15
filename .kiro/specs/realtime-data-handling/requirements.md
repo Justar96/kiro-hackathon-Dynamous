@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This specification addresses gaps in the real-time data handling architecture of the Debate Platform. The platform currently has partial SSE (Server-Sent Events) implementation for market prices and comments on the debate detail page, but lacks comprehensive real-time updates for critical user interactions including stance changes, argument submissions, reactions, and round transitions. Additionally, the index page has no real-time capabilities, causing stale market data in trending debates.
+This specification addresses gaps in the real-time data handling architecture of Thesis. The platform currently has partial SSE (Server-Sent Events) implementation for market prices and comments on the debate detail page, but lacks comprehensive real-time updates for critical user interactions including stance changes, argument submissions, reactions, and round transitions. Additionally, the index page has no real-time capabilities, causing stale market data in trending debates.
 
 The goal is to create a unified, consistent real-time data layer that integrates SSE broadcasts with TanStack Query cache management, ensuring all users see live updates without manual refresh.
 

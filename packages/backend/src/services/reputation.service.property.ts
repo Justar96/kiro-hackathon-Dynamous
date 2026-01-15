@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import type { DebateResult } from '@debate-platform/shared';
+import type { DebateResult } from '@thesis/shared';
 
 /**
  * Feature: debate-platform, Property 13: Reputation Increase on Correct Prediction

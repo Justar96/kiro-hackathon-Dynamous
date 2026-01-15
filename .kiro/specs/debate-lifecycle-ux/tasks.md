@@ -73,224 +73,224 @@ This implementation plan breaks down the debate lifecycle UX enhancements into d
 - [x] 4. Checkpoint - Media Service Tests Pass
   - Ensure all media service tests pass, ask the user if questions arise.
 
-- [-] 5. Backend ReputationEngineV2 Implementation
+- [x] 5. Backend ReputationEngineV2 Implementation
   - [x] 5.1 Create ReputationEngineV2 class with multi-factor calculation
     - Implement calculateReputation() using weighted factors
     - Implement calculateVoteWeight() considering reputation and accuracy
     - _Requirements: 4.1, 4.5_
 
-  - [-] 5.2 Write property test for multi-factor reputation
+  - [x] 5.2 Write property test for multi-factor reputation
     - **Property 10: Multi-Factor Reputation Calculation**
     - **Validates: Requirements 4.1, 4.5**
 
-  - [ ] 5.3 Implement impact-based reputation updates
+  - [x] 5.3 Implement impact-based reputation updates
     - Implement updateReputationOnImpact() proportional to impact score
     - Record change in reputation_history table
     - _Requirements: 4.2_
 
-  - [ ] 5.4 Write property test for impact-proportional reputation
+  - [x] 5.4 Write property test for impact-proportional reputation
     - **Property 11: Impact-Proportional Reputation**
     - **Validates: Requirements 4.2**
 
-  - [ ] 5.5 Implement prediction accuracy tracking
+  - [x] 5.5 Implement prediction accuracy tracking
     - Implement updatePredictionAccuracy() on debate conclusion
     - Increase on correct predictions, decrease on incorrect
     - _Requirements: 4.3_
 
-  - [ ] 5.6 Write property test for prediction accuracy
+  - [x] 5.6 Write property test for prediction accuracy
     - **Property 12: Prediction Accuracy Update**
     - **Validates: Requirements 4.3**
 
-  - [ ] 5.7 Implement diminishing returns formula
+  - [x] 5.7 Implement diminishing returns formula
     - Apply logarithmic diminishing returns to repeated actions
     - Formula: gain = rawScore * (1 / (1 + log10(count + 1)))
     - _Requirements: 4.4_
 
-  - [ ] 5.8 Write property test for diminishing returns
+  - [x] 5.8 Write property test for diminishing returns
     - **Property 13: Diminishing Returns Formula**
     - **Validates: Requirements 4.4**
 
-  - [ ] 5.9 Implement reputation decay for inactive users
+  - [x] 5.9 Implement reputation decay for inactive users
     - Implement applyDecay() based on days since last activity
     - Decay rate: 1% per week of inactivity after 30 days
     - _Requirements: 4.6_
 
-  - [ ] 5.10 Write property test for reputation decay
+  - [x] 5.10 Write property test for reputation decay
     - **Property 14: Reputation Decay Over Time**
     - **Validates: Requirements 4.6**
 
-  - [ ] 5.11 Implement low-impact neutrality handling
+  - [x] 5.11 Implement low-impact neutrality handling
     - Arguments with impact < threshold result in ±0 reputation change
     - _Requirements: 4.7_
 
-  - [ ] 5.12 Write property test for low-impact neutrality
+  - [x] 5.12 Write property test for low-impact neutrality
     - **Property 15: Low-Impact Neutrality**
     - **Validates: Requirements 4.7**
 
-- [~] 6. Checkpoint - Reputation Engine Tests Pass
+- [x] 6. Checkpoint - Reputation Engine Tests Pass
   - Ensure all reputation engine tests pass, ask the user if questions arise.
 
-- [ ] 7. Backend PrivacyGuard Implementation
-  - [ ] 7.1 Create PrivacyGuard class with filtering logic
+- [x] 7. Backend PrivacyGuard Implementation
+  - [x] 7.1 Create PrivacyGuard class with filtering logic
     - Implement filterForPublicResponse() to remove voter IDs
     - Implement getAggregateStats() returning only counts/averages
     - _Requirements: 3.1, 3.2, 3.3_
 
-  - [ ] 7.2 Write property test for vote privacy
+  - [x] 7.2 Write property test for vote privacy
     - **Property 7: Vote Privacy Invariant**
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.5**
 
-  - [ ] 7.3 Implement self-access authorization
+  - [x] 7.3 Implement self-access authorization
     - Implement canAccessOwnStance() checking requester === owner
     - Return own stance data only to the owner
     - _Requirements: 3.4_
 
-  - [ ] 7.4 Write property test for self-access
+  - [x] 7.4 Write property test for self-access
     - **Property 8: Self-Access Vote Retrieval**
     - **Validates: Requirements 3.4**
 
-  - [ ] 7.5 Implement blind voting enforcement
+  - [x] 7.5 Implement blind voting enforcement
     - Check pre-stance exists before returning market price
     - Return error if no pre-stance recorded
     - _Requirements: 3.6_
 
-  - [ ] 7.6 Write property test for blind voting
+  - [x] 7.6 Write property test for blind voting
     - **Property 9: Blind Voting Enforcement**
     - **Validates: Requirements 3.6**
 
-- [ ] 8. Checkpoint - Privacy Guard Tests Pass
+- [x] 8. Checkpoint - Privacy Guard Tests Pass
   - Ensure all privacy guard tests pass, ask the user if questions arise.
 
-- [ ] 9. Backend API Routes Integration
-  - [ ] 9.1 Add media upload endpoint
+- [x] 9. Backend API Routes Integration
+  - [x] 9.1 Add media upload endpoint
     - POST /api/arguments/:id/media
     - Validate file, store, return MediaAttachment
     - _Requirements: 2.1, 2.5_
 
-  - [ ] 9.2 Add URL preview endpoint
+  - [x] 9.2 Add URL preview endpoint
     - POST /api/media/preview
     - Parse URL, return UrlPreview or YouTubePreview
     - _Requirements: 2.2, 2.3_
 
-  - [ ] 9.3 Update stance endpoints with privacy filtering
+  - [x] 9.3 Update stance endpoints with privacy filtering
     - Apply PrivacyGuard to all stance-related responses
     - Ensure no voter IDs leak through any endpoint
     - _Requirements: 3.1, 3.2, 3.3_
 
-  - [ ] 9.4 Add reputation breakdown endpoint
+  - [x] 9.4 Add reputation breakdown endpoint
     - GET /api/users/:id/reputation
     - Return ReputationBreakdown for user profile
     - _Requirements: 4.1_
 
-  - [ ] 9.5 Update debate conclusion to use ReputationEngineV2
+  - [x] 9.5 Update debate conclusion to use ReputationEngineV2
     - Wire processDebateConclusion() into debate.service
     - Update all participant reputations
     - _Requirements: 4.2, 4.3_
 
-- [ ] 10. Checkpoint - Backend Integration Tests Pass
+- [x] 10. Checkpoint - Backend Integration Tests Pass
   - Ensure all backend integration tests pass, ask the user if questions arise.
 
-- [ ] 11. Frontend MediaUploader Component
-  - [ ] 11.1 Create MediaUploader component
+- [x] 11. Frontend MediaUploader Component
+  - [x] 11.1 Create MediaUploader component
     - File input with drag-and-drop support
     - URL paste detection for YouTube and web links
     - Preview display for attached media
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 11.2 Create MediaPreview component
+  - [x] 11.2 Create MediaPreview component
     - Display thumbnails for images and videos
     - Display link cards for web URLs
     - Display file icons for documents
     - _Requirements: 2.4_
 
-  - [ ] 11.3 Integrate MediaUploader into ArgumentSubmissionForm
+  - [x] 11.3 Integrate MediaUploader into ArgumentSubmissionForm
     - Add media attachment section below textarea
     - Pass media array to onSubmit handler
     - _Requirements: 2.1, 2.4_
 
-- [ ] 12. Frontend Enhanced Debate Creation
-  - [ ] 12.1 Update NewDebateModal with topic suggestions
+- [x] 12. Frontend Enhanced Debate Creation
+  - [x] 12.1 Update NewDebateModal with topic suggestions
     - Add category-based topic suggestions
     - Add "Random topic" button
     - _Requirements: 1.1, 1.4_
 
-  - [ ] 12.2 Write property test for character count
+  - [x] 12.2 Write property test for character count
     - **Property 2: Character Count Accuracy**
     - **Validates: Requirements 1.2**
 
-  - [ ] 12.3 Write property test for topic acceptance
+  - [x] 12.3 Write property test for topic acceptance
     - **Property 3: Topic Acceptance Universality**
     - **Validates: Requirements 1.4**
 
-  - [ ] 12.4 Write property test for debate initialization
+  - [x] 12.4 Write property test for debate initialization
     - **Property 1: Debate Initialization Invariant**
     - **Validates: Requirements 1.5**
 
-- [ ] 13. Frontend Privacy-Aware Components
-  - [ ] 13.1 Update StanceInput to hide market price before pre-stance
+- [x] 13. Frontend Privacy-Aware Components
+  - [x] 13.1 Update StanceInput to hide market price before pre-stance
     - Check hasPreStance before showing market data
     - Display "Record stance to see market" message
     - _Requirements: 3.6_
 
-  - [ ] 13.2 Update debate statistics display for aggregate-only
+  - [x] 13.2 Update debate statistics display for aggregate-only
     - Remove any individual voter indicators
     - Show only totalVoters, avgDelta, mindChangedCount
     - _Requirements: 3.2, 3.3_
 
-  - [ ] 13.3 Add personal voting history to profile
+  - [x] 13.3 Add personal voting history to profile
     - Query own stances only
     - Display in private profile section
     - _Requirements: 3.4_
 
-- [ ] 14. Frontend Reputation Display
-  - [ ] 14.1 Create ReputationBreakdown component
+- [x] 14. Frontend Reputation Display
+  - [x] 14.1 Create ReputationBreakdown component
     - Display overall score with factor breakdown
     - Show recent changes with reasons
     - Display rank/percentile if available
     - _Requirements: 4.1_
 
-  - [ ] 14.2 Update user profile with reputation breakdown
+  - [x] 14.2 Update user profile with reputation breakdown
     - Integrate ReputationBreakdown component
     - Show milestones and achievements
     - _Requirements: 7.4_
 
-- [ ] 15. Frontend Debate Lifecycle UX
-  - [ ] 15.1 Create DebateProgressIndicator component
+- [x] 15. Frontend Debate Lifecycle UX
+  - [x] 15.1 Create DebateProgressIndicator component
     - Visual progress bar showing rounds 1-2-3
     - Highlight current round and turn
     - Show "Your turn" indicator when applicable
     - _Requirements: 5.1, 5.2_
 
-  - [ ] 15.2 Create DebateResultsSummary component
+  - [x] 15.2 Create DebateResultsSummary component
     - Display final prices, mind changes, persuasion delta
     - Show winner side with visual emphasis
     - _Requirements: 5.4_
 
-  - [ ] 15.3 Write property test for results summary completeness
+  - [x] 15.3 Write property test for results summary completeness
     - **Property 16: Results Summary Completeness**
     - **Validates: Requirements 5.4**
 
-  - [ ] 15.4 Add contextual help tooltips
+  - [x] 15.4 Add contextual help tooltips
     - Add tooltips explaining each phase
     - Show for new users (first 5 debates)
     - _Requirements: 5.5_
 
-  - [ ] 15.5 Update waiting state display
+  - [x] 15.5 Update waiting state display
     - Show estimated wait time
     - Show matching status
     - _Requirements: 5.6_
 
-- [ ] 16. Frontend Spectator Engagement
-  - [ ] 16.1 Update reaction display for privacy
+- [x] 16. Frontend Spectator Engagement
+  - [x] 16.1 Update reaction display for privacy
     - Show aggregate counts only
     - Remove any user indicators from reactions
     - _Requirements: 6.3_
 
-  - [ ] 16.2 Write property test for reaction privacy
+  - [x] 16.2 Write property test for reaction privacy
     - **Property 18: Reaction Privacy**
     - **Validates: Requirements 6.3**
 
-  - [ ] 16.3 Add argument attribution prompt
+  - [x] 16.3 Add argument attribution prompt
     - Show after post-stance submission
     - Allow selecting most influential argument
     - _Requirements: 6.2_
@@ -298,93 +298,93 @@ This implementation plan breaks down the debate lifecycle UX enhancements into d
 - [ ] 17. Checkpoint - Frontend Component Tests Pass
   - Ensure all frontend component tests pass, ask the user if questions arise.
 
-- [ ] 18. Backend Comment Threading Validation
-  - [ ] 18.1 Add parent existence validation to comment service
+- [x] 18. Backend Comment Threading Validation
+  - [x] 18.1 Add parent existence validation to comment service
     - Verify parentId exists before creating reply
     - Return error if parent not found
     - _Requirements: 6.5_
 
-  - [ ] 18.2 Write property test for comment threading
+  - [x] 18.2 Write property test for comment threading
     - **Property 20: Comment Threading Integrity**
     - **Validates: Requirements 6.5**
 
-- [ ] 19. Backend Trending Algorithm
-  - [ ] 19.1 Implement trending score calculation
+- [x] 19. Backend Trending Algorithm
+  - [x] 19.1 Implement trending score calculation
     - Score = votes + reactions + comments (weighted)
     - Add recency decay factor
     - _Requirements: 6.4_
 
-  - [ ] 19.2 Write property test for trending consistency
+  - [x] 19.2 Write property test for trending consistency
     - **Property 19: Trending Algorithm Consistency**
     - **Validates: Requirements 6.4**
 
-- [ ] 20. Backend Sandbox Completion
-  - [ ] 20.1 Update sandbox completion to set full vote weight
+- [x] 20. Backend Sandbox Completion
+  - [x] 20.1 Update sandbox completion to set full vote weight
     - Set sandboxCompleted = true after 5 debates
     - Update vote weight calculation
     - _Requirements: 7.3_
 
-  - [ ] 20.2 Write property test for sandbox vote weight
+  - [x] 20.2 Write property test for sandbox vote weight
     - **Property 21: Sandbox Completion Vote Weight**
     - **Validates: Requirements 7.3**
 
-- [ ] 21. Backend Argument Validation Feedback
-  - [ ] 21.1 Enhance argument rejection messages
+- [x] 21. Backend Argument Validation Feedback
+  - [x] 21.1 Enhance argument rejection messages
     - Include specific character count requirement
     - Include improvement suggestions
     - _Requirements: 7.5_
 
-  - [ ] 21.2 Write property test for argument feedback
+  - [x] 21.2 Write property test for argument feedback
     - **Property 22: Short Argument Feedback**
     - **Validates: Requirements 7.5**
 
-- [ ] 22. Frontend Accessibility
-  - [ ] 22.1 Audit and fix touch target sizes
+- [x] 22. Frontend Accessibility
+  - [x] 22.1 Audit and fix touch target sizes
     - Ensure all interactive elements are ≥44px
     - Add padding where needed
     - _Requirements: 8.3_
 
-  - [ ] 22.2 Write property test for touch targets
+  - [x] 22.2 Write property test for touch targets
     - **Property 23: Touch Target Minimum Size**
     - **Validates: Requirements 8.3**
 
-  - [ ] 22.3 Add ARIA labels to new components
+  - [x] 22.3 Add ARIA labels to new components
     - MediaUploader, ReputationBreakdown, DebateProgressIndicator
     - _Requirements: 8.2_
 
-  - [ ] 22.4 Add reduced motion support
+  - [x] 22.4 Add reduced motion support
     - Check prefers-reduced-motion media query
     - Disable animations when preference set
     - _Requirements: 8.5_
 
-- [ ] 23. Final Checkpoint - All Tests Pass
+- [x] 23. Final Checkpoint - All Tests Pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 24. Integration and Wiring
-  - [ ] 24.1 Wire all new services into main backend index
+- [x] 24. Integration and Wiring
+  - [x] 24.1 Wire all new services into main backend index
     - Export MediaService, ReputationEngineV2, PrivacyGuard
     - Register new API routes
     - _Requirements: All_
 
-  - [ ] 24.2 Update frontend query hooks for new endpoints
+  - [x] 24.2 Update frontend query hooks for new endpoints
     - Add useMediaUpload, useReputationBreakdown hooks
     - Update existing hooks to use privacy-filtered data
     - _Requirements: All_
 
-  - [ ] 24.3 Add SSE events for reputation updates
+  - [x] 24.3 Add SSE events for reputation updates
     - Broadcast reputation changes to affected users
     - _Requirements: 4.1_
 
-- [ ] 25. Final Integration Tests
-  - [ ] 25.1 Write end-to-end test for debate with media
+- [x] 25. Final Integration Tests
+  - [x] 25.1 Write end-to-end test for debate with media
     - Create debate, add argument with media, verify display
     - _Requirements: 2.1, 2.4_
 
-  - [ ] 25.2 Write end-to-end test for reputation flow
+  - [x] 25.2 Write end-to-end test for reputation flow
     - Complete debate, verify reputation updates for all participants
     - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ] 25.3 Write end-to-end test for privacy
+  - [x] 25.3 Write end-to-end test for privacy
     - Verify no individual votes exposed through any flow
     - _Requirements: 3.1, 3.2, 3.3_
 

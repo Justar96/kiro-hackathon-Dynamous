@@ -6,7 +6,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from './useAuthToken';
-import { queryKeys } from '../../api';
+import { queryKeys, mutationKeys, requireAuthToken } from '../../api';
 import { attributeImpact, markMindChanged } from '../../api';
 
 /**
@@ -20,7 +20,7 @@ export function useAttributeImpact() {
   const token = useAuthToken();
 
   return useMutation({
-    mutationKey: ['mutations', 'impact', 'attribute'] as const,
+    mutationKey: mutationKeys.impact.attribute(),
     mutationFn: ({
       debateId,
       argumentId
@@ -28,8 +28,8 @@ export function useAttributeImpact() {
       debateId: string;
       argumentId: string;
     }) => {
-      if (!token) throw new Error('Authentication required');
-      return attributeImpact(debateId, { argumentId }, token);
+      const authToken = requireAuthToken(token);
+      return attributeImpact(debateId, { argumentId }, authToken);
     },
     onSuccess: (_, { debateId }) => {
       // Invalidate stance to update lastArgumentSeen
@@ -48,22 +48,27 @@ export function useAttributeImpact() {
  * Per original vision: "This changed my mind" button for explicit impact attribution.
  * Updates impact score and creates spike if significant.
  * TanStack Query v5: Added mutationKey for tracking via useMutationState
+ *
+ * Fix: Changed signature to accept debateId for targeted invalidation
+ * instead of invalidating all debates/markets globally
  */
 export function useMindChanged() {
   const queryClient = useQueryClient();
   const token = useAuthToken();
 
   return useMutation({
-    mutationKey: ['mutations', 'arguments', 'mindChanged'] as const,
-    mutationFn: (argumentId: string) => {
-      if (!token) throw new Error('Authentication required');
-      return markMindChanged(argumentId, token);
+    mutationKey: mutationKeys.arguments.mindChanged(),
+    mutationFn: ({ argumentId }: { argumentId: string; debateId: string }) => {
+      const authToken = requireAuthToken(token);
+      return markMindChanged(argumentId, authToken);
     },
-    onSuccess: () => {
-      // Invalidate all relevant queries to refresh impact scores
-      queryClient.invalidateQueries({ queryKey: ['debates'] });
-      queryClient.invalidateQueries({ queryKey: ['market'] });
-      queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+    onSuccess: (_, { debateId }) => {
+      // Fix: Only invalidate the specific debate's data, not all debates
+      // This prevents massive refetch cascade across the entire app
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.full(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.detail(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.market.byDebate(debateId) });
+      // Leaderboard will naturally refresh via staleTime
     },
   });
 }

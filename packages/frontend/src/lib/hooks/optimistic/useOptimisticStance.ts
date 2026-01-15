@@ -12,9 +12,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { useAuthToken } from '../data/useAuthToken';
 import { useToast } from '../../../components/common/Toast';
-import { queryKeys, mutationKeys } from '../../api';
+import { queryKeys, mutationKeys, requireAuthToken } from '../../api';
+import { getMutationErrorMessage } from '../mutationHelpers';
 import { recordPreStance, recordPostStance } from '../../api';
-import type { Stance, StanceValue } from '@debate-platform/shared';
+import type { Stance, StanceValue } from '@thesis/shared';
 import type { StanceResponse, OptimisticContext } from './types';
 
 interface UseOptimisticStanceOptions {
@@ -44,13 +45,13 @@ export function useOptimisticStance({ debateId, onSuccess, onError }: UseOptimis
   const mutation = useMutation({
     mutationKey: mutationKeys.stances.record(debateId),
     mutationFn: async (params: RecordStanceParams) => {
-      if (!token) throw new Error('Authentication required');
+      const authToken = requireAuthToken(token);
       
       if (params.type === 'pre') {
         return recordPreStance(
           debateId,
           { supportValue: params.supportValue, confidence: params.confidence },
-          token
+          authToken
         );
       } else {
         return recordPostStance(
@@ -60,7 +61,7 @@ export function useOptimisticStance({ debateId, onSuccess, onError }: UseOptimis
             confidence: params.confidence,
             lastArgumentSeen: params.lastArgumentSeen,
           },
-          token
+          authToken
         );
       }
     },
@@ -147,18 +148,50 @@ export function useOptimisticStance({ debateId, onSuccess, onError }: UseOptimis
       // Show error toast
       showToast({
         type: 'error',
-        message: error.message || 'Failed to record stance. Please try again.',
+        message: getMutationErrorMessage(error, 'Failed to record stance. Please try again.'),
       });
       
       onError?.(error);
     },
-    onSuccess: (_data, _params) => {
+    onSuccess: (serverResponse, params) => {
       isPendingRef.current = false;
-      
-      // Invalidate to reconcile with server data
-      queryClient.invalidateQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.market.byDebate(debateId) });
-      
+
+      // Fix: Reconcile with server data using setQueryData instead of invalidating
+      // This avoids a redundant refetch after the optimistic update
+      // Market data is updated via SSE, so we don't need to invalidate it
+      if (serverResponse) {
+        queryClient.setQueryData<StanceResponse>(queryKeys.stances.byDebate(debateId), (oldData) => {
+          // Handle different response types:
+          // - Pre stance returns Stance directly
+          // - Post stance returns RecordPostStanceResponse with { stance, delta }
+          const isPostResponse = params.type === 'post' && 'stance' in serverResponse;
+          const stanceData: Stance = isPostResponse
+            ? (serverResponse as { stance: Stance }).stance
+            : serverResponse as Stance;
+          const deltaData = isPostResponse
+            ? (serverResponse as { delta: unknown }).delta as StanceResponse['delta']
+            : null;
+
+          if (!oldData) {
+            return {
+              stances: {
+                pre: params.type === 'pre' ? stanceData : null,
+                post: params.type === 'post' ? stanceData : null,
+              },
+              delta: deltaData,
+            };
+          }
+
+          return {
+            stances: {
+              pre: params.type === 'pre' ? stanceData : oldData.stances.pre,
+              post: params.type === 'post' ? stanceData : oldData.stances.post,
+            },
+            delta: deltaData ?? oldData.delta,
+          };
+        });
+      }
+
       onSuccess?.();
     },
     onSettled: () => {

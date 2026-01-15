@@ -1,5 +1,5 @@
 {
-  "name": "@debate-platform/backend",
+  "name": "@thesis/backend",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -16,7 +16,7 @@
     "db:test:migrate": "set DB_TARGET=test && drizzle-kit migrate"
   },
   "dependencies": {
-    "@debate-platform/shared": "workspace:*",
+    "@thesis/shared": "workspace:*",
     "@neondatabase/serverless": "^0.10.0",
     "drizzle-orm": "^0.36.0",
     "hono": "^4.6.0",

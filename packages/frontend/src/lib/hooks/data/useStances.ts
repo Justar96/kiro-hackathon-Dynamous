@@ -6,7 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from './useAuthToken';
-import { queryKeys, userStanceQueryOptions } from '../../api';
+import { queryKeys, userStanceQueryOptions, requireAuthToken } from '../../api';
 import { recordPreStance, recordPostStance, recordQuickStance } from '../../api';
 import { mutationKeys } from '../../api';
 
@@ -27,7 +27,7 @@ export function useRecordPreStance() {
   const token = useAuthToken();
 
   return useMutation({
-    mutationKey: ['mutations', 'stances', 'pre'] as const,
+    mutationKey: mutationKeys.stances.pre(),
     mutationFn: ({
       debateId,
       supportValue,
@@ -37,8 +37,8 @@ export function useRecordPreStance() {
       supportValue: number;
       confidence: number;
     }) => {
-      if (!token) throw new Error('Authentication required');
-      return recordPreStance(debateId, { supportValue, confidence }, token);
+      const authToken = requireAuthToken(token);
+      return recordPreStance(debateId, { supportValue, confidence }, authToken);
     },
     onSuccess: (_, { debateId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
@@ -56,7 +56,7 @@ export function useRecordPostStance() {
   const token = useAuthToken();
 
   return useMutation({
-    mutationKey: ['mutations', 'stances', 'post'] as const,
+    mutationKey: mutationKeys.stances.post(),
     mutationFn: ({
       debateId,
       supportValue,
@@ -68,8 +68,8 @@ export function useRecordPostStance() {
       confidence: number;
       lastArgumentSeen?: string | null;
     }) => {
-      if (!token) throw new Error('Authentication required');
-      return recordPostStance(debateId, { supportValue, confidence, lastArgumentSeen }, token);
+      const authToken = requireAuthToken(token);
+      return recordPostStance(debateId, { supportValue, confidence, lastArgumentSeen }, authToken);
     },
     onSuccess: (_, { debateId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
@@ -88,7 +88,7 @@ export function useQuickStance() {
   const token = useAuthToken();
 
   return useMutation({
-    mutationKey: mutationKeys.stances.quick(''),
+    mutationKey: mutationKeys.stances.quick(),
     mutationFn: ({
       debateId,
       side,
@@ -96,14 +96,17 @@ export function useQuickStance() {
       debateId: string;
       side: 'support' | 'oppose';
     }) => {
-      if (!token) throw new Error('Authentication required');
-      return recordQuickStance(debateId, { side }, token);
+      const authToken = requireAuthToken(token);
+      return recordQuickStance(debateId, { side }, authToken);
     },
     onSuccess: (_, { debateId }) => {
-      // Invalidate relevant queries to refresh stance and market data
+      // Fix: Only invalidate specific debate data, not the entire debate list
+      // This prevents refetching all debates when recording a single stance
       queryClient.invalidateQueries({ queryKey: queryKeys.stances.byDebate(debateId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.market.byDebate(debateId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.debates.all });
+      // Invalidate specific debate keys instead of debates.all
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.full(debateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.debates.detail(debateId) });
     },
   });
 }

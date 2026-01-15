@@ -11,7 +11,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSSE } from '../useSSE';
 import { queryKeys } from '../../api/queryKeys';
-import type { Comment, CommentEventData } from '@debate-platform/shared';
+import type { Comment, CommentEventData } from '@thesis/shared';
 
 /**
  * Check if a comment ID is an optimistic ID (starts with 'optimistic-')

@@ -24,7 +24,7 @@ interface SessionState {
 }
 
 // Session storage key for persistence check
-const SESSION_STORAGE_KEY = 'debate-platform-session-active';
+const SESSION_STORAGE_KEY = 'thesis-session-active';
 
 /**
  * Check if session is expired based on expiresAt timestamp

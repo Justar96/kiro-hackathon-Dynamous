@@ -15,6 +15,9 @@ export async function setupTestDb() {
 export async function cleanTestDb() {
   // Delete in order respecting foreign key constraints
   const tables = [
+    'reputation_history',
+    'reputation_factors',
+    'media_attachments',
     'notifications',
     'comment_reactions',
     'comments',

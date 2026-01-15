@@ -7,7 +7,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from './useAuthToken';
-import { queryKeys, steelmanStatusQueryOptions, pendingSteelmansQueryOptions } from '../../api';
+import { queryKeys, steelmanStatusQueryOptions, pendingSteelmansQueryOptions, mutationKeys, requireAuthToken } from '../../api';
 import { submitSteelman, reviewSteelman, deleteSteelman } from '../../api';
 
 /**
@@ -35,14 +35,15 @@ export function useSubmitSteelman() {
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: mutationKeys.steelman.submit(),
     mutationFn: ({ debateId, roundNumber, targetArgumentId, content }: {
       debateId: string;
       roundNumber: 1 | 2 | 3;
       targetArgumentId: string;
       content: string;
     }) => {
-      if (!token) throw new Error('Authentication required');
-      return submitSteelman(debateId, { roundNumber, targetArgumentId, content }, token);
+      const authToken = requireAuthToken(token);
+      return submitSteelman(debateId, { roundNumber, targetArgumentId, content }, authToken);
     },
     onSuccess: (_, { debateId, roundNumber }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.steelman.status(debateId, roundNumber) });
@@ -59,16 +60,17 @@ export function useReviewSteelman() {
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: mutationKeys.steelman.review(),
     mutationFn: ({ steelmanId, approved, rejectionReason }: {
       steelmanId: string;
       approved: boolean;
       rejectionReason?: string;
     }) => {
-      if (!token) throw new Error('Authentication required');
-      return reviewSteelman(steelmanId, { approved, rejectionReason }, token);
+      const authToken = requireAuthToken(token);
+      return reviewSteelman(steelmanId, { approved, rejectionReason }, authToken);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['steelman'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.steelman.all });
     },
   });
 }
@@ -81,12 +83,13 @@ export function useDeleteSteelman() {
   const token = useAuthToken();
 
   return useMutation({
+    mutationKey: mutationKeys.steelman.delete(),
     mutationFn: (steelmanId: string) => {
-      if (!token) throw new Error('Authentication required');
-      return deleteSteelman(steelmanId, token);
+      const authToken = requireAuthToken(token);
+      return deleteSteelman(steelmanId, authToken);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['steelman'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.steelman.all });
     },
   });
 }

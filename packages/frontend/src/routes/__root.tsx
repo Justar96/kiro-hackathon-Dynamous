@@ -140,10 +140,10 @@ function Navigation({ sessionState }: NavigationProps) {
           {/* Logo / Brand - Clean minimal style */}
           <Link to="/" className="flex items-center gap-2 sm:gap-2.5 group min-h-[44px]">
             <div className="w-7 h-7 bg-text-primary rounded-subtle flex items-center justify-center">
-              <span className="text-paper font-heading font-semibold text-sm">P</span>
+              <span className="text-paper font-heading font-semibold text-sm">T</span>
             </div>
             <span className="font-heading text-base sm:text-lg text-text-primary group-hover:text-accent transition-colors">
-              Persuasion
+              Thesis
             </span>
           </Link>
 

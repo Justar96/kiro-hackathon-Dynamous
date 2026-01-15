@@ -6,7 +6,7 @@ import {
   REPUTATION_DECAY_THRESHOLD_DAYS,
   REPUTATION_DECAY_RATE_PER_WEEK,
   LOW_IMPACT_THRESHOLD
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * Feature: debate-lifecycle-ux

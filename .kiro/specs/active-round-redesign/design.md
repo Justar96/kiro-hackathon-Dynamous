@@ -91,7 +91,7 @@ interface RoundSectionProps {
 
 ## Data Models
 
-No new data models required. The redesign uses existing `Debate`, `Round`, and `Argument` types from `@debate-platform/shared`.
+No new data models required. The redesign uses existing `Debate`, `Round`, and `Argument` types from `@thesis/shared`.
 
 ### State Derivation
 

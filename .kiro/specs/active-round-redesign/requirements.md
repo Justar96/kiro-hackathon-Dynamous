@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This specification covers the redesign of the debate active round UI to create a more compact, seamless experience that integrates better with the opening view of the debate page. The current implementation uses a separate tab navigation (RoundNavigator) and a progress indicator bar that creates visual separation and adds unnecessary chrome. The goal is to streamline the round display, remove redundant navigation elements, and improve overall UX for better engagement with the debate platform's core purpose.
+This specification covers the redesign of the debate active round UI to create a more compact, seamless experience that integrates better with the opening view of the debate page. The current implementation uses a separate tab navigation (RoundNavigator) and a progress indicator bar that creates visual separation and adds unnecessary chrome. The goal is to streamline the round display, remove redundant navigation elements, and improve overall UX for better engagement with Thesis's core purpose.
 
 ## Glossary
 

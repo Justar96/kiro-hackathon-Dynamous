@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This feature replaces the current inline SVG icons throughout the debate platform with a centralized icon system using heroicons-animated for UI icons with smooth animations, and svgl for brand/logo SVGs. The goal is to improve visual polish, reduce code duplication, and provide delightful micro-interactions through animated icons.
+This feature replaces the current inline SVG icons throughout Thesis with a centralized icon system using heroicons-animated for UI icons with smooth animations, and svgl for brand/logo SVGs. The goal is to improve visual polish, reduce code duplication, and provide delightful micro-interactions through animated icons.
 
 ## Glossary
 

@@ -15,7 +15,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
  */
 
 // Session storage key used by useSession
-const SESSION_STORAGE_KEY = 'debate-platform-session-active';
+const SESSION_STORAGE_KEY = 'thesis-session-active';
 
 // Mock sessionStorage
 const mockStorage: Record<string, string> = {};

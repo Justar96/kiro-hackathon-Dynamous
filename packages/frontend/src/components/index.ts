@@ -127,12 +127,15 @@ export {
   // New Debate Modal
   NewDebateModalProvider,
   useNewDebateModal,
+  // Spectator Engagement (Requirements 6.2, 6.3)
+  ArgumentAttributionPrompt,
+  ReactionDisplay,
   // Utilities
   getRoundLabel,
   deriveRoundStates,
   canNavigateToRound,
   generateExcerpt,
-  getRoundConfig,
+  getRoundDisplayConfig,
   getTurnLabel,
   getProgressText,
 } from './debate';
@@ -150,13 +153,14 @@ export type {
   RoundStep,
   RoundSummary,
   RoundSectionState,
+  ArgumentAttributionPromptProps,
 } from './debate';
 
 // ============================================
 // Leaderboard Components
 // ============================================
-export { MindChangeLeaderboard, LeaderboardSection, TopArgumentsSection, TopUsersSection, TopArgumentCard, TopUserCard } from './leaderboard';
-export type { TopArgument, TopUser } from './leaderboard';
+export { MindChangeLeaderboard, LeaderboardSection, TopArgumentsSection, TopUsersSection, TopArgumentCard, TopUserCard, ReputationBreakdown, useReputationBreakdown, reputationBreakdownQueryOptions } from './leaderboard';
+export type { TopArgument, TopUser, ReputationBreakdownProps } from './leaderboard';
 
 // ============================================
 // Index List Components

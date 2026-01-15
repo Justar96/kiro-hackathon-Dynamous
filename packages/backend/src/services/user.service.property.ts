@@ -4,7 +4,7 @@ import {
   SANDBOX_DEBATES_REQUIRED, 
   SANDBOX_VOTE_WEIGHT, 
   FULL_VOTE_WEIGHT 
-} from '@debate-platform/shared';
+} from '@thesis/shared';
 
 /**
  * Feature: debate-platform, Property 14: Sandbox Vote Weight
@@ -14,6 +14,15 @@ import {
  * - If sandboxCompleted = false, vote weight = 0.5
  * - If sandboxCompleted = true, vote weight = 1.0
  * - sandboxCompleted becomes true after participating in 5 debates
+ */
+
+/**
+ * Feature: debate-lifecycle-ux, Property 21: Sandbox Completion Vote Weight
+ * Validates: Requirements 7.3
+ * 
+ * For any user who has completed sandbox requirements (5 debates), their vote weight 
+ * SHALL be 1.0 (full weight). For any user who has NOT completed sandbox, their vote 
+ * weight SHALL be 0.5 (half weight).
  */
 
 // Simulated user state for testing
@@ -183,6 +192,145 @@ describe('UserService Property Tests', () => {
         (user) => {
           const weight = calculateVoteWeight(user);
           expect([SANDBOX_VOTE_WEIGHT, FULL_VOTE_WEIGHT]).toContain(weight);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+});
+
+/**
+ * Feature: debate-lifecycle-ux, Property 21: Sandbox Completion Vote Weight
+ * Validates: Requirements 7.3
+ * 
+ * For any user who has completed sandbox requirements (5 debates), their vote weight 
+ * SHALL be 1.0 (full weight). For any user who has NOT completed sandbox, their vote 
+ * weight SHALL be 0.5 (half weight).
+ */
+describe('Property 21: Sandbox Completion Vote Weight', () => {
+  /**
+   * Property 21a: Completed sandbox users get full vote weight
+   * For any user with sandboxCompleted = true, vote weight SHALL be 1.0
+   * **Validates: Requirements 7.3**
+   */
+  it('Property 21a: Completed sandbox users SHALL have 1.0x vote weight', () => {
+    fc.assert(
+      fc.property(
+        fc.record({
+          debatesParticipated: fc.integer({ min: SANDBOX_DEBATES_REQUIRED, max: 1000 }),
+          sandboxCompleted: fc.constant(true),
+        }),
+        (user) => {
+          const weight = calculateVoteWeight(user);
+          // Per Requirement 7.3: completed sandbox = full weight
+          expect(weight).toBe(FULL_VOTE_WEIGHT);
+          expect(weight).toBe(1.0);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Property 21b: Incomplete sandbox users get half vote weight
+   * For any user with sandboxCompleted = false, vote weight SHALL be 0.5
+   * **Validates: Requirements 7.3**
+   */
+  it('Property 21b: Incomplete sandbox users SHALL have 0.5x vote weight', () => {
+    fc.assert(
+      fc.property(
+        fc.record({
+          debatesParticipated: fc.integer({ min: 0, max: SANDBOX_DEBATES_REQUIRED - 1 }),
+          sandboxCompleted: fc.constant(false),
+        }),
+        (user) => {
+          const weight = calculateVoteWeight(user);
+          // Per Requirement 7.3: incomplete sandbox = half weight
+          expect(weight).toBe(SANDBOX_VOTE_WEIGHT);
+          expect(weight).toBe(0.5);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Property 21c: Sandbox completion threshold is exactly 5 debates
+   * sandboxCompleted becomes true after exactly 5 debates participated
+   * **Validates: Requirements 7.3**
+   */
+  it('Property 21c: Sandbox SHALL complete after exactly 5 debates', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 100 }),
+        (debatesCount) => {
+          const shouldComplete = shouldCompleteSandbox(debatesCount);
+          
+          // Per Requirement 7.3: 5 debates required for full weight
+          if (debatesCount >= SANDBOX_DEBATES_REQUIRED) {
+            expect(shouldComplete).toBe(true);
+          } else {
+            expect(shouldComplete).toBe(false);
+          }
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Property 21d: Vote weight transition at sandbox completion
+   * When a user completes their 5th debate, vote weight SHALL transition from 0.5 to 1.0
+   * **Validates: Requirements 7.3**
+   */
+  it('Property 21d: Vote weight SHALL transition from 0.5 to 1.0 at 5th debate', () => {
+    fc.assert(
+      fc.property(
+        fc.constant(null), // Fixed scenario test
+        () => {
+          let user: UserState = { debatesParticipated: 0, sandboxCompleted: false };
+          
+          // Before any debates - should be sandbox weight
+          expect(calculateVoteWeight(user)).toBe(SANDBOX_VOTE_WEIGHT);
+          
+          // After 1-4 debates - should still be sandbox weight
+          for (let i = 0; i < 4; i++) {
+            user = incrementDebates(user);
+            expect(user.sandboxCompleted).toBe(false);
+            expect(calculateVoteWeight(user)).toBe(SANDBOX_VOTE_WEIGHT);
+          }
+          
+          // After 5th debate - should transition to full weight
+          user = incrementDebates(user);
+          expect(user.debatesParticipated).toBe(5);
+          expect(user.sandboxCompleted).toBe(true);
+          expect(calculateVoteWeight(user)).toBe(FULL_VOTE_WEIGHT);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  /**
+   * Property 21e: Sandbox completion is irreversible
+   * Once sandboxCompleted = true, vote weight SHALL remain 1.0 regardless of further activity
+   * **Validates: Requirements 7.3**
+   */
+  it('Property 21e: Sandbox completion SHALL be permanent', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 100 }), // Additional debates after completion
+        (additionalDebates) => {
+          let user: UserState = { debatesParticipated: SANDBOX_DEBATES_REQUIRED, sandboxCompleted: true };
+          
+          // Simulate additional debates
+          for (let i = 0; i < additionalDebates; i++) {
+            user = incrementDebates(user);
+          }
+          
+          // Should always remain completed with full weight
+          expect(user.sandboxCompleted).toBe(true);
+          expect(calculateVoteWeight(user)).toBe(FULL_VOTE_WEIGHT);
         }
       ),
       { numRuns: 100 }

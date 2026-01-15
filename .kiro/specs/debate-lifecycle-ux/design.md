@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design document outlines the architecture and implementation approach for enhancing the debate platform's lifecycle and user experience. The enhancements focus on making debates more accessible, supporting rich media, ensuring vote privacy, implementing intelligent reputation scoring, and providing a world-class research UX.
+This design document outlines the architecture and implementation approach for enhancing Thesis's lifecycle and user experience. The enhancements focus on making debates more accessible, supporting rich media, ensuring vote privacy, implementing intelligent reputation scoring, and providing a world-class research UX.
 
 The design builds upon the existing Hono backend, React frontend with TanStack Router/Query, and Drizzle ORM with Neon PostgreSQL. New components will integrate seamlessly with the current service-oriented architecture.
 

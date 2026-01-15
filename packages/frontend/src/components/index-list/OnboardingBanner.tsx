@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { XIcon } from '../icons';
 
-const ONBOARDING_DISMISSED_KEY = 'debate-onboarding-dismissed';
+const ONBOARDING_DISMISSED_KEY = 'thesis-onboarding-dismissed';
 
 interface OnboardingBannerProps {
   onDismiss?: () => void;
@@ -37,7 +37,7 @@ export function OnboardingBanner({ onDismiss }: OnboardingBannerProps) {
               <span className="text-lg">💡</span>
             </div>
             <h2 className="font-semibold text-lg text-gray-900">
-              Welcome to Debate Platform
+              Welcome to Thesis
             </h2>
           </div>
           

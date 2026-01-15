@@ -1,6 +1,6 @@
-# Debate Platform UX Improvement Plan
+# Thesis UX Improvement Plan
 
-> **Goal**: Make the debate platform more Reddit-like with emphasis on easy onboarding, anonymous voting, reputation systems, and threaded comments - while polishing existing features and removing dead code.
+> **Goal**: Make Thesis more Reddit-like with emphasis on easy onboarding, anonymous voting, reputation systems, and threaded comments - while polishing existing features and removing dead code.
 
 ---
 
@@ -25,7 +25,7 @@ CREATE DEBATE ──► WAIT FOR OPPONENT ──► 3 STRUCTURED ROUNDS ──�
      │                   │                      │                  │
      │                   │                      │                  │
   Resolution      Queue/Matching         Opening → Steelman      Winner by
-  Pick Side       (can take time)        Rebuttal → Steelman    Persuasion
+  Pick Side       (can take time)        Rebuttal → Steelman    Thesis
                                          Closing                   Delta
 ```
 

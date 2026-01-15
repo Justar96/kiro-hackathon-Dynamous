@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import type { Debate, MarketPrice } from '@debate-platform/shared';
+import type { Debate, MarketPrice } from '@thesis/shared';
 import { useDebateLinkPrefetch } from '../../lib';
 
 interface DebateWithMarket {
@@ -86,7 +86,7 @@ interface TrendingRailItemProps {
  */
 function TrendingRailItem({ item, rank }: TrendingRailItemProps) {
   const { debate, marketPrice } = item;
-  const prefetchProps = useDebateLinkPrefetch(debate.id);
+  const prefetchProps = useDebateLinkPrefetch(debate.id, { delay: 200 });
   
   const supportPercent = marketPrice?.supportPrice ?? 50;
   const mindChangeCount = marketPrice?.mindChangeCount ?? 0;

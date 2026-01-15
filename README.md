@@ -1,4 +1,4 @@
-# kiro-hackathon-dynamous
+# Thesis
 
 To install dependencies:
 

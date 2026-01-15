@@ -63,17 +63,17 @@ describe('Debate Lifecycle Integration', () => {
   });
 
   it('should complete full debate lifecycle with winner determination', { timeout: 15000 }, async () => {
-    // Submit arguments for all 3 rounds
+    // Submit arguments for all 3 rounds (each must be at least 100 characters)
     await debateService.submitArgument({
       debateId,
       debaterId: supporterId,
-      content: 'Remote work eliminates commute time, allowing more focus on actual work.'
+      content: 'Remote work eliminates commute time, allowing more focus on actual work. Studies consistently show that employees who work from home report higher productivity levels.'
     });
 
     await debateService.submitArgument({
       debateId,
       debaterId: opposerId,
-      content: 'Remote work reduces collaboration and team cohesion.'
+      content: 'Remote work reduces collaboration and team cohesion significantly. The lack of face-to-face interaction leads to communication breakdowns and reduced innovation.'
     });
 
     // Continue through all rounds...
@@ -81,26 +81,26 @@ describe('Debate Lifecycle Integration', () => {
     await debateService.submitArgument({
       debateId,
       debaterId: supporterId,
-      content: 'Studies show 13% productivity increase in remote workers.'
+      content: 'Studies show 13% productivity increase in remote workers. This data comes from Stanford research involving thousands of employees over multiple years.'
     });
 
     await debateService.submitArgument({
       debateId,
       debaterId: opposerId,
-      content: 'Those studies ignore decreased innovation from lack of spontaneous interaction.'
+      content: 'Those studies ignore decreased innovation from lack of spontaneous interaction. Many breakthrough ideas come from casual office conversations that remote work eliminates.'
     });
 
     // Round 3
     await debateService.submitArgument({
       debateId,
       debaterId: supporterId,
-      content: 'The data speaks for itself - remote work is the future.'
+      content: 'The data speaks for itself - remote work is the future. Companies that embrace flexible work arrangements see better retention and employee satisfaction.'
     });
 
     await debateService.submitArgument({
       debateId,
       debaterId: opposerId,
-      content: 'Human connection drives innovation, not isolation.'
+      content: 'Human connection drives innovation, not isolation. The most successful companies maintain strong in-person cultures that foster creativity and collaboration.'
     });
 
     // Record voter stances
@@ -214,11 +214,11 @@ describe('Debate Lifecycle Integration', () => {
   });
 
   it('should detect stance spikes', async () => {
-    // Create an argument first for the foreign key
+    // Create an argument first for the foreign key (must be at least 100 characters)
     const argument = await debateService.submitArgument({
       debateId,
       debaterId: supporterId,
-      content: 'This is a test argument for spike detection'
+      content: 'This is a test argument for spike detection that needs to be at least one hundred characters long to pass validation requirements.'
     });
     
     await marketService.detectAndRecordSpikes(

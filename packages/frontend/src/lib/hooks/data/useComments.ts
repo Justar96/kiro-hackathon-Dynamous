@@ -6,7 +6,7 @@
 
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthToken } from './useAuthToken';
-import { queryKeys, commentsQueryOptions, commentsInfiniteQueryOptions } from '../../api';
+import { queryKeys, commentsQueryOptions, commentsInfiniteQueryOptions, mutationKeys, requireAuthToken } from '../../api';
 import { addComment } from '../../api';
 
 /**
@@ -42,7 +42,7 @@ export function useAddComment() {
   const token = useAuthToken();
 
   return useMutation({
-    mutationKey: ['mutations', 'comments', 'add'] as const,
+    mutationKey: mutationKeys.comments.add(),
     mutationFn: ({
       debateId,
       content,
@@ -52,8 +52,8 @@ export function useAddComment() {
       content: string;
       parentId?: string | null;
     }) => {
-      if (!token) throw new Error('Authentication required');
-      return addComment(debateId, { content, parentId }, token);
+      const authToken = requireAuthToken(token);
+      return addComment(debateId, { content, parentId }, authToken);
     },
     onSuccess: (_, { debateId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.comments.byDebate(debateId) });
