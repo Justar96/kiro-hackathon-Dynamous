@@ -1,26 +1,17 @@
 // ============================================
 // Components - Main Barrel Export
 // ============================================
-// This file re-exports from subdirectory barrels to maintain
-// backward compatibility with existing imports.
 
-// ============================================
 // Auth Components
-// ============================================
 export {
-  // AuthProvider
   AuthProvider,
   validateUsername,
-  // AuthModal
   AuthModalProvider,
   useAuthModal,
   useRequireAuth,
   AuthModalContext,
-  // ProfileDropdown
   ProfileDropdown,
-  // UserAvatar
   UserAvatar,
-  // OnboardingToast
   OnboardingToast,
   useOnboardingToast,
   useAutoOnboarding,
@@ -32,42 +23,29 @@ export type {
   UserAvatarProps,
 } from './auth';
 
-// ============================================
 // Common Components
-// ============================================
 export {
-  // Hooks
   useIsMobile,
-  // Modal Components
   Modal,
   ModalOverlay,
   BottomSheet,
-  // Toast & Notifications
   ToastProvider,
   useToast,
   ToastContainer,
   ToastItem,
-  // Error Handling
   ErrorBoundary,
   ErrorFallback,
   InlineError,
   ErrorMessage,
-  // Loading States
   Skeleton,
   SkeletonText,
   SkeletonHeading,
   SkeletonAvatar,
   SkeletonCard,
-  SkeletonDebateRow,
-  SkeletonArgumentBlock,
-  SkeletonMarketData,
-  SkeletonStatCard,
   SkeletonLoader,
   SkeletonParagraph,
   SkeletonButton,
-  // Form Components
   FormField,
-  // Connection Status
   ConnectionStatus,
 } from './common';
 export type {
@@ -90,174 +68,56 @@ export type {
   ConnectionStatusProps,
 } from './common';
 
-// ============================================
-// Debate Components
-// ============================================
+// Market Components
 export {
-  // Core Debate Components
-  ResolutionCard,
-  DossierHeader,
-  // Argument Components
-  ArgumentBlock,
-  ImpactBadge,
-  MindChangedButton,
-  // Evidence/Citation Components
-  EvidenceFootnote,
-  SourceCard,
-  SourceCardContainer,
-  useSourceCardState,
-  // Round Components
-  RoundSection,
-  RoundProgressIndicator,
-  RoundHistory,
-  ActiveRoundView,
-  ArgumentSubmissionForm,
-  // Market Components
+  MarketCard,
+  OrderBook,
+  TradingPanel,
+  PortfolioView,
+  CreateMarketForm,
   MarketChart,
-  StanceInput,
-  DeltaLabel,
-  // Audience Stats (for spectators)
-  AudienceStats,
-  // Comments
-  SpectatorComments,
-  // Steelman Gate
-  SteelmanForm,
-  SteelmanReview,
-  SteelmanGateBadge,
-  // New Debate Modal
-  NewDebateModalProvider,
-  useNewDebateModal,
-  // Spectator Engagement (Requirements 6.2, 6.3)
-  ArgumentAttributionPrompt,
-  ReactionDisplay,
-  // Utilities
-  getRoundLabel,
-  deriveRoundStates,
-  canNavigateToRound,
-  generateExcerpt,
-  getRoundDisplayConfig,
-  getTurnLabel,
-  getProgressText,
-} from './debate';
-export type {
-  Citation,
-  EvidenceSource,
-  RoundSectionProps,
-  ActiveRoundViewProps,
-  SteelmanData,
-  PendingReview,
-  ArgumentSubmissionFormProps,
-  RoundProgressIndicatorProps,
-  RoundHistoryProps,
-  RoundStepState,
-  RoundStep,
-  RoundSummary,
-  RoundSectionState,
-  ArgumentAttributionPromptProps,
-} from './debate';
+} from './market';
+export type { MarketFormData } from './market';
 
-// ============================================
-// Leaderboard Components
-// ============================================
-export { MindChangeLeaderboard, LeaderboardSection, TopArgumentsSection, TopUsersSection, TopArgumentCard, TopUserCard, ReputationBreakdown, useReputationBreakdown, reputationBreakdownQueryOptions } from './leaderboard';
-export type { TopArgument, TopUser, ReputationBreakdownProps } from './leaderboard';
-
-// ============================================
-// Index List Components
-// ============================================
-export { 
-  DebateIndexList, 
-  DebateIndexRow, 
-  DebateTabs, 
-  getPersistedTab, 
-  TrendingDebatesCard,
-  TrendingRail,
-  QuickStanceWidget,
-  SeekingOpponentsSection,
-  OnboardingBanner,
-  resetOnboardingBanner,
-  SandboxProgress,
-  CompactDebateCard,
-  CARD_CONFIG,
-  InfiniteFeed,
-  VIRTUALIZATION_CONFIG,
-} from './index-list';
-export type { DebateTabType, TrendingRailProps, CompactDebateCardProps, InfiniteFeedProps } from './index-list';
-
-// ============================================
 // Layout Components
-// ============================================
 export {
   ThreeColumnLayout,
   IndexThreeColumnLayout,
   LeftNavRail,
-  useActiveSectionObserver,
-  generateDebateRoundsLabel,
-  createUnifiedTocSections,
   RightMarginRail,
-  SectionAnchorNav,
-  useActiveSectionTracking,
-  DEFAULT_DEBATE_ANCHORS,
   MOBILE_BREAKPOINT,
 } from './layout';
-export type { NavSection, SectionAnchor, SectionAnchorNavProps } from './layout';
 
-// ============================================
 // UI Components
-// ============================================
-export {
-  HorizontalDivider,
-  SPACING_VALUES,
-} from './ui';
-export type {
-  HorizontalDividerProps,
-  DividerSpacing,
-} from './ui';
+export { HorizontalDivider, SPACING_VALUES } from './ui';
+export type { HorizontalDividerProps, DividerSpacing } from './ui';
 
-// ============================================
 // Icons
-// ============================================
 export {
-  // Icon utilities
   createIcon,
   useReducedMotion,
   BrandLogo,
-  // Navigation icons
   MenuIcon,
   XIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  // Action icons
   PlusIcon,
   CheckIcon,
   CheckCircleIcon,
   XCircleIcon,
-  // Status icons
   WarningIcon,
   SpinnerIcon,
   InfoIcon,
   ClockIcon,
   ShieldCheckIcon,
-  // User icons
   UserIcon,
   ChatIcon,
   SignOutIcon,
-  // Chart/data icons
   ChartIcon,
   LightBulbIcon,
   TrendingUpIcon,
   ChatBubbleIcon,
-  // Custom domain-specific icons
-  DeltaIcon,
-  MindChangeIcon,
-  ImpactIcon,
-  VoteIcon,
 } from './icons';
-export type {
-  IconSize,
-  AnimationTrigger,
-  IconProps,
-  BrandLogoProps,
-} from './icons';
+export type { IconSize, AnimationTrigger, IconProps, BrandLogoProps } from './icons';

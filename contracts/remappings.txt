@@ -1,0 +1,4 @@
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@gnosis.pm/conditional-tokens-contracts/=lib/conditional-tokens-contracts/
+@uma/core/=lib/protocol/packages/core/
+forge-std/=lib/forge-std/src/

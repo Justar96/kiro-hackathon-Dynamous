@@ -11,9 +11,10 @@ The architecture follows Polymarket's proven hybrid-decentralized model:
 
 Key technical decisions aligned with Polymarket:
 - Use existing Gnosis CTF contract (`0x4d97dcd97ec945f40cf65f87097ace5ea0476045`) on Polygon
-- USDCe as collateral (`0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174`)
+- Native USDC as collateral (`0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`) on Polygon mainnet
 - EIP-712 signed orders for off-chain matching
 - UMA Oracle for decentralized resolution
+- Polygon Amoy testnet (chainId: 80002) for development - Mumbai is deprecated
 
 ## Glossary
 
@@ -21,14 +22,14 @@ Key technical decisions aligned with Polymarket:
 - **Outcome_Token**: ERC-1155 tokens from CTF representing shares in a specific outcome (YES or NO)
 - **CLOB**: Central Limit Order Book - hybrid system with off-chain matching and on-chain settlement
 - **CTF_Exchange**: The smart contract that settles matched orders on-chain
-- **Collateral_Token**: USDCe (bridged USDC on Polygon) used to mint outcome tokens and settle payouts
+- **Collateral_Token**: Native USDC on Polygon (`0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`) used to mint outcome tokens and settle payouts
 - **Oracle**: UMA Optimistic Oracle that provides resolution data for markets
 - **Resolution**: The process of determining the winning outcome via oracle
 - **Settlement**: The process of redeeming winning outcome tokens for collateral
 - **Position**: A user's holdings of outcome tokens in a specific market
 - **Operator**: Off-chain service that matches orders and submits settlements to chain
-- **Split**: CTF operation converting 1 USDCe into 1 YES + 1 NO token
-- **Merge**: CTF operation converting 1 YES + 1 NO token back into 1 USDCe
+- **Split**: CTF operation converting 1 USDC into 1 YES + 1 NO token
+- **Merge**: CTF operation converting 1 YES + 1 NO token back into 1 USDC
 - **Condition_ID**: Unique identifier for a market's resolution condition in CTF
 - **Question_ID**: Unique identifier linking market to oracle resolution
 
@@ -53,8 +54,8 @@ Key technical decisions aligned with Polymarket:
 
 #### Acceptance Criteria
 
-1. WHEN a user calls splitPosition with USDCe, THE CTF SHALL mint equal amounts of YES and NO Outcome_Tokens (1 USDCe → 1 YES + 1 NO)
-2. WHEN a user calls mergePositions with equal YES and NO tokens, THE CTF SHALL burn tokens and return USDCe (1 YES + 1 NO → 1 USDCe)
+1. WHEN a user calls splitPosition with USDC, THE CTF SHALL mint equal amounts of YES and NO Outcome_Tokens (1 USDC → 1 YES + 1 NO)
+2. WHEN a user calls mergePositions with equal YES and NO tokens, THE CTF SHALL burn tokens and return USDC (1 YES + 1 NO → 1 USDC)
 3. THE Outcome_Tokens SHALL be ERC-1155 tokens managed by the existing Gnosis CTF at `0x4d97dcd97ec945f40cf65f87097ace5ea0476045`
 4. WHEN tokens are split or merged, THE CTF SHALL emit PositionSplit or PositionMerge events
 5. THE System SHALL track token balances via CTF contract reads
@@ -69,7 +70,7 @@ Key technical decisions aligned with Polymarket:
 1. WHEN a user places an order, THE Frontend SHALL create an EIP-712 signed order message with price (0.01-0.99), quantity, expiration, and nonce
 2. WHEN a user places a sell order, THE User SHALL have approved the CTF_Exchange to transfer their Outcome_Tokens
 3. WHEN the Operator matches orders off-chain, THE Operator SHALL submit matched orders to CTF_Exchange for atomic on-chain settlement
-4. WHEN a trade settles on-chain, THE CTF_Exchange SHALL transfer Outcome_Tokens to buyer and USDCe to seller atomically
+4. WHEN a trade settles on-chain, THE CTF_Exchange SHALL transfer Outcome_Tokens to buyer and USDC to seller atomically
 5. THE Operator SHALL maintain price-time priority for order matching (best price first, then earliest timestamp)
 6. WHEN a user cancels an order, THE System SHALL invalidate the order nonce on-chain
 7. THE CTF_Exchange SHALL emit OrderFilled events for all settled trades
@@ -86,17 +87,17 @@ Key technical decisions aligned with Polymarket:
 3. IF no dispute is raised during the dispute period, THE Resolution SHALL be finalized automatically
 4. WHEN a resolution is disputed, THE UMA DVM (Data Verification Mechanism) SHALL arbitrate
 5. WHEN resolution is finalized, THE Oracle SHALL call reportPayouts on CTF to enable redemption
-6. IF the Oracle returns INVALID, THEN THE CTF SHALL allow all token holders to redeem at 0.50 per token
+6. IF the Oracle returns INVALID, THEN THE CTF SHALL allow all token holders to redeem at 0.50 USDC per token
 7. THE System SHALL emit resolution events for frontend updates
 
 ### Requirement 5: Settlement and Payouts
 
-**User Story:** As a winning position holder, I want to redeem my outcome tokens for USDCe, so that I receive my winnings.
+**User Story:** As a winning position holder, I want to redeem my outcome tokens for USDC, so that I receive my winnings.
 
 #### Acceptance Criteria
 
-1. WHEN a Market is resolved with YES outcome, THE CTF SHALL allow YES token holders to call redeemPositions for 1.00 USDCe per token
-2. WHEN a Market is resolved with NO outcome, THE CTF SHALL allow NO token holders to call redeemPositions for 1.00 USDCe per token
+1. WHEN a Market is resolved with YES outcome, THE CTF SHALL allow YES token holders to call redeemPositions for 1.00 USDC per token
+2. WHEN a Market is resolved with NO outcome, THE CTF SHALL allow NO token holders to call redeemPositions for 1.00 USDC per token
 3. THE CTF SHALL burn redeemed Outcome_Tokens upon payout
 4. WHEN a user redeems winning tokens, THE System MAY charge a protocol fee (configurable, default 0%)
 5. THE CTF SHALL emit PayoutRedemption events with user address and payout amount
@@ -113,7 +114,7 @@ Key technical decisions aligned with Polymarket:
 2. WHEN a wallet connects, THE System SHALL verify the user is on Polygon network (chainId: 137)
 3. IF the user is on wrong network, THEN THE System SHALL prompt to switch to Polygon
 4. WHEN a user initiates a transaction, THE Frontend SHALL display gas estimation and confirmation dialog
-5. THE Frontend SHALL display real-time balance updates for USDCe and Outcome_Tokens
+5. THE Frontend SHALL display real-time balance updates for USDC and Outcome_Tokens
 6. WHEN a transaction fails, THE System SHALL display human-readable error message
 7. THE System SHALL persist wallet connection state across page refreshes using wagmi's persistence
 
@@ -166,6 +167,6 @@ Key technical decisions aligned with Polymarket:
 2. THE Frontend SHALL replace debate routes with market routes (/markets, /markets/:id)
 3. THE Frontend SHALL implement new market listing page with price, volume, and end date
 4. THE Frontend SHALL implement market detail page with order book, trading interface, and position display
-5. THE Frontend SHALL use wagmi hooks for all contract interactions
+5. THE Frontend SHALL use wagmi v2 hooks for all contract interactions
 6. THE System SHALL provide TypeScript types for all contract ABIs
 7. THE Frontend SHALL implement responsive design for mobile trading

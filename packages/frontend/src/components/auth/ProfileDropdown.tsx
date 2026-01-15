@@ -18,7 +18,7 @@ import { Link } from '@tanstack/react-router';
 import { UserAvatar } from './UserAvatar';
 import { useSignOut } from '../../lib';
 import { useToast } from '../common/Toast';
-import { ChevronDownIcon, UserIcon, ChatIcon, SignOutIcon } from '../icons';
+import { ChevronDownIcon, ChartIcon, SignOutIcon } from '../icons';
 
 // ============================================================================
 // Types
@@ -321,30 +321,17 @@ function ProfileDropdownMenu({
         )}
       </div>
 
-      {/* Navigation Menu Items - Requirements: 1.3, 1.4 */}
+      {/* Navigation Menu Items */}
       <div className="py-1">
         <Link
-          to="/users/$userId"
-          params={{ userId: platformUser?.id || user.id }}
+          to="/portfolio"
           onClick={onClose}
           role="menuitem"
           className="flex items-center gap-3 px-4 py-2.5 text-body-small text-text-primary hover:bg-page-bg transition-colors min-h-[44px]"
-          data-testid={testId ? `${testId}-view-profile` : undefined}
+          data-testid={testId ? `${testId}-portfolio` : undefined}
         >
-          <UserIcon size="md" className="text-text-secondary" decorative />
-          View Profile
-        </Link>
-        
-        <Link
-          to="/"
-          search={{ filter: 'my-debates' }}
-          onClick={onClose}
-          role="menuitem"
-          className="flex items-center gap-3 px-4 py-2.5 text-body-small text-text-primary hover:bg-page-bg transition-colors min-h-[44px]"
-          data-testid={testId ? `${testId}-my-debates` : undefined}
-        >
-          <ChatIcon size="md" className="text-text-secondary" decorative />
-          My Debates
+          <ChartIcon size="md" className="text-text-secondary" decorative />
+          My Portfolio
         </Link>
       </div>
 

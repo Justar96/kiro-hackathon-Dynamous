@@ -6,14 +6,38 @@ This design transforms Thesis from a centralized debate platform into a decentra
 
 The system consists of three layers:
 1. **Smart Contract Layer** - Solidity contracts on Polygon handling all market logic, token management, and settlement
-2. **Integration Layer** - TypeScript/wagmi hooks bridging frontend to contracts
-3. **Frontend Layer** - React components for market interaction, leveraging existing UI patterns
+2. **Integration Layer** - TypeScript/wagmi v2 hooks bridging frontend to contracts
+3. **Frontend Layer** - React 18 components for market interaction, leveraging existing UI patterns
 
 Key design decisions:
 - **CLOB over AMM**: Better capital efficiency and tighter spreads for binary markets
 - **ERC-1155 for outcome tokens**: Gas-efficient batch operations, proven CTF pattern
 - **UMA Oracle**: Decentralized resolution with economic guarantees
 - **USDC as collateral**: Stable, widely available on Polygon
+
+## Technology Stack
+
+### Runtime & Package Management
+- **Bun** (v1.1+) - Fast JavaScript runtime and package manager
+- **Bun workspaces** - Monorepo management
+
+### Smart Contracts
+- **Solidity 0.8.24** - Latest stable with Cancun EVM features
+- **Foundry** - Testing, deployment, and verification
+- **OpenZeppelin Contracts v5** - Security primitives
+
+### Frontend
+- **React 18** - UI framework with concurrent features
+- **Vite 5** - Build tooling (Bun-compatible)
+- **wagmi v2** - React hooks for Ethereum (stable release)
+- **viem v2** - TypeScript Ethereum library
+- **TanStack Query v5** - Server state management
+- **TanStack Router** - Type-safe routing
+
+### Testing
+- **Foundry fuzz testing** - Property-based tests for contracts (256 runs)
+- **Vitest** - Frontend unit and integration tests
+- **fast-check** - Property-based testing for TypeScript
 
 ## Architecture
 
@@ -543,23 +567,23 @@ export const fromUsdcUnits = (units: bigint): number =>
 ### Contract Configuration
 
 ```typescript
-// packages/frontend/src/lib/contracts/config.ts
+// packages/shared/src/contracts/config.ts
 
 export const POLYGON_CHAIN_ID = 137;
-export const POLYGON_MUMBAI_CHAIN_ID = 80001;
+export const POLYGON_AMOY_CHAIN_ID = 80002; // Polygon Amoy testnet (Mumbai deprecated)
 
 export const CONTRACT_ADDRESSES = {
   [POLYGON_CHAIN_ID]: {
     marketFactory: '0x...' as `0x${string}`,
     conditionalTokens: '0x...' as `0x${string}`,
     orderBook: '0x...' as `0x${string}`,
-    usdc: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x${string}`, // USDC on Polygon
+    usdc: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x${string}`, // Native USDC on Polygon
   },
-  [POLYGON_MUMBAI_CHAIN_ID]: {
+  [POLYGON_AMOY_CHAIN_ID]: {
     marketFactory: '0x...' as `0x${string}`,
     conditionalTokens: '0x...' as `0x${string}`,
     orderBook: '0x...' as `0x${string}`,
-    usdc: '0x...' as `0x${string}`, // Test USDC
+    usdc: '0x...' as `0x${string}`, // Test USDC on Amoy
   },
 } as const;
 
@@ -847,31 +871,51 @@ export function useTransaction() {
 This system requires both unit tests and property-based tests:
 
 - **Unit tests**: Verify specific examples, edge cases, integration points, and error conditions
-- **Property tests**: Verify universal properties across randomized inputs using fast-check
+- **Property tests**: Verify universal properties across randomized inputs
 
 ### Smart Contract Testing
 
-**Framework**: Foundry (forge) with fuzzing support
+**Framework**: Foundry (forge) with native fuzz testing
+
+**Commands** (using Bun):
+```bash
+# Run all contract tests
+cd contracts && forge test
+
+# Run with verbose output
+forge test -vvv
+
+# Run specific test file
+forge test --match-path test/Market.fuzz.sol
+
+# Run with gas reporting
+forge test --gas-report
+```
 
 **Test Organization**:
 ```
 contracts/
 ├── test/
-│   ├── MarketFactory.t.sol      # Unit tests
 │   ├── MarketFactory.fuzz.sol   # Fuzz/property tests
-│   ├── Market.t.sol
 │   ├── Market.fuzz.sol
-│   ├── OrderBook.t.sol
 │   ├── OrderBook.fuzz.sol
+│   ├── ConditionalTokens.fuzz.sol
+│   ├── Security.fuzz.sol
 │   └── helpers/
 │       ├── TestSetup.sol
 │       └── Generators.sol
 ```
 
-**Property Test Configuration**:
-- Minimum 256 fuzz runs per property
-- Use bounded inputs for realistic scenarios
-- Tag format: `/// @dev Feature: on-chain-settlement, Property N: [property_text]`
+**Property Test Configuration** (foundry.toml):
+```toml
+[fuzz]
+runs = 256
+max_test_rejects = 65536
+seed = "0x3e8"
+dictionary_weight = 40
+include_storage = true
+include_push_bytes = true
+```
 
 **Example Property Test**:
 ```solidity
@@ -902,6 +946,18 @@ function testFuzz_mintingBalanceInvariant(uint256 collateralAmount) public {
 
 **Framework**: Vitest with fast-check for property-based testing
 
+**Commands** (using Bun):
+```bash
+# Run frontend tests
+bun run --cwd packages/frontend test
+
+# Run in watch mode
+bun run --cwd packages/frontend test:watch
+
+# Run with coverage
+bun run --cwd packages/frontend test --coverage
+```
+
 **Test Organization**:
 ```
 packages/frontend/src/
@@ -909,17 +965,24 @@ packages/frontend/src/
 │   ├── hooks/
 │   │   ├── useMarket.ts
 │   │   ├── useMarket.test.ts        # Unit tests
-│   │   ��── useMarket.property.ts    # Property tests
+│   │   └── useMarket.property.ts    # Property tests
 │   ├── utils/
 │   │   ├── calculations.ts
 │   │   ├── calculations.test.ts
 │   │   └── calculations.property.ts
 ```
 
-**Property Test Configuration**:
-- Minimum 100 iterations per property
-- Use fast-check arbitraries for input generation
-- Tag format: `// Feature: on-chain-settlement, Property N: [property_text]`
+**Property Test Configuration** (vitest.config.ts):
+```typescript
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test-setup.ts'],
+    include: ['**/*.{test,property}.{ts,tsx}'],
+  },
+});
+```
 
 **Example Property Test**:
 ```typescript
@@ -931,8 +994,8 @@ describe('P&L Calculation Property', () => {
   it('should calculate unrealized P&L correctly for any valid inputs', () => {
     fc.assert(
       fc.property(
-        fc.float({ min: 0.01, max: 0.99 }), // entryPrice
-        fc.float({ min: 0.01, max: 0.99 }), // currentPrice
+        fc.float({ min: 0.01, max: 0.99, noNaN: true }), // entryPrice
+        fc.float({ min: 0.01, max: 0.99, noNaN: true }), // currentPrice
         fc.bigInt({ min: 1n, max: 1000000n }), // quantity
         (entryPrice, currentPrice, quantity) => {
           const result = calculateUnrealizedPnL(entryPrice, currentPrice, quantity);
@@ -958,7 +1021,7 @@ import { createTestClient, http } from 'viem';
 import { foundry } from 'viem/chains';
 
 describe('useMarket Integration', () => {
-  let testClient: TestClient;
+  let testClient: ReturnType<typeof createTestClient>;
   
   beforeAll(async () => {
     testClient = createTestClient({

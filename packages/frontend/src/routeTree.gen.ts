@@ -9,30 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as UsersUserIdRouteImport } from './routes/users.$userId'
-import { Route as DebatesNewRouteImport } from './routes/debates.new'
-import { Route as DebatesDebateIdRouteImport } from './routes/debates.$debateId'
+import { Route as MarketsMarketIdRouteImport } from './routes/markets.$marketId'
 import { Route as AuthPathnameRouteImport } from './routes/auth.$pathname'
 
+const PortfolioRoute = PortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UsersUserIdRoute = UsersUserIdRouteImport.update({
-  id: '/users/$userId',
-  path: '/users/$userId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DebatesNewRoute = DebatesNewRouteImport.update({
-  id: '/debates/new',
-  path: '/debates/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DebatesDebateIdRoute = DebatesDebateIdRouteImport.update({
-  id: '/debates/$debateId',
-  path: '/debates/$debateId',
+const MarketsMarketIdRoute = MarketsMarketIdRouteImport.update({
+  id: '/markets/$marketId',
+  path: '/markets/$marketId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthPathnameRoute = AuthPathnameRouteImport.update({
@@ -43,60 +37,47 @@ const AuthPathnameRoute = AuthPathnameRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/portfolio': typeof PortfolioRoute
   '/auth/$pathname': typeof AuthPathnameRoute
-  '/debates/$debateId': typeof DebatesDebateIdRoute
-  '/debates/new': typeof DebatesNewRoute
-  '/users/$userId': typeof UsersUserIdRoute
+  '/markets/$marketId': typeof MarketsMarketIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/portfolio': typeof PortfolioRoute
   '/auth/$pathname': typeof AuthPathnameRoute
-  '/debates/$debateId': typeof DebatesDebateIdRoute
-  '/debates/new': typeof DebatesNewRoute
-  '/users/$userId': typeof UsersUserIdRoute
+  '/markets/$marketId': typeof MarketsMarketIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/portfolio': typeof PortfolioRoute
   '/auth/$pathname': typeof AuthPathnameRoute
-  '/debates/$debateId': typeof DebatesDebateIdRoute
-  '/debates/new': typeof DebatesNewRoute
-  '/users/$userId': typeof UsersUserIdRoute
+  '/markets/$marketId': typeof MarketsMarketIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/auth/$pathname'
-    | '/debates/$debateId'
-    | '/debates/new'
-    | '/users/$userId'
+  fullPaths: '/' | '/portfolio' | '/auth/$pathname' | '/markets/$marketId'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/auth/$pathname'
-    | '/debates/$debateId'
-    | '/debates/new'
-    | '/users/$userId'
-  id:
-    | '__root__'
-    | '/'
-    | '/auth/$pathname'
-    | '/debates/$debateId'
-    | '/debates/new'
-    | '/users/$userId'
+  to: '/' | '/portfolio' | '/auth/$pathname' | '/markets/$marketId'
+  id: '__root__' | '/' | '/portfolio' | '/auth/$pathname' | '/markets/$marketId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PortfolioRoute: typeof PortfolioRoute
   AuthPathnameRoute: typeof AuthPathnameRoute
-  DebatesDebateIdRoute: typeof DebatesDebateIdRoute
-  DebatesNewRoute: typeof DebatesNewRoute
-  UsersUserIdRoute: typeof UsersUserIdRoute
+  MarketsMarketIdRoute: typeof MarketsMarketIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/portfolio': {
+      id: '/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,25 +85,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/users/$userId': {
-      id: '/users/$userId'
-      path: '/users/$userId'
-      fullPath: '/users/$userId'
-      preLoaderRoute: typeof UsersUserIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/debates/new': {
-      id: '/debates/new'
-      path: '/debates/new'
-      fullPath: '/debates/new'
-      preLoaderRoute: typeof DebatesNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/debates/$debateId': {
-      id: '/debates/$debateId'
-      path: '/debates/$debateId'
-      fullPath: '/debates/$debateId'
-      preLoaderRoute: typeof DebatesDebateIdRouteImport
+    '/markets/$marketId': {
+      id: '/markets/$marketId'
+      path: '/markets/$marketId'
+      fullPath: '/markets/$marketId'
+      preLoaderRoute: typeof MarketsMarketIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/$pathname': {
@@ -137,10 +104,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PortfolioRoute: PortfolioRoute,
   AuthPathnameRoute: AuthPathnameRoute,
-  DebatesDebateIdRoute: DebatesDebateIdRoute,
-  DebatesNewRoute: DebatesNewRoute,
-  UsersUserIdRoute: UsersUserIdRoute,
+  MarketsMarketIdRoute: MarketsMarketIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

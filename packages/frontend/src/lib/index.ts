@@ -1,72 +1,13 @@
 /**
  * Lib Index - Main Barrel Exports
- * 
- * This file provides backward-compatible exports from the reorganized lib structure.
- * The lib folder has been restructured into:
- * 
- * - api/        - API client, queries, mutations, types, cache strategies
- * - sse/        - Server-Sent Events hooks and providers
- * - hooks/      - React hooks organized by domain
- *   - data/     - Data fetching hooks (debates, stances, comments, etc.)
- *   - optimistic/ - Optimistic update hooks
- *   - form/     - Form state and validation hooks
- *   - navigation/ - URL, scroll, and prefetch hooks
- *   - ui/       - UI utility hooks (loading, polling, etc.)
- * - auth/       - Authentication hooks
- * - utils/      - Utility functions
  */
 
 // ============================================================================
 // API Layer
 // ============================================================================
 
-// Query options and keys
-export {
-  queryKeys,
-  debatesQueryOptions,
-  debateFullQueryOptions,
-  marketQueryOptions,
-  userStanceQueryOptions,
-  stanceStatsQueryOptions,
-  commentsQueryOptions,
-  commentsInfiniteQueryOptions,
-  reactionsQueryOptions,
-  currentUserQueryOptions,
-  userQueryOptions,
-  userStatsQueryOptions,
-  userDebatesQueryOptions,
-  votingHistoryQueryOptions,
-  healthCheckQueryOptions,
-  steelmanStatusQueryOptions,
-  pendingSteelmansQueryOptions,
-  debatesWithMarketQueryOptions,
-  leaderboardQueryOptions,
-  topUsersQueryOptions,
-} from './api';
-export type { UseInfiniteDebatesOptions, TopArgument, TopUser } from './api';
+export { queryKeys, CACHE_STRATEGIES, mutationKeys } from './api';
 
-// Mutation functions
-export {
-  createDebate,
-  joinDebate,
-  submitArgument,
-  recordPreStance,
-  recordPostStance,
-  recordQuickStance,
-  addComment,
-  addReaction,
-  removeReaction,
-  attributeImpact,
-  markMindChanged,
-  submitSteelman,
-  reviewSteelman,
-  deleteSteelman,
-} from './api';
-
-// Cache strategies
-export { CACHE_STRATEGIES, mutationKeys } from './api';
-
-// Query client configuration (TanStack Query v5)
 export {
   createQueryClient,
   defaultQueryOptions,
@@ -82,62 +23,15 @@ export {
 // ============================================================================
 
 export {
-  // Auth token
   useAuthToken,
-  // Debates
-  useDebates,
-  useDebateFull,
-  useCreateDebate,
-  useJoinDebate,
-  useSubmitArgument,
-  useInfiniteDebates,
-  // Market
-  useMarket,
-  // Stances
-  useUserStance,
-  useRecordPreStance,
-  useRecordPostStance,
-  useQuickStance,
-  // Comments
-  useComments,
-  useInfiniteComments,
-  useAddComment,
-  // Reactions
-  useReactions,
-  useBatchReactions,
-  useAddReaction,
-  useRemoveReaction,
-  // Impact
-  useAttributeImpact,
-  useMindChanged,
-  // Users
-  useCurrentUser,
-  useUserProfile,
-  useUserStats,
-  // Health
   useHealthCheck,
-  // Steelman
-  useSteelmanStatus,
-  usePendingSteelmans,
-  useSubmitSteelman,
-  useReviewSteelman,
-  useDeleteSteelman,
+  useMarkets,
+  useMarket,
+  useCreateMarket,
+  usePlaceOrder,
+  usePositions,
 } from './hooks/data';
-export type { UseInfiniteDebatesResult } from './hooks/data';
-
-// ============================================================================
-// Optimistic Update Hooks
-// ============================================================================
-
-export {
-  useOptimisticStance,
-  useOptimisticReaction,
-  useOptimisticComment,
-} from './hooks/optimistic';
-export type { StanceResponse, ReactionsResponse, OptimisticContext } from './hooks/optimistic';
-
-// Mutation helpers
-export { getMutationErrorMessage, normalizeMutationError } from './hooks/mutationHelpers';
+export type { Market } from './hooks/data';
 
 // ============================================================================
 // Auth Hooks
@@ -158,9 +52,7 @@ export {
 // ============================================================================
 
 export {
-  // Form preservation
   useFormPreservation,
-  // Form validation
   useFormValidation,
   required,
   email,
@@ -168,7 +60,6 @@ export {
   maxLength,
   pattern,
   custom,
-  // Unsaved changes
   useUnsavedChanges,
   useUnsavedChangesControl,
 } from './hooks/form';
@@ -190,25 +81,17 @@ export type {
 // ============================================================================
 
 export {
-  // Deep links
   useDeepLink,
   useAutoDeepLink,
-  // Scroll restoration
   useScrollRestoration,
-  // Modal URL sync
   useModalUrlSync,
   useModalUrlState,
-  // Prefetch
-  usePrefetch,
-  usePrefetchDebate,
-  useDebateLinkPrefetch,
 } from './hooks/navigation';
 export type {
   UseDeepLinkOptions,
   UseScrollRestorationOptions,
   UseScrollRestorationResult,
   UseModalUrlSyncOptions,
-  UsePrefetchOptions,
 } from './hooks/navigation';
 
 // ============================================================================
@@ -216,20 +99,8 @@ export type {
 // ============================================================================
 
 export {
-  // Scroll-based unlock
-  useAfterStanceUnlock,
-  // Reading progress
-  useReadingProgress,
-  // Minimum loading
   useMinimumLoading,
   useMinimumLoadingQuery,
-  // Index polling
-  useIndexPolling,
-  POLLING_CONSTANTS,
-} from './hooks/ui';
-export type {
-  UseIndexPollingOptions,
-  UseIndexPollingResult,
 } from './hooks/ui';
 
 // ============================================================================
@@ -243,16 +114,6 @@ export {
   SSE_CONSTANTS,
   calculateBackoffDelay,
   useSSEQuerySync,
-  createShallowMergeUpdater,
-  createDeepMergeUpdater,
-  hasDataChanged,
-  // Domain-specific SSE hooks
-  useSSEComments,
-  useSSEMarket,
-  useSSEArguments,
-  useSSEReactions,
-  useSSERound,
-  useSSESteelman,
 } from './sse';
 export type { 
   SSEConnectionStatus, 
@@ -264,15 +125,13 @@ export type {
 } from './sse';
 
 // ============================================================================
-// Utils
+// Web3 / Wagmi
 // ============================================================================
 
-export { 
-  DEBATE_TEMPLATES, 
-  getRandomTopic, 
-  getTopicsByCategory,
-  getCategories,
-  getRandomTopicFromCategory,
-  getAllTopics,
-} from './utils';
-export type { DebateCategory } from './utils';
+export {
+  wagmiConfig,
+  Web3Provider,
+  POLYGON_CHAIN_ID,
+  POLYGON_AMOY_CHAIN_ID,
+  DEFAULT_CHAIN_ID,
+} from './wagmi';

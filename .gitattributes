@@ -1,197 +1,47 @@
-# =============================================================================
-# Git Attributes for Debate Platform Monorepo
-# =============================================================================
-
-# Auto detect text files and perform LF normalization
+# Auto detect and normalize line endings
 * text=auto
 
-# =============================================================================
 # Bun
-# =============================================================================
 bun.lock text eol=lf
-bun.lockb binary diff=lockb
 
-# =============================================================================
-# JavaScript / TypeScript
-# =============================================================================
-*.js text eol=lf diff=javascript
-*.jsx text eol=lf diff=javascript
-*.ts text eol=lf diff=javascript
-*.tsx text eol=lf diff=javascript
-*.mjs text eol=lf diff=javascript
-*.cjs text eol=lf diff=javascript
-*.mts text eol=lf diff=javascript
-*.cts text eol=lf diff=javascript
+# JavaScript/TypeScript
+*.js text eol=lf
+*.ts text eol=lf
+*.jsx text eol=lf
+*.tsx text eol=lf
 
-# =============================================================================
-# JSON & Config
-# =============================================================================
+# Solidity
+*.sol text eol=lf linguist-language=Solidity
+
+# Config
 *.json text eol=lf
-package.json text eol=lf merge=union linguist-language=JSON-with-Comments
-package-lock.json text eol=lf -diff linguist-generated
-yarn.lock text eol=lf -diff linguist-generated
-pnpm-lock.yaml text eol=lf -diff linguist-generated
-
-# Config files
 *.yaml text eol=lf
 *.yml text eol=lf
 *.toml text eol=lf
-*.ini text eol=lf
-*.conf text eol=lf
-*.config text eol=lf
-.editorconfig text eol=lf
-.browserslistrc text eol=lf
-.nvmrc text eol=lf
-.node-version text eol=lf
 
-# =============================================================================
-# Web Assets
-# =============================================================================
-*.html text eol=lf diff=html
-*.htm text eol=lf diff=html
-*.css text eol=lf diff=css
-*.scss text eol=lf diff=css
-*.sass text eol=lf diff=css
-*.less text eol=lf diff=css
-*.postcss text eol=lf diff=css
+# Web
+*.html text eol=lf
+*.css text eol=lf
 
-# =============================================================================
-# Documentation
-# =============================================================================
-*.md text eol=lf diff=markdown linguist-documentation
-*.mdx text eol=lf diff=markdown
-*.txt text eol=lf
-*.rst text eol=lf
-LICENSE text eol=lf
-LICENSE.* text eol=lf
-CHANGELOG* text eol=lf
-README* text eol=lf linguist-documentation
+# Docs
+*.md text eol=lf
 
-# =============================================================================
-# Database & SQL
-# =============================================================================
-*.sql text eol=lf linguist-detectable
+# Shell
+*.sh text eol=lf
 
-# =============================================================================
-# Shell Scripts
-# =============================================================================
-*.sh text eol=lf diff=bash
-*.bash text eol=lf diff=bash
-*.zsh text eol=lf diff=bash
-*.fish text eol=lf
-
-# Windows scripts (keep CRLF)
-*.bat text eol=crlf
-*.cmd text eol=crlf
-*.ps1 text eol=crlf
-
-# =============================================================================
-# Docker
-# =============================================================================
-Dockerfile text eol=lf
-Dockerfile.* text eol=lf
-*.dockerfile text eol=lf
-docker-compose*.yml text eol=lf
-docker-compose*.yaml text eol=lf
-.dockerignore text eol=lf
-
-# =============================================================================
-# Environment & Secrets
-# =============================================================================
-.env text eol=lf
-.env.* text eol=lf
-*.env text eol=lf
-
-# =============================================================================
-# Images (binary)
-# =============================================================================
+# Binary
 *.png binary
 *.jpg binary
-*.jpeg binary
 *.gif binary
 *.ico binary
-*.webp binary
-*.avif binary
-*.bmp binary
-*.tiff binary
-*.tif binary
-
-# SVG can be text or binary - treat as text for better diffs
-*.svg text eol=lf
-
-# =============================================================================
-# Fonts (binary)
-# =============================================================================
 *.woff binary
 *.woff2 binary
-*.ttf binary
-*.eot binary
-*.otf binary
 
-# =============================================================================
-# Audio/Video (binary)
-# =============================================================================
-*.mp3 binary
-*.mp4 binary
-*.webm binary
-*.ogg binary
-*.wav binary
-*.flac binary
-*.m4a binary
-*.avi binary
-*.mov binary
-
-# =============================================================================
-# Archives (binary)
-# =============================================================================
-*.zip binary
-*.tar binary
-*.gz binary
-*.tgz binary
-*.rar binary
-*.7z binary
-
-# =============================================================================
-# Documents (binary)
-# =============================================================================
-*.pdf binary
-*.doc binary
-*.docx binary
-*.xls binary
-*.xlsx binary
-*.ppt binary
-*.pptx binary
-
-# =============================================================================
-# Generated Files (exclude from language stats)
-# =============================================================================
+# Generated (exclude from stats)
 packages/frontend/src/routeTree.gen.ts linguist-generated
-packages/frontend/.tanstack/** linguist-generated
-*.min.js linguist-generated
-*.min.css linguist-generated
 dist/** linguist-generated
-coverage/** linguist-generated
+contracts/out/** linguist-generated
 
-# =============================================================================
-# Vendor Files (exclude from language stats)
-# =============================================================================
+# Vendored
 node_modules/** linguist-vendored
-**/vendor/** linguist-vendored
-
-# =============================================================================
-# Export-ignore (exclude from archives)
-# =============================================================================
-.github export-ignore
-.gitattributes export-ignore
-.gitignore export-ignore
-.editorconfig export-ignore
-.vscode export-ignore
-.kiro export-ignore
-*.md export-ignore
-!README.md export-ignore
-tests export-ignore
-__tests__ export-ignore
-*.test.* export-ignore
-*.spec.* export-ignore
-*.property.* export-ignore
-coverage export-ignore
+contracts/lib/** linguist-vendored

@@ -1,7 +1,5 @@
 /**
  * Navigation Hooks Index
- * 
- * Hooks for navigation, URL state, scroll handling, and prefetching.
  */
 
 // Deep link navigation
@@ -15,7 +13,3 @@ export type { UseScrollRestorationOptions, UseScrollRestorationResult } from './
 // Modal URL sync
 export { useModalUrlSync, useModalUrlState } from './useModalUrlSync';
 export type { UseModalUrlSyncOptions } from './useModalUrlSync';
-
-// Prefetch
-export { usePrefetch, usePrefetchDebate, useDebateLinkPrefetch } from './usePrefetch';
-export type { UsePrefetchOptions } from './usePrefetch';
