@@ -10,7 +10,7 @@ import {
 import { AuthView } from '@neondatabase/neon-js/auth/react';
 import { Modal } from '../common/Modal';
 import { useToast } from '../common/Toast';
-import { useSession } from '../../lib/useSession';
+import { useSession } from '../../lib';
 import { useOnboardingToast } from './OnboardingToast';
 import { XIcon } from '../icons';
 

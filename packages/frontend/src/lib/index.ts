@@ -1,38 +1,153 @@
-// Query options for use with TanStack Query
-export * from './queries';
+/**
+ * Lib Index - Main Barrel Exports
+ * 
+ * This file provides backward-compatible exports from the reorganized lib structure.
+ * The lib folder has been restructured into:
+ * 
+ * - api/        - API client, queries, mutations, types, cache strategies
+ * - sse/        - Server-Sent Events hooks and providers
+ * - hooks/      - React hooks organized by domain
+ *   - data/     - Data fetching hooks (debates, stances, comments, etc.)
+ *   - optimistic/ - Optimistic update hooks
+ *   - form/     - Form state and validation hooks
+ *   - navigation/ - URL, scroll, and prefetch hooks
+ *   - ui/       - UI utility hooks (loading, polling, etc.)
+ * - auth/       - Authentication hooks
+ * - utils/      - Utility functions
+ */
 
-// Mutation functions for API calls
-export * from './mutations';
+// ============================================================================
+// API Layer
+// ============================================================================
 
-// React hooks for data fetching and mutations
-export * from './hooks';
+// Query options and keys
+export {
+  queryKeys,
+  debatesQueryOptions,
+  debateQueryOptions,
+  debateDetailQueryOptions,
+  debateFullQueryOptions,
+  marketQueryOptions,
+  userStanceQueryOptions,
+  stanceStatsQueryOptions,
+  commentsQueryOptions,
+  commentsInfiniteQueryOptions,
+  reactionsQueryOptions,
+  currentUserQueryOptions,
+  userQueryOptions,
+  userStatsQueryOptions,
+  userDebatesQueryOptions,
+  healthCheckQueryOptions,
+  steelmanStatusQueryOptions,
+  pendingSteelmansQueryOptions,
+  debatesWithMarketQueryOptions,
+  leaderboardQueryOptions,
+  topUsersQueryOptions,
+} from './api';
+export type { UseInfiniteDebatesOptions, TopArgument, TopUser } from './api';
 
-// Optimistic update hooks
-export * from './optimistic';
+// Mutation functions
+export {
+  createDebate,
+  joinDebate,
+  submitArgument,
+  recordPreStance,
+  recordPostStance,
+  recordQuickStance,
+  addComment,
+  addReaction,
+  removeReaction,
+  attributeImpact,
+  markMindChanged,
+  submitSteelman,
+  reviewSteelman,
+  deleteSteelman,
+} from './api';
 
-// Session management hooks
+// Cache strategies
+export { CACHE_STRATEGIES, mutationKeys } from './api';
+
+// ============================================================================
+// Data Hooks
+// ============================================================================
+
+export {
+  // Auth token
+  useAuthToken,
+  // Debates
+  useDebates,
+  useDebate,
+  useDebateDetail,
+  useDebateFull,
+  useCreateDebate,
+  useJoinDebate,
+  useSubmitArgument,
+  // Market
+  useMarket,
+  // Stances
+  useUserStance,
+  useRecordPreStance,
+  useRecordPostStance,
+  useQuickStance,
+  // Comments
+  useComments,
+  useInfiniteComments,
+  useAddComment,
+  // Reactions
+  useReactions,
+  useBatchReactions,
+  useAddReaction,
+  useRemoveReaction,
+  // Impact
+  useAttributeImpact,
+  useMindChanged,
+  // Users
+  useCurrentUser,
+  useUserProfile,
+  useUserStats,
+  // Health
+  useHealthCheck,
+  // Steelman
+  useSteelmanStatus,
+  usePendingSteelmans,
+  useSubmitSteelman,
+  useReviewSteelman,
+  useDeleteSteelman,
+} from './hooks/data';
+
+// ============================================================================
+// Optimistic Update Hooks
+// ============================================================================
+
+export {
+  useOptimisticStance,
+  useOptimisticReaction,
+  useOptimisticComment,
+} from './hooks/optimistic';
+export type { StanceResponse, ReactionsResponse, OptimisticContext } from './hooks/optimistic';
+
+// ============================================================================
+// Auth Hooks
+// ============================================================================
+
 export { 
   useSession, 
   useUser, 
   useSignOut, 
   useSessionWatcher,
-  hadActiveSession 
-} from './useSession';
+  hadActiveSession,
+  useSignUpCallback,
+  useUsernameCheck,
+} from './auth';
 
-// Loading state hooks
-export { useMinimumLoading, useMinimumLoadingQuery } from './useMinimumLoading';
+// ============================================================================
+// Form Hooks
+// ============================================================================
 
-// Form preservation hooks
-export { useFormPreservation } from './useFormPreservation';
-export type { 
-  FormFieldState, 
-  FormState, 
-  UseFormPreservationOptions, 
-  UseFormPreservationReturn 
-} from './useFormPreservation';
-
-// Form validation hooks
-export { 
+export {
+  // Form preservation
+  useFormPreservation,
+  // Form validation
   useFormValidation,
   required,
   email,
@@ -40,103 +155,111 @@ export {
   maxLength,
   pattern,
   custom,
-} from './useFormValidation';
-export type {
+  // Unsaved changes
+  useUnsavedChanges,
+  useUnsavedChangesControl,
+} from './hooks/form';
+export type { 
+  FormFieldState, 
+  FormState, 
+  UseFormPreservationOptions, 
+  UseFormPreservationReturn,
   ValidationRule,
   FieldConfig,
   FieldState,
   FieldHandlers,
   UseFormValidationReturn,
-} from './useFormValidation';
+  UseUnsavedChangesOptions,
+} from './hooks/form';
 
-// SSE (Server-Sent Events) hooks
+// ============================================================================
+// Navigation Hooks
+// ============================================================================
+
+export {
+  // Deep links
+  useDeepLink,
+  useAutoDeepLink,
+  // Scroll restoration
+  useScrollRestoration,
+  // Modal URL sync
+  useModalUrlSync,
+  useModalUrlState,
+  // Prefetch
+  usePrefetch,
+  usePrefetchDebate,
+  useDebateLinkPrefetch,
+} from './hooks/navigation';
+export type {
+  UseDeepLinkOptions,
+  UseScrollRestorationOptions,
+  UseScrollRestorationResult,
+  UseModalUrlSyncOptions,
+  UsePrefetchOptions,
+} from './hooks/navigation';
+
+// ============================================================================
+// UI Hooks
+// ============================================================================
+
+export {
+  // Scroll-based unlock
+  useAfterStanceUnlock,
+  // Reading progress
+  useReadingProgress,
+  // Minimum loading
+  useMinimumLoading,
+  useMinimumLoadingQuery,
+  // Index polling
+  useIndexPolling,
+  POLLING_CONSTANTS,
+} from './hooks/ui';
+export type {
+  UseIndexPollingOptions,
+  UseIndexPollingResult,
+} from './hooks/ui';
+
+// ============================================================================
+// SSE (Server-Sent Events)
+// ============================================================================
+
 export { 
   SSEProvider, 
   useSSE, 
   useSSEContext,
   SSE_CONSTANTS,
   calculateBackoffDelay,
-} from './useSSE';
+  useSSEQuerySync,
+  createShallowMergeUpdater,
+  createDeepMergeUpdater,
+  hasDataChanged,
+  // Domain-specific SSE hooks
+  useSSEComments,
+  useSSEMarket,
+  useSSEArguments,
+  useSSEReactions,
+  useSSERound,
+  useSSESteelman,
+} from './sse';
 export type { 
   SSEConnectionStatus, 
   SSEContextValue, 
   SSEProviderProps,
   SSEEvent,
-} from './useSSE';
-
-// SSE Query Sync hook
-export {
-  useSSEQuerySync,
-  createShallowMergeUpdater,
-  createDeepMergeUpdater,
-  hasDataChanged,
-} from './useSSEQuerySync';
-export type {
   UseSSEQuerySyncOptions,
   UseSSEQuerySyncResult,
-} from './useSSEQuerySync';
+} from './sse';
 
-// SSE Comment updates hook
-export { useSSEComments } from './useSSEComments';
+// ============================================================================
+// Utils
+// ============================================================================
 
-// SSE Market updates hook
-export { useSSEMarket } from './useSSEMarket';
+export { DEBATE_TEMPLATES, getRandomTopic, getTopicsByCategory } from './utils';
 
-// SSE Arguments updates hook
-export { useSSEArguments } from './useSSEArguments';
+// ============================================================================
+// Legacy Exports (for backward compatibility)
+// ============================================================================
 
-// SSE Reactions updates hook
-export { useSSEReactions } from './useSSEReactions';
-
-// SSE Round updates hook
-export { useSSERound } from './useSSERound';
-
-// SSE Steelman updates hook
-export { useSSESteelman } from './useSSESteelman';
-
-// Scroll restoration hooks
-export { useScrollRestoration } from './useScrollRestoration';
-
-// Deep link navigation hooks
-export {
-  useDeepLink,
-  useAutoDeepLink,
-} from './useDeepLink';
-export type { UseDeepLinkOptions } from './useDeepLink';
-
-// Prefetch hooks
-export {
-  usePrefetch,
-  usePrefetchDebate,
-  useDebateLinkPrefetch,
-} from './usePrefetch';
-export type { UsePrefetchOptions } from './usePrefetch';
-
-// Unsaved changes warning hooks
-export {
-  useUnsavedChanges,
-  useUnsavedChangesControl,
-} from './useUnsavedChanges';
-export type { UseUnsavedChangesOptions } from './useUnsavedChanges';
-
-// Modal URL sync hooks
-export {
-  useModalUrlSync,
-  useModalUrlState,
-} from './useModalUrlSync';
-export type { UseModalUrlSyncOptions } from './useModalUrlSync';
-
-// Index page polling hook
-export {
-  useIndexPolling,
-  POLLING_CONSTANTS,
-} from './useIndexPolling';
-export type {
-  UseIndexPollingOptions,
-  UseIndexPollingResult,
-} from './useIndexPolling';
-
-// Infinite debates hook for Reddit-style feed
+// Infinite debates hook
 export { useInfiniteDebates } from './useInfiniteDebates';
 export type { UseInfiniteDebatesResult } from './useInfiniteDebates';
-export type { UseInfiniteDebatesOptions } from './queries';

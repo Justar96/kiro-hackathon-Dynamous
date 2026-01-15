@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { Debate, MarketPrice } from '@debate-platform/shared';
-import { useDebateLinkPrefetch } from '../../lib/usePrefetch';
+import { useDebateLinkPrefetch } from '../../lib';
 import { InlineQuickStance } from './InlineQuickStance';
 
 /**
@@ -158,7 +158,7 @@ function StatusBadge({
   needsOpponent, 
   isLive, 
   isConcluded,
-  currentRound 
+  currentRound: _currentRound 
 }: { 
   needsOpponent: boolean; 
   isLive: boolean; 
@@ -206,137 +206,6 @@ function formatTimeAgo(date: Date): string {
   if (diffHours < 24) return `${diffHours}h`;
   if (diffDays < 7) return `${diffDays}d`;
   return created.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-/**
- * Get status badge configuration based on debate state
- * Requirements: 2.4 - Display debate status
- */
-function getStatusBadge(
-  debate: Debate,
-  needsOpponent: boolean,
-  isLive: boolean,
-  isConcluded: boolean
-): { text: string; class: string } {
-  if (needsOpponent) {
-    return { text: 'Open', class: 'text-accent bg-accent/10' };
-  }
-  if (isConcluded) {
-    return { text: 'Resolved', class: 'text-text-tertiary bg-page-bg' };
-  }
-  if (isLive) {
-    return { text: `Round ${debate.currentRound}`, class: 'text-text-secondary bg-page-bg' };
-  }
-  return { text: 'Active', class: 'text-text-secondary bg-page-bg' };
-}
-
-/**
- * Support/Oppose percentage bar
- * Requirements: 2.2 - Display support/oppose percentage as visual bar
- */
-interface SupportOpposeBarProps {
-  supportPercent: number;
-  opposePercent: number;
-}
-
-function SupportOpposeBar({ supportPercent, opposePercent }: SupportOpposeBarProps) {
-  return (
-    <div className="space-y-1" data-testid="support-oppose-bar">
-      <div className="flex h-1.5 rounded-full overflow-hidden bg-divider">
-        <div
-          className="bg-support transition-all duration-300"
-          style={{ width: `${supportPercent}%` }}
-          data-testid="support-bar"
-        />
-        <div
-          className="bg-oppose transition-all duration-300"
-          style={{ width: `${opposePercent}%` }}
-          data-testid="oppose-bar"
-        />
-      </div>
-      <div className="flex justify-between text-[10px] text-text-tertiary">
-        <span>{supportPercent.toFixed(0)}%</span>
-        <span>{opposePercent.toFixed(0)}%</span>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Mind change delta indicator
- * Requirements: 2.3 - Display mind change count with delta indicator
- */
-interface MindChangeDeltaProps {
-  count: number;
-}
-
-function MindChangeDelta({ count }: MindChangeDeltaProps) {
-  return (
-    <div 
-      className="flex items-center gap-1 text-accent animate-delta"
-      data-testid="mind-change-delta"
-    >
-      <span className="text-sm font-semibold tabular-nums">{count}</span>
-      <span className="text-xs font-medium">Δ</span>
-    </div>
-  );
-}
-
-/**
- * Mini sparkline showing stance trend over time
- * Requirements: 2.8 - Display mini sparkline showing stance trend
- */
-interface MiniSparklineProps {
-  supportPercent: number;
-}
-
-function MiniSparkline({ supportPercent }: MiniSparklineProps) {
-  const height = 24;
-  const width = 48;
-  const padding = 2;
-
-  // Calculate Y position based on support percentage
-  const y = padding + ((100 - supportPercent) / 100) * (height - padding * 2);
-  const midY = height / 2;
-
-  // Create a simple curved path from center to current position
-  const path = `M ${padding} ${midY} Q ${width / 3} ${midY + 4} ${width / 2} ${midY} T ${width - padding} ${y}`;
-
-  // Color based on support percentage
-  const lineColor = supportPercent >= 50 ? '#2D8A6E' : '#C75B5B';
-  const trendDirection = supportPercent >= 50 ? 'upward' : 'downward';
-
-  return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      className="w-full h-full"
-      preserveAspectRatio="none"
-      role="img"
-      aria-label={`Stance trend sparkline showing ${trendDirection} movement at ${supportPercent}%`}
-      data-testid="mini-sparkline"
-    >
-      {/* Center reference line */}
-      <line
-        x1={padding}
-        y1={midY}
-        x2={width - padding}
-        y2={midY}
-        stroke="#E5E5E0"
-        strokeWidth="1"
-        strokeDasharray="2 2"
-      />
-      {/* Trend line */}
-      <path
-        d={path}
-        fill="none"
-        stroke={lineColor}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      {/* Current position dot */}
-      <circle cx={width - padding} cy={y} r="2" fill={lineColor} />
-    </svg>
-  );
 }
 
 export default CompactDebateCard;

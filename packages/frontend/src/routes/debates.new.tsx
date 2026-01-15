@@ -1,12 +1,17 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useSession } from '../lib/useSession';
 import { useState, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createDebate } from '../lib/mutations';
+import { 
+  useSession, 
+  createDebate, 
+  useFormValidation, 
+  required, 
+  maxLength, 
+  DEBATE_TEMPLATES, 
+  getRandomTopic 
+} from '../lib';
 import { FormField } from '../components/common/FormField';
-import { useFormValidation, required, maxLength } from '../lib/useFormValidation';
 import { useAuthModal, useToast } from '../components';
-import { DEBATE_TEMPLATES, getRandomTopic } from '../lib/debateTemplates';
 
 export const Route = createFileRoute('/debates/new')({
   component: NewDebatePage,

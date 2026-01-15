@@ -130,6 +130,9 @@ export const commentReactionTypeEnum = pgEnum('comment_reaction_type', ['support
 // Notification type enum
 export const notificationTypeEnum = pgEnum('notification_type', ['opponent_joined', 'debate_started', 'your_turn']);
 
+// Media attachment type enum
+export const mediaAttachmentTypeEnum = pgEnum('media_attachment_type', ['file', 'youtube', 'link']);
+
 export const steelmans = pgTable('steelmans', {
   id: text('id').primaryKey(),
   debateId: text('debate_id').notNull().references(() => debates.id),
@@ -165,4 +168,47 @@ export const notifications = pgTable('notifications', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => [
   index('notifications_user_read_created_idx').on(table.userId, table.read, table.createdAt),
+]);
+
+
+// Media attachments table - stores file uploads, YouTube embeds, and link previews for arguments
+export const mediaAttachments = pgTable('media_attachments', {
+  id: text('id').primaryKey(),
+  argumentId: text('argument_id').notNull().references(() => arguments_.id, { onDelete: 'cascade' }),
+  type: mediaAttachmentTypeEnum('type').notNull(),
+  url: text('url').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  title: text('title'),
+  description: text('description'),
+  mimeType: text('mime_type'),
+  fileSize: integer('file_size'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Reputation factors table - stores multi-factor reputation breakdown for users
+export const reputationFactors = pgTable('reputation_factors', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  impactScoreTotal: real('impact_score_total').notNull().default(0),
+  predictionAccuracy: real('prediction_accuracy').notNull().default(50),
+  participationCount: integer('participation_count').notNull().default(0),
+  qualityScore: real('quality_score').notNull().default(0),
+  lastActiveAt: timestamp('last_active_at'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('reputation_factors_user_id_idx').on(table.userId),
+]);
+
+// Reputation history table - tracks reputation changes over time
+export const reputationHistory = pgTable('reputation_history', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  previousScore: real('previous_score').notNull(),
+  newScore: real('new_score').notNull(),
+  changeAmount: real('change_amount').notNull(),
+  reason: text('reason').notNull(),
+  debateId: text('debate_id').references(() => debates.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  index('reputation_history_user_id_created_idx').on(table.userId, table.createdAt),
 ]);

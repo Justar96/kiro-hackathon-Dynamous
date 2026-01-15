@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { infiniteDebatesQueryOptions, type UseInfiniteDebatesOptions } from './queries';
+import { infiniteDebatesQueryOptions, type UseInfiniteDebatesOptions } from './api';
 import type { DebateWithMarket } from '@debate-platform/shared';
 
 /**

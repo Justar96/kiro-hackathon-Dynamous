@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { useState, useMemo, useCallback } from 'react';
-import { debatesWithMarketQueryOptions } from '../lib/queries';
-import { useQuickStance } from '../lib/hooks';
-import { useSession } from '../lib/useSession';
 import { 
-  DebateIndexList, 
+  debatesWithMarketQueryOptions,
+  useQuickStance,
+  useSession,
+  useInfiniteDebates,
+} from '../lib';
+import { 
   SkeletonDebateRow, 
   SkeletonHeading, 
   SkeletonText, 
@@ -18,11 +20,9 @@ import {
   useToast,
   useAuthModal,
   useNewDebateModal,
-  HorizontalDivider,
   PlusIcon,
   ChartIcon,
 } from '../components';
-import { useInfiniteDebates } from '../lib/useInfiniteDebates';
 import type { DebateTabType } from '../components';
 
 export const Route = createFileRoute('/')({
@@ -265,6 +265,8 @@ function IndexCenterContent({
   
   // Use infinite debates hook for pagination
   // Requirements: 1.1, 1.2, 1.3 - Infinite scroll with cursor-based pagination
+  // Note: 'watching' tab falls back to 'all' since infinite scroll doesn't support it yet
+  const infiniteFilter = activeTab === 'watching' ? 'all' : activeTab;
   const {
     debates: infiniteDebates,
     fetchNextPage,
@@ -274,7 +276,7 @@ function IndexCenterContent({
     isError,
     refetch,
   } = useInfiniteDebates({
-    filter: activeTab,
+    filter: infiniteFilter,
   });
 
   // Use infinite debates if available, otherwise fall back to filtered debates

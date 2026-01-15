@@ -6,8 +6,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useAuthModal, ProfileDropdown, useNewDebateModal, WarningIcon } from '../components';
 import { NewDebateModalContent } from '../components/debate/NewDebateModal';
-import { useSessionWatcher, useSession } from '../lib/useSession';
-import { useCurrentUser } from '../lib/hooks';
+import { useSessionWatcher, useSession, useCurrentUser } from '../lib';
 
 export interface RouterContext {
   queryClient: QueryClient;

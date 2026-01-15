@@ -432,3 +432,174 @@ export interface PaginatedDebatesParams {
   userId?: string;
   includeMarket?: boolean;
 }
+
+// ============================================
+// Media Attachment Types (Requirement 2.1, 2.6)
+// ============================================
+
+export type MediaAttachmentType = 'file' | 'youtube' | 'link';
+
+export interface MediaAttachment {
+  id: string;
+  argumentId: string;
+  type: MediaAttachmentType;
+  url: string;
+  thumbnailUrl: string | null;
+  title: string | null;
+  description: string | null;
+  mimeType: string | null;
+  fileSize: number | null;
+  createdAt: Date;
+}
+
+export interface UrlPreview {
+  url: string;
+  title: string;
+  description: string;
+  thumbnailUrl: string | null;
+  siteName: string | null;
+  type: 'article' | 'video' | 'image' | 'other';
+}
+
+export interface YouTubePreview {
+  videoId: string;
+  title: string;
+  thumbnailUrl: string;
+  channelName: string | null;
+  duration: string | null;
+}
+
+// Accepted file types for media uploads
+export const ACCEPTED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+] as const;
+
+export type AcceptedFileType = typeof ACCEPTED_FILE_TYPES[number];
+
+// Maximum file size: 10MB in bytes
+export const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+export interface CreateMediaAttachmentInput {
+  argumentId: string;
+  type: MediaAttachmentType;
+  url: string;
+  thumbnailUrl?: string | null;
+  title?: string | null;
+  description?: string | null;
+  mimeType?: string | null;
+  fileSize?: number | null;
+}
+
+
+// ============================================
+// Reputation Types (Requirement 4.1, 4.5)
+// ============================================
+
+export interface ReputationScore {
+  overall: number;           // 0-1000 scale
+  persuasionSkill: number;   // Based on impact scores
+  predictionAccuracy: number; // Based on correct predictions
+  consistency: number;        // Based on participation quality
+  trustLevel: number;         // Derived from all factors
+}
+
+export interface ReputationFactor {
+  id: string;
+  userId: string;
+  impactScoreTotal: number;
+  predictionAccuracy: number;
+  participationCount: number;
+  qualityScore: number;
+  lastActiveAt: Date | null;
+  updatedAt: Date;
+}
+
+export interface ReputationBreakdownFactor {
+  name: string;
+  value: number;
+  weight: number;
+  contribution: number;
+}
+
+export interface ReputationChange {
+  date: Date;
+  change: number;
+  reason: string;
+}
+
+export interface ReputationBreakdown {
+  overall: number;
+  factors: ReputationBreakdownFactor[];
+  recentChanges: ReputationChange[];
+  rank?: number;
+  percentile?: number;
+}
+
+export interface ReputationHistory {
+  id: string;
+  userId: string;
+  previousScore: number;
+  newScore: number;
+  changeAmount: number;
+  reason: string;
+  debateId: string | null;
+  createdAt: Date;
+}
+
+// Reputation calculation weights
+export const REPUTATION_WEIGHTS = {
+  impactScore: 0.35,        // How much arguments change minds
+  predictionAccuracy: 0.25, // How well user predicts outcomes
+  participationQuality: 0.20, // Engagement without gaming
+  consistency: 0.10,        // Regular quality contributions
+  communityTrust: 0.10,     // Reactions and endorsements
+} as const;
+
+// Diminishing returns formula helper
+export const calculateDiminishingReturns = (rawScore: number, count: number): number => {
+  // Each additional contribution has less impact
+  // Score = rawScore * (1 / (1 + log(count)))
+  return rawScore * (1 / (1 + Math.log10(count + 1)));
+};
+
+// Reputation decay configuration
+export const REPUTATION_DECAY_THRESHOLD_DAYS = 30;
+export const REPUTATION_DECAY_RATE_PER_WEEK = 0.01; // 1% per week after threshold
+
+// Low-impact threshold for neutral reputation changes
+export const LOW_IMPACT_THRESHOLD = 5;
+
+
+// ============================================
+// Privacy Types (Requirement 3.1, 3.2)
+// ============================================
+
+/**
+ * Aggregate stance data for public API responses.
+ * This interface ensures no individual voter data is exposed.
+ * Individual voter IDs are NEVER included in this type.
+ */
+export interface AggregateStanceData {
+  totalVoters: number;
+  averagePreStance: number;
+  averagePostStance: number;
+  averageDelta: number;
+  mindChangedCount: number;
+  // Note: Individual voter data is intentionally excluded for privacy
+}
+
+/**
+ * Privacy-filtered debate statistics for public display.
+ * Contains only aggregate metrics, no individual voter information.
+ */
+export interface PrivateDebateStats {
+  debateId: string;
+  stanceData: AggregateStanceData;
+  lastUpdated: Date;
+}

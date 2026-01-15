@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { leaderboardQueryOptions, type TopArgument } from '../../lib/queries';
+import { leaderboardQueryOptions, type TopArgument } from '../../lib';
 
 interface MindChangeLeaderboardProps {
   limit?: number;

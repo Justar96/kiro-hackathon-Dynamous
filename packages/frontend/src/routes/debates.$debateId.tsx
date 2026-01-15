@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router';
 import { useState, useCallback, useMemo } from 'react';
-import { debateFullQueryOptions } from '../lib/queries';
 import { 
+  debateFullQueryOptions,
   useUserStance, 
   useAfterStanceUnlock,
   useReadingProgress,
@@ -14,12 +14,16 @@ import {
   useSubmitSteelman,
   useReviewSteelman,
   useDeleteSteelman,
-} from '../lib/hooks';
-import { 
   useOptimisticStance, 
-  useOptimisticComment 
-} from '../lib/optimistic';
-import { SSEProvider, useSSEComments, useSSEMarket, useSSEArguments, useSSERound, useSSEReactions, useSSESteelman } from '../lib';
+  useOptimisticComment,
+  SSEProvider, 
+  useSSEComments, 
+  useSSEMarket, 
+  useSSEArguments, 
+  useSSERound, 
+  useSSEReactions, 
+  useSSESteelman,
+} from '../lib';
 import {
   ThreeColumnLayout,
   LeftNavRail,

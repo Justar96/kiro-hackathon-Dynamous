@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useSession } from '../lib/useSession';
-import { userQueryOptions, userDebatesQueryOptions } from '../lib/queries';
+import { useSession, userQueryOptions, userDebatesQueryOptions } from '../lib';
 import { SkeletonStatCard, Skeleton } from '../components';
 import type { Debate } from '@debate-platform/shared';
 

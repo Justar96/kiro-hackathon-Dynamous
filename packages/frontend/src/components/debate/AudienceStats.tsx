@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { stanceStatsQueryOptions } from '../../lib/queries';
+import { stanceStatsQueryOptions } from '../../lib';
 
 interface AudienceStatsProps {
   debateId: string;

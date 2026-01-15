@@ -11,11 +11,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal } from '../common/Modal';
 import { FormField } from '../common/FormField';
 import { useToast } from '../common/Toast';
-import { useSession } from '../../lib/useSession';
+import { useSession, createDebate, useFormValidation, required, maxLength, DEBATE_TEMPLATES, getRandomTopic } from '../../lib';
 import { useAuthModal } from '../auth/AuthModal';
-import { createDebate } from '../../lib/mutations';
-import { useFormValidation, required, maxLength } from '../../lib/useFormValidation';
-import { DEBATE_TEMPLATES, getRandomTopic } from '../../lib/debateTemplates';
 import { PlusIcon, XIcon, SpinnerIcon } from '../icons';
 
 // ============================================================================

@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { Debate, MarketPrice } from '@debate-platform/shared';
-import { useDebateLinkPrefetch } from '../../lib/usePrefetch';
+import { useDebateLinkPrefetch } from '../../lib';
 import { InlineQuickStance } from './InlineQuickStance';
 
 interface DebateIndexRowProps {

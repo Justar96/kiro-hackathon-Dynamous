@@ -16,7 +16,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { UserAvatar } from './UserAvatar';
-import { useSignOut } from '../../lib/useSession';
+import { useSignOut } from '../../lib';
 import { useToast } from '../common/Toast';
 import { ChevronDownIcon, UserIcon, ChatIcon, SignOutIcon } from '../icons';
 

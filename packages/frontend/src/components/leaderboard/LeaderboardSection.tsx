@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { leaderboardQueryOptions, topUsersQueryOptions, type TopUser } from '../../lib/queries';
+import { leaderboardQueryOptions, topUsersQueryOptions, type TopUser } from '../../lib';
 import { TopArgumentCard, TopUserCard } from './TopCards';
 
 interface LeaderboardSectionProps {
