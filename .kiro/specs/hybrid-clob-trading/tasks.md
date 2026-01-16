@@ -72,7 +72,7 @@ This implementation plan converts the hybrid CLOB trading design into discrete c
     - Generate crossing orders and verify trade price
     - **Validates: Requirements 3.2, 3.3**
 
-- [ ] 4. Checkpoint - Core Services
+- [x] 4. Checkpoint - Core Services
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 5. Create Order Service with Validation
@@ -215,7 +215,7 @@ This implementation plan converts the hybrid CLOB trading design into discrete c
     - Fuzz test matchOrders with random order sets
     - **Validates: Requirements 5.1, 5.2, 5.3**
 
-- [ ] 12. Checkpoint - Contract Enhancements
+- [x] 12. Checkpoint - Contract Enhancements
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 13. Frontend Order Signing
@@ -273,7 +273,7 @@ This implementation plan converts the hybrid CLOB trading design into discrete c
     - Show pending deposits and claimable amounts
     - _Requirements: 1.1, 6.1, 6.3_
 
-- [ ] 16. Checkpoint - Frontend Integration
+- [x] 16. Checkpoint - Frontend Integration
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 17. Add SSE Event Types and Broadcasting
@@ -306,7 +306,7 @@ This implementation plan converts the hybrid CLOB trading design into discrete c
     - Calculate and display estimated fees before order submission
     - _Requirements: 12.3_
 
-- [-] 19. Final Integration and Wiring
+- [x] 19. Final Integration and Wiring
   - [x] 19.1 Wire all services together in backend entry point
     - Update `packages/backend/src/index.ts`
     - Initialize Ledger, Indexer, MatchingEngine, OrderService, SettlementService, RiskEngine, ReconciliationService
@@ -314,13 +314,13 @@ This implementation plan converts the hybrid CLOB trading design into discrete c
     - Configure settlement batch intervals
     - _Requirements: All_
   
-  - [-] 19.2 Add contract addresses and ABIs to shared package
+  - [x] 19.2 Add contract addresses and ABIs to shared package
     - Update `packages/shared/src/contracts/`
     - Add CTFExchange ABI and address
     - Add SettlementVault ABI and address
     - _Requirements: All frontend integration_
 
-- [ ] 20. Final Checkpoint
+- [x] 20. Final Checkpoint
   - Ensure all tests pass, ask the user if questions arise.
   - Run full integration test: deposit → order → match → settle → withdraw
 

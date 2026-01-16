@@ -13,12 +13,16 @@ export const CONTRACT_ADDRESSES = {
     marketFactory: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
     conditionalTokens: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
     orderBook: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
+    ctfExchange: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
+    settlementVault: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
     usdc: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as `0x${string}`, // Native USDC on Polygon mainnet
   },
   [POLYGON_AMOY_CHAIN_ID]: {
     marketFactory: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
     conditionalTokens: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
     orderBook: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
+    ctfExchange: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
+    settlementVault: '0x0000000000000000000000000000000000000000' as `0x${string}`, // To be deployed
     usdc: '0x0000000000000000000000000000000000000000' as `0x${string}`, // Test USDC on Amoy (to be deployed)
   },
 } as const;

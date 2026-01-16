@@ -273,3 +273,140 @@ export const erc20Abi = [
   { type: "event", name: "Approval", inputs: [{ name: "owner", type: "address", indexed: true, internalType: "address" }, { name: "spender", type: "address", indexed: true, internalType: "address" }, { name: "value", type: "uint256", indexed: false, internalType: "uint256" }], anonymous: false },
   { type: "event", name: "Transfer", inputs: [{ name: "from", type: "address", indexed: true, internalType: "address" }, { name: "to", type: "address", indexed: true, internalType: "address" }, { name: "value", type: "uint256", indexed: false, internalType: "uint256" }], anonymous: false },
 ] as const;
+
+
+// ============ CTFExchange ABI ============
+// Hybrid off-chain/on-chain exchange for Conditional Token Framework
+// Implements EIP-712 signed orders with operator-based settlement
+
+export const ctfExchangeAbi = [
+  // Constructor
+  {
+    type: "constructor",
+    inputs: [
+      { name: "collateralAddr", type: "address", internalType: "address" },
+      { name: "ctfAddr", type: "address", internalType: "address" },
+      { name: "operatorAddr", type: "address", internalType: "address" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  // Constants
+  { type: "function", name: "ORDER_TYPEHASH", inputs: [], outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }], stateMutability: "view" },
+  { type: "function", name: "PARENT_COLLECTION_ID", inputs: [], outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }], stateMutability: "view" },
+  // View Functions
+  { type: "function", name: "getOrderStatus", inputs: [{ name: "orderHash", type: "bytes32", internalType: "bytes32" }], outputs: [{ name: "", type: "tuple", internalType: "struct ICTFExchange.OrderStatus", components: [{ name: "isFilledOrCancelled", type: "bool", internalType: "bool" }, { name: "remaining", type: "uint256", internalType: "uint256" }] }], stateMutability: "view" },
+  { type: "function", name: "nonces", inputs: [{ name: "user", type: "address", internalType: "address" }], outputs: [{ name: "", type: "uint256", internalType: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "isValidNonce", inputs: [{ name: "user", type: "address", internalType: "address" }, { name: "nonce", type: "uint256", internalType: "uint256" }], outputs: [{ name: "", type: "bool", internalType: "bool" }], stateMutability: "view" },
+  { type: "function", name: "registry", inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }], outputs: [{ name: "", type: "tuple", internalType: "struct ICTFExchange.TokenInfo", components: [{ name: "complement", type: "uint256", internalType: "uint256" }, { name: "conditionId", type: "bytes32", internalType: "bytes32" }] }], stateMutability: "view" },
+  { type: "function", name: "getComplement", inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }], outputs: [{ name: "", type: "uint256", internalType: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "getConditionId", inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }], outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }], stateMutability: "view" },
+  { type: "function", name: "validateTokenId", inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "view" },
+  { type: "function", name: "validateComplement", inputs: [{ name: "token", type: "uint256", internalType: "uint256" }, { name: "complement", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "view" },
+  { type: "function", name: "getMaxFeeRate", inputs: [], outputs: [{ name: "", type: "uint256", internalType: "uint256" }], stateMutability: "pure" },
+  { type: "function", name: "getCollateral", inputs: [], outputs: [{ name: "", type: "address", internalType: "address" }], stateMutability: "view" },
+  { type: "function", name: "getCtf", inputs: [], outputs: [{ name: "", type: "address", internalType: "address" }], stateMutability: "view" },
+  { type: "function", name: "getOperator", inputs: [], outputs: [{ name: "", type: "address", internalType: "address" }], stateMutability: "view" },
+  { type: "function", name: "hashOrder", inputs: [{ name: "order", type: "tuple", internalType: "struct ICTFExchange.SignedOrder", components: [{ name: "salt", type: "uint256", internalType: "uint256" }, { name: "maker", type: "address", internalType: "address" }, { name: "signer", type: "address", internalType: "address" }, { name: "taker", type: "address", internalType: "address" }, { name: "marketId", type: "bytes32", internalType: "bytes32" }, { name: "tokenId", type: "uint256", internalType: "uint256" }, { name: "side", type: "uint8", internalType: "enum ICTFExchange.Side" }, { name: "makerAmount", type: "uint256", internalType: "uint256" }, { name: "takerAmount", type: "uint256", internalType: "uint256" }, { name: "expiration", type: "uint256", internalType: "uint256" }, { name: "nonce", type: "uint256", internalType: "uint256" }, { name: "feeRateBps", type: "uint256", internalType: "uint256" }, { name: "sigType", type: "uint8", internalType: "enum ICTFExchange.SignatureType" }, { name: "signature", type: "bytes", internalType: "bytes" }] }], outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }], stateMutability: "view" },
+  { type: "function", name: "validateOrderSignature", inputs: [{ name: "orderHash", type: "bytes32", internalType: "bytes32" }, { name: "order", type: "tuple", internalType: "struct ICTFExchange.SignedOrder", components: [{ name: "salt", type: "uint256", internalType: "uint256" }, { name: "maker", type: "address", internalType: "address" }, { name: "signer", type: "address", internalType: "address" }, { name: "taker", type: "address", internalType: "address" }, { name: "marketId", type: "bytes32", internalType: "bytes32" }, { name: "tokenId", type: "uint256", internalType: "uint256" }, { name: "side", type: "uint8", internalType: "enum ICTFExchange.Side" }, { name: "makerAmount", type: "uint256", internalType: "uint256" }, { name: "takerAmount", type: "uint256", internalType: "uint256" }, { name: "expiration", type: "uint256", internalType: "uint256" }, { name: "nonce", type: "uint256", internalType: "uint256" }, { name: "feeRateBps", type: "uint256", internalType: "uint256" }, { name: "sigType", type: "uint8", internalType: "enum ICTFExchange.SignatureType" }, { name: "signature", type: "bytes", internalType: "bytes" }] }], outputs: [], stateMutability: "view" },
+  // Operator Functions
+  { type: "function", name: "fillOrder", inputs: [{ name: "order", type: "tuple", internalType: "struct ICTFExchange.SignedOrder", components: [{ name: "salt", type: "uint256", internalType: "uint256" }, { name: "maker", type: "address", internalType: "address" }, { name: "signer", type: "address", internalType: "address" }, { name: "taker", type: "address", internalType: "address" }, { name: "marketId", type: "bytes32", internalType: "bytes32" }, { name: "tokenId", type: "uint256", internalType: "uint256" }, { name: "side", type: "uint8", internalType: "enum ICTFExchange.Side" }, { name: "makerAmount", type: "uint256", internalType: "uint256" }, { name: "takerAmount", type: "uint256", internalType: "uint256" }, { name: "expiration", type: "uint256", internalType: "uint256" }, { name: "nonce", type: "uint256", internalType: "uint256" }, { name: "feeRateBps", type: "uint256", internalType: "uint256" }, { name: "sigType", type: "uint8", internalType: "enum ICTFExchange.SignatureType" }, { name: "signature", type: "bytes", internalType: "bytes" }] }, { name: "fillAmount", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "matchOrders", inputs: [{ name: "takerOrder", type: "tuple", internalType: "struct ICTFExchange.SignedOrder", components: [{ name: "salt", type: "uint256", internalType: "uint256" }, { name: "maker", type: "address", internalType: "address" }, { name: "signer", type: "address", internalType: "address" }, { name: "taker", type: "address", internalType: "address" }, { name: "marketId", type: "bytes32", internalType: "bytes32" }, { name: "tokenId", type: "uint256", internalType: "uint256" }, { name: "side", type: "uint8", internalType: "enum ICTFExchange.Side" }, { name: "makerAmount", type: "uint256", internalType: "uint256" }, { name: "takerAmount", type: "uint256", internalType: "uint256" }, { name: "expiration", type: "uint256", internalType: "uint256" }, { name: "nonce", type: "uint256", internalType: "uint256" }, { name: "feeRateBps", type: "uint256", internalType: "uint256" }, { name: "sigType", type: "uint8", internalType: "enum ICTFExchange.SignatureType" }, { name: "signature", type: "bytes", internalType: "bytes" }] }, { name: "makerOrders", type: "tuple[]", internalType: "struct ICTFExchange.SignedOrder[]", components: [{ name: "salt", type: "uint256", internalType: "uint256" }, { name: "maker", type: "address", internalType: "address" }, { name: "signer", type: "address", internalType: "address" }, { name: "taker", type: "address", internalType: "address" }, { name: "marketId", type: "bytes32", internalType: "bytes32" }, { name: "tokenId", type: "uint256", internalType: "uint256" }, { name: "side", type: "uint8", internalType: "enum ICTFExchange.Side" }, { name: "makerAmount", type: "uint256", internalType: "uint256" }, { name: "takerAmount", type: "uint256", internalType: "uint256" }, { name: "expiration", type: "uint256", internalType: "uint256" }, { name: "nonce", type: "uint256", internalType: "uint256" }, { name: "feeRateBps", type: "uint256", internalType: "uint256" }, { name: "sigType", type: "uint8", internalType: "enum ICTFExchange.SignatureType" }, { name: "signature", type: "bytes", internalType: "bytes" }] }, { name: "takerFillAmount", type: "uint256", internalType: "uint256" }, { name: "makerFillAmounts", type: "uint256[]", internalType: "uint256[]" }], outputs: [], stateMutability: "nonpayable" },
+  // User Functions
+  { type: "function", name: "cancelOrder", inputs: [{ name: "order", type: "tuple", internalType: "struct ICTFExchange.SignedOrder", components: [{ name: "salt", type: "uint256", internalType: "uint256" }, { name: "maker", type: "address", internalType: "address" }, { name: "signer", type: "address", internalType: "address" }, { name: "taker", type: "address", internalType: "address" }, { name: "marketId", type: "bytes32", internalType: "bytes32" }, { name: "tokenId", type: "uint256", internalType: "uint256" }, { name: "side", type: "uint8", internalType: "enum ICTFExchange.Side" }, { name: "makerAmount", type: "uint256", internalType: "uint256" }, { name: "takerAmount", type: "uint256", internalType: "uint256" }, { name: "expiration", type: "uint256", internalType: "uint256" }, { name: "nonce", type: "uint256", internalType: "uint256" }, { name: "feeRateBps", type: "uint256", internalType: "uint256" }, { name: "sigType", type: "uint8", internalType: "enum ICTFExchange.SignatureType" }, { name: "signature", type: "bytes", internalType: "bytes" }] }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "cancelOrders", inputs: [{ name: "orders", type: "tuple[]", internalType: "struct ICTFExchange.SignedOrder[]", components: [{ name: "salt", type: "uint256", internalType: "uint256" }, { name: "maker", type: "address", internalType: "address" }, { name: "signer", type: "address", internalType: "address" }, { name: "taker", type: "address", internalType: "address" }, { name: "marketId", type: "bytes32", internalType: "bytes32" }, { name: "tokenId", type: "uint256", internalType: "uint256" }, { name: "side", type: "uint8", internalType: "enum ICTFExchange.Side" }, { name: "makerAmount", type: "uint256", internalType: "uint256" }, { name: "takerAmount", type: "uint256", internalType: "uint256" }, { name: "expiration", type: "uint256", internalType: "uint256" }, { name: "nonce", type: "uint256", internalType: "uint256" }, { name: "feeRateBps", type: "uint256", internalType: "uint256" }, { name: "sigType", type: "uint8", internalType: "enum ICTFExchange.SignatureType" }, { name: "signature", type: "bytes", internalType: "bytes" }] }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "incrementNonce", inputs: [], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "cancelAllOrders", inputs: [], outputs: [], stateMutability: "nonpayable" },
+  // Admin Functions
+  { type: "function", name: "registerToken", inputs: [{ name: "token", type: "uint256", internalType: "uint256" }, { name: "complement", type: "uint256", internalType: "uint256" }, { name: "conditionId", type: "bytes32", internalType: "bytes32" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "setOperator", inputs: [{ name: "newOperator", type: "address", internalType: "address" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "pause", inputs: [], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "unpause", inputs: [], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "withdrawFees", inputs: [{ name: "token", type: "address", internalType: "address" }, { name: "amount", type: "uint256", internalType: "uint256" }, { name: "to", type: "address", internalType: "address" }], outputs: [], stateMutability: "nonpayable" },
+  // Ownable
+  { type: "function", name: "owner", inputs: [], outputs: [{ name: "", type: "address", internalType: "address" }], stateMutability: "view" },
+  { type: "function", name: "renounceOwnership", inputs: [], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "transferOwnership", inputs: [{ name: "newOwner", type: "address", internalType: "address" }], outputs: [], stateMutability: "nonpayable" },
+  // ERC-1155 Receiver
+  { type: "function", name: "onERC1155Received", inputs: [{ name: "", type: "address", internalType: "address" }, { name: "", type: "address", internalType: "address" }, { name: "", type: "uint256", internalType: "uint256" }, { name: "", type: "uint256", internalType: "uint256" }, { name: "", type: "bytes", internalType: "bytes" }], outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }], stateMutability: "pure" },
+  { type: "function", name: "onERC1155BatchReceived", inputs: [{ name: "", type: "address", internalType: "address" }, { name: "", type: "address", internalType: "address" }, { name: "", type: "uint256[]", internalType: "uint256[]" }, { name: "", type: "uint256[]", internalType: "uint256[]" }, { name: "", type: "bytes", internalType: "bytes" }], outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }], stateMutability: "pure" },
+  { type: "function", name: "supportsInterface", inputs: [{ name: "interfaceId", type: "bytes4", internalType: "bytes4" }], outputs: [{ name: "", type: "bool", internalType: "bool" }], stateMutability: "pure" },
+  // Events
+  { type: "event", name: "OrderFilled", inputs: [{ name: "orderHash", type: "bytes32", indexed: true, internalType: "bytes32" }, { name: "maker", type: "address", indexed: true, internalType: "address" }, { name: "taker", type: "address", indexed: true, internalType: "address" }, { name: "makerAssetId", type: "uint256", indexed: false, internalType: "uint256" }, { name: "takerAssetId", type: "uint256", indexed: false, internalType: "uint256" }, { name: "makerAmountFilled", type: "uint256", indexed: false, internalType: "uint256" }, { name: "takerAmountFilled", type: "uint256", indexed: false, internalType: "uint256" }, { name: "fee", type: "uint256", indexed: false, internalType: "uint256" }], anonymous: false },
+  { type: "event", name: "OrdersMatched", inputs: [{ name: "takerOrderHash", type: "bytes32", indexed: true, internalType: "bytes32" }, { name: "takerMaker", type: "address", indexed: true, internalType: "address" }, { name: "makerAssetId", type: "uint256", indexed: false, internalType: "uint256" }, { name: "takerAssetId", type: "uint256", indexed: false, internalType: "uint256" }, { name: "makerAmountFilled", type: "uint256", indexed: false, internalType: "uint256" }, { name: "takerAmountFilled", type: "uint256", indexed: false, internalType: "uint256" }], anonymous: false },
+  { type: "event", name: "OrderCancelled", inputs: [{ name: "orderHash", type: "bytes32", indexed: true, internalType: "bytes32" }], anonymous: false },
+  { type: "event", name: "FeeCharged", inputs: [{ name: "receiver", type: "address", indexed: true, internalType: "address" }, { name: "tokenId", type: "uint256", indexed: false, internalType: "uint256" }, { name: "fee", type: "uint256", indexed: false, internalType: "uint256" }], anonymous: false },
+  { type: "event", name: "TokenRegistered", inputs: [{ name: "token", type: "uint256", indexed: true, internalType: "uint256" }, { name: "complement", type: "uint256", indexed: true, internalType: "uint256" }, { name: "conditionId", type: "bytes32", indexed: true, internalType: "bytes32" }], anonymous: false },
+  { type: "event", name: "FeesWithdrawn", inputs: [{ name: "token", type: "address", indexed: true, internalType: "address" }, { name: "amount", type: "uint256", indexed: false, internalType: "uint256" }, { name: "to", type: "address", indexed: true, internalType: "address" }], anonymous: false },
+  { type: "event", name: "AllOrdersCancelled", inputs: [{ name: "maker", type: "address", indexed: true, internalType: "address" }, { name: "newNonce", type: "uint256", indexed: false, internalType: "uint256" }], anonymous: false },
+  { type: "event", name: "OwnershipTransferred", inputs: [{ name: "previousOwner", type: "address", indexed: true, internalType: "address" }, { name: "newOwner", type: "address", indexed: true, internalType: "address" }], anonymous: false },
+  // Errors
+  { type: "error", name: "InvalidSignature", inputs: [] },
+  { type: "error", name: "OrderExpired", inputs: [] },
+  { type: "error", name: "OrderFilledOrCancelled", inputs: [] },
+  { type: "error", name: "InvalidNonce", inputs: [] },
+  { type: "error", name: "FeeTooHigh", inputs: [] },
+  { type: "error", name: "InvalidTokenId", inputs: [] },
+  { type: "error", name: "InvalidComplement", inputs: [] },
+  { type: "error", name: "NotOperator", inputs: [] },
+  { type: "error", name: "NotOwner", inputs: [] },
+  { type: "error", name: "NotTaker", inputs: [] },
+  { type: "error", name: "NotCrossing", inputs: [] },
+  { type: "error", name: "MismatchedTokenIds", inputs: [] },
+  { type: "error", name: "MakingGtRemaining", inputs: [] },
+  { type: "error", name: "TooLittleTokensReceived", inputs: [] },
+  { type: "error", name: "Paused", inputs: [] },
+  { type: "error", name: "OwnableInvalidOwner", inputs: [{ name: "owner", type: "address", internalType: "address" }] },
+  { type: "error", name: "OwnableUnauthorizedAccount", inputs: [{ name: "account", type: "address", internalType: "address" }] },
+] as const;
+
+
+// ============ SettlementVault ABI ============
+// Merkle-based batch settlement vault for gas-efficient withdrawals
+
+export const settlementVaultAbi = [
+  // Constructor
+  {
+    type: "constructor",
+    inputs: [
+      { name: "collateral_", type: "address", internalType: "address" },
+      { name: "operator_", type: "address", internalType: "address" },
+    ],
+    stateMutability: "nonpayable",
+  },
+  // View Functions
+  { type: "function", name: "collateral", inputs: [], outputs: [{ name: "", type: "address", internalType: "contract IERC20" }], stateMutability: "view" },
+  { type: "function", name: "operator", inputs: [], outputs: [{ name: "", type: "address", internalType: "address" }], stateMutability: "view" },
+  { type: "function", name: "currentEpoch", inputs: [], outputs: [{ name: "", type: "uint256", internalType: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "deposits", inputs: [{ name: "user", type: "address", internalType: "address" }], outputs: [{ name: "", type: "uint256", internalType: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "getEpoch", inputs: [{ name: "epochId", type: "uint256", internalType: "uint256" }], outputs: [{ name: "", type: "tuple", internalType: "struct ISettlementVault.Epoch", components: [{ name: "merkleRoot", type: "bytes32", internalType: "bytes32" }, { name: "timestamp", type: "uint256", internalType: "uint256" }, { name: "totalAmount", type: "uint256", internalType: "uint256" }] }], stateMutability: "view" },
+  { type: "function", name: "hasClaimed", inputs: [{ name: "user", type: "address", internalType: "address" }, { name: "epochId", type: "uint256", internalType: "uint256" }], outputs: [{ name: "", type: "bool", internalType: "bool" }], stateMutability: "view" },
+  // Legacy getters
+  { type: "function", name: "epochs", inputs: [{ name: "epochId", type: "uint256", internalType: "uint256" }], outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }, { name: "", type: "uint256", internalType: "uint256" }, { name: "", type: "uint256", internalType: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "claimed", inputs: [{ name: "user", type: "address", internalType: "address" }, { name: "epochId", type: "uint256", internalType: "uint256" }], outputs: [{ name: "", type: "bool", internalType: "bool" }], stateMutability: "view" },
+  // User Functions
+  { type: "function", name: "deposit", inputs: [{ name: "amount", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "claim", inputs: [{ name: "epochId", type: "uint256", internalType: "uint256" }, { name: "amount", type: "uint256", internalType: "uint256" }, { name: "proof", type: "bytes32[]", internalType: "bytes32[]" }], outputs: [], stateMutability: "nonpayable" },
+  // Operator Functions
+  { type: "function", name: "commitEpoch", inputs: [{ name: "merkleRoot", type: "bytes32", internalType: "bytes32" }, { name: "totalAmount", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "deductDeposit", inputs: [{ name: "user", type: "address", internalType: "address" }, { name: "amount", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "creditDeposit", inputs: [{ name: "user", type: "address", internalType: "address" }, { name: "amount", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  // Admin Functions
+  { type: "function", name: "setOperator", inputs: [{ name: "operator_", type: "address", internalType: "address" }], outputs: [], stateMutability: "nonpayable" },
+  // Ownable
+  { type: "function", name: "owner", inputs: [], outputs: [{ name: "", type: "address", internalType: "address" }], stateMutability: "view" },
+  { type: "function", name: "renounceOwnership", inputs: [], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "transferOwnership", inputs: [{ name: "newOwner", type: "address", internalType: "address" }], outputs: [], stateMutability: "nonpayable" },
+  // Events
+  { type: "event", name: "Deposit", inputs: [{ name: "user", type: "address", indexed: true, internalType: "address" }, { name: "amount", type: "uint256", indexed: false, internalType: "uint256" }], anonymous: false },
+  { type: "event", name: "EpochCommitted", inputs: [{ name: "epochId", type: "uint256", indexed: true, internalType: "uint256" }, { name: "merkleRoot", type: "bytes32", indexed: false, internalType: "bytes32" }, { name: "totalAmount", type: "uint256", indexed: false, internalType: "uint256" }], anonymous: false },
+  { type: "event", name: "Claimed", inputs: [{ name: "user", type: "address", indexed: true, internalType: "address" }, { name: "epochId", type: "uint256", indexed: true, internalType: "uint256" }, { name: "amount", type: "uint256", indexed: false, internalType: "uint256" }], anonymous: false },
+  { type: "event", name: "OwnershipTransferred", inputs: [{ name: "previousOwner", type: "address", indexed: true, internalType: "address" }, { name: "newOwner", type: "address", indexed: true, internalType: "address" }], anonymous: false },
+  // Errors
+  { type: "error", name: "NotOperator", inputs: [] },
+  { type: "error", name: "AlreadyClaimed", inputs: [] },
+  { type: "error", name: "InvalidProof", inputs: [] },
+  { type: "error", name: "ZeroAmount", inputs: [] },
+  { type: "error", name: "InsufficientDeposit", inputs: [] },
+  { type: "error", name: "OwnableInvalidOwner", inputs: [{ name: "owner", type: "address", internalType: "address" }] },
+  { type: "error", name: "OwnableUnauthorizedAccount", inputs: [{ name: "account", type: "address", internalType: "address" }] },
+] as const;

@@ -241,3 +241,211 @@ export const formatUsdc = (units: bigint): string => {
     maximumFractionDigits: 2,
   }).format(amount);
 };
+
+
+// ============================================
+// CTFExchange Types
+// ============================================
+
+// Signature type enum (matches ICTFExchange.SignatureType in Solidity)
+export enum SignatureType {
+  EOA = 0,            // Standard ECDSA signature
+  POLY_PROXY = 1,     // Polymarket proxy wallet
+  POLY_GNOSIS_SAFE = 2, // Gnosis Safe multisig
+}
+
+// Match type enum (matches ICTFExchange.MatchType in Solidity)
+export enum MatchType {
+  COMPLEMENTARY = 0,  // BUY vs SELL - standard swap
+  MINT = 1,           // BUY vs BUY - mint new tokens
+  MERGE = 2,          // SELL vs SELL - merge tokens
+}
+
+/**
+ * EIP-712 signed order structure (matches ICTFExchange.SignedOrder)
+ */
+export interface CTFSignedOrder {
+  salt: bigint;           // Unique entropy for order
+  maker: Address;         // Address providing funds
+  signer: Address;        // Address that signed (can differ for AA wallets)
+  taker: Address;         // Specific taker or 0x0 for public
+  marketId: Bytes32;      // Market identifier
+  tokenId: bigint;        // CTF ERC-1155 token ID
+  side: OrderSide;        // BUY or SELL
+  makerAmount: bigint;    // Amount maker is offering
+  takerAmount: bigint;    // Amount maker wants in return
+  expiration: bigint;     // Order expiry timestamp
+  nonce: bigint;          // Replay protection
+  feeRateBps: bigint;     // Fee rate in basis points
+  sigType: SignatureType; // Signature type
+  signature: `0x${string}`; // The signature
+}
+
+/**
+ * Order status tracking (matches ICTFExchange.OrderStatus)
+ */
+export interface CTFOrderStatus {
+  isFilledOrCancelled: boolean;
+  remaining: bigint;
+}
+
+/**
+ * Token registry entry (matches ICTFExchange.TokenInfo)
+ */
+export interface CTFTokenInfo {
+  complement: bigint;     // Complement token ID (YES <-> NO)
+  conditionId: Bytes32;   // CTF condition ID
+}
+
+// ============================================
+// SettlementVault Types
+// ============================================
+
+/**
+ * Settlement epoch data (matches ISettlementVault.Epoch)
+ */
+export interface SettlementEpoch {
+  merkleRoot: Bytes32;
+  timestamp: bigint;
+  totalAmount: bigint;
+}
+
+/**
+ * Withdrawal proof for claiming from an epoch
+ */
+export interface WithdrawalProof {
+  epochId: number;
+  amount: bigint;
+  proof: Bytes32[];
+}
+
+/**
+ * Deposit status for tracking pending deposits
+ */
+export interface DepositStatus {
+  txHash: `0x${string}`;
+  user: Address;
+  amount: bigint;
+  blockNumber: number;
+  confirmations: number;
+  indexed: boolean;
+}
+
+// ============================================
+// EIP-712 Domain and Types
+// ============================================
+
+/**
+ * EIP-712 domain for CTFExchange
+ */
+export interface CTFExchangeDomain {
+  name: 'CTFExchange';
+  version: '1';
+  chainId: number;
+  verifyingContract: Address;
+}
+
+/**
+ * EIP-712 order type definition
+ */
+export const CTF_ORDER_TYPES = {
+  Order: [
+    { name: 'salt', type: 'uint256' },
+    { name: 'maker', type: 'address' },
+    { name: 'signer', type: 'address' },
+    { name: 'taker', type: 'address' },
+    { name: 'marketId', type: 'bytes32' },
+    { name: 'tokenId', type: 'uint256' },
+    { name: 'side', type: 'uint8' },
+    { name: 'makerAmount', type: 'uint256' },
+    { name: 'takerAmount', type: 'uint256' },
+    { name: 'expiration', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'feeRateBps', type: 'uint256' },
+    { name: 'sigType', type: 'uint8' },
+  ],
+} as const;
+
+// ============================================
+// Trading Event Types
+// ============================================
+
+/**
+ * Order added event data
+ */
+export interface OrderAddedEvent {
+  orderId: string;
+  maker: Address;
+  marketId: Bytes32;
+  tokenId: bigint;
+  side: OrderSide;
+  price: bigint;
+  quantity: bigint;
+  timestamp: number;
+}
+
+/**
+ * Order removed event data
+ */
+export interface OrderRemovedEvent {
+  orderId: string;
+  marketId: Bytes32;
+  tokenId: bigint;
+}
+
+/**
+ * Order updated event data
+ */
+export interface OrderUpdatedEvent {
+  orderId: string;
+  marketId: Bytes32;
+  tokenId: bigint;
+  filled: bigint;
+  remaining: bigint;
+}
+
+/**
+ * Trade event data
+ */
+export interface TradeEvent {
+  id: string;
+  maker: Address;
+  taker: Address;
+  marketId: Bytes32;
+  tokenId: bigint;
+  amount: bigint;
+  price: bigint;
+  matchType: MatchType;
+  timestamp: number;
+}
+
+/**
+ * Price update event data
+ */
+export interface PriceUpdateEvent {
+  marketId: Bytes32;
+  tokenId: bigint;
+  lastPrice: bigint;
+  bestBid: bigint | null;
+  bestAsk: bigint | null;
+}
+
+/**
+ * Balance update event data
+ */
+export interface BalanceUpdateEvent {
+  user: Address;
+  tokenId: bigint;
+  available: bigint;
+  locked: bigint;
+}
+
+/**
+ * Epoch committed event data
+ */
+export interface EpochCommittedEvent {
+  epochId: number;
+  merkleRoot: Bytes32;
+  totalAmount: bigint;
+  timestamp: number;
+}
