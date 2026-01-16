@@ -4,10 +4,10 @@
  * Hook for order management including submission, cancellation, and status tracking.
  * Integrates with the OrderSigner for EIP-712 signing and the backend API.
  *
- * Requirements: 2.1, 2.2, 7.1
+ * Requirements: 2.1, 2.2, 3.1, 3.6, 7.1
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useAccount, useSignTypedData, useChainId } from 'wagmi';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { type Address, type Hex } from 'viem';
@@ -124,6 +124,15 @@ const USDC_DECIMALS = 6;
 const TOKEN_DECIMALS = 18;
 const BPS_DIVISOR = 10000n;
 
+/** Maximum retry attempts for transient failures */
+const MAX_RETRY_ATTEMPTS = 3;
+
+/** Base delay for exponential backoff (ms) */
+const RETRY_BASE_DELAY = 1000;
+
+/** Jitter factor for retry delays (0-1) */
+const RETRY_JITTER = 0.2;
+
 // ============================================
 // Helper Functions
 // ============================================
@@ -170,6 +179,73 @@ function getExchangeAddress(): Address {
   return '0x0000000000000000000000000000000000000000' as Address;
 }
 
+/**
+ * Calculate delay for retry with exponential backoff and jitter
+ */
+function calculateRetryDelay(attempt: number): number {
+  const exponentialDelay = RETRY_BASE_DELAY * Math.pow(2, attempt);
+  const jitter = exponentialDelay * RETRY_JITTER * (Math.random() * 2 - 1);
+  return Math.min(exponentialDelay + jitter, 30000); // Cap at 30 seconds
+}
+
+/**
+ * Check if an error is retryable (transient failure)
+ */
+function isRetryableError(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    return error.isRetryable;
+  }
+  // Network errors are retryable
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('network') ||
+      message.includes('timeout') ||
+      message.includes('fetch') ||
+      message.includes('connection')
+    );
+  }
+  return false;
+}
+
+/**
+ * Execute a function with retry logic for transient failures
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number = MAX_RETRY_ATTEMPTS,
+  onRetry?: (attempt: number, error: Error) => void
+): Promise<T> {
+  let lastError: Error | undefined;
+  
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Don't retry non-retryable errors
+      if (!isRetryableError(error)) {
+        throw error;
+      }
+      
+      // Don't retry on last attempt
+      if (attempt === maxAttempts - 1) {
+        throw error;
+      }
+      
+      // Notify about retry
+      onRetry?.(attempt + 1, lastError);
+      
+      // Wait before retrying
+      const delay = calculateRetryDelay(attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  
+  throw lastError || new Error('Retry failed');
+}
+
 // ============================================
 // Hook Implementation
 // ============================================
@@ -189,6 +265,9 @@ export function useOrders(marketId?: Hex): UseOrdersReturn {
   // Local state for errors
   const [submitError, setSubmitError] = useState<Error | null>(null);
   const [cancelError, setCancelError] = useState<Error | null>(null);
+  
+  // Track retry attempts for logging
+  const retryCountRef = useRef(0);
 
   // Create order signer
   const orderSigner = useMemo(() => {
@@ -196,7 +275,7 @@ export function useOrders(marketId?: Hex): UseOrdersReturn {
     return new OrderSigner(effectiveChainId, getExchangeAddress());
   }, [chainId]);
 
-  // Query for user's orders
+  // Query for user's orders with retry logic
   const {
     data: ordersData,
     isLoading,
@@ -207,26 +286,48 @@ export function useOrders(marketId?: Hex): UseOrdersReturn {
     queryKey: queryKeys.trading.userOrders(address),
     queryFn: async () => {
       if (!address) return { orders: [] };
-      const response = await fetchApi<UserOrdersResponse>(`/api/orders/user/${address}`);
-      return response;
+      return withRetry(
+        () => fetchApi<UserOrdersResponse>(`/api/orders/user/${address}`),
+        MAX_RETRY_ATTEMPTS,
+        (attempt) => {
+          console.warn(`[useOrders] Retrying orders fetch, attempt ${attempt}`);
+        }
+      );
     },
     enabled: !!address && isConnected,
     staleTime: 10_000, // 10 seconds
+    retry: (failureCount, error) => {
+      // Let TanStack Query handle retries for retryable errors
+      if (isRetryableError(error)) {
+        return failureCount < MAX_RETRY_ATTEMPTS;
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => calculateRetryDelay(attemptIndex),
   });
 
-  // Query for user's nonce
+  // Query for user's nonce with retry logic
   const { data: balancesData } = useQuery({
     queryKey: queryKeys.trading.balances(address),
     queryFn: async () => {
       if (!address) return null;
-      const response = await fetchApi<BalancesResponse>(`/api/balances/${address}`);
-      return response;
+      return withRetry(
+        () => fetchApi<BalancesResponse>(`/api/balances/${address}`),
+        MAX_RETRY_ATTEMPTS
+      );
     },
     enabled: !!address && isConnected,
     staleTime: 5_000, // 5 seconds
+    retry: (failureCount, error) => {
+      if (isRetryableError(error)) {
+        return failureCount < MAX_RETRY_ATTEMPTS;
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => calculateRetryDelay(attemptIndex),
   });
 
-  // Submit order mutation
+  // Submit order mutation with retry logic for transient failures
   const submitMutation = useMutation({
     mutationFn: async (params: SubmitOrderParams): Promise<OrderResult> => {
       if (!address) {
@@ -265,7 +366,7 @@ export function useOrders(marketId?: Hex): UseOrdersReturn {
       // Get sign typed data params
       const signParams = orderSigner.getSignTypedDataParams(unsignedOrder);
 
-      // Sign the order using wagmi
+      // Sign the order using wagmi (not retryable - user interaction)
       const signature = await signTypedDataAsync({
         domain: signParams.domain,
         types: signParams.types,
@@ -276,40 +377,60 @@ export function useOrders(marketId?: Hex): UseOrdersReturn {
       // Create signed order
       const signedOrder = orderSigner.attachSignature(unsignedOrder, signature);
 
-      // Serialize and submit to API
+      // Serialize and submit to API with retry logic
       const serialized = serializeOrder(signedOrder);
-      const result = await mutateApi<OrderResult>(
-        '/api/orders',
-        'POST',
-        serialized
+      
+      return withRetry(
+        () => mutateApi<OrderResult>('/api/orders', 'POST', serialized),
+        MAX_RETRY_ATTEMPTS,
+        (attempt, error) => {
+          console.warn(`[useOrders] Retrying order submission, attempt ${attempt}:`, error.message);
+          retryCountRef.current = attempt;
+        }
       );
-
-      return result;
     },
     onSuccess: () => {
       setSubmitError(null);
+      retryCountRef.current = 0;
       // Invalidate orders and balances queries
       queryClient.invalidateQueries({ queryKey: queryKeys.trading.userOrders(address) });
       queryClient.invalidateQueries({ queryKey: queryKeys.trading.balances(address) });
     },
     onError: (error: Error) => {
       setSubmitError(error);
+      retryCountRef.current = 0;
+      
+      // Log detailed error for debugging
+      if (error instanceof ApiError) {
+        console.error('[useOrders] Order submission failed:', {
+          code: error.code,
+          status: error.status,
+          message: error.message,
+          details: error.details,
+        });
+      }
     },
   });
 
-  // Cancel order mutation
+  // Cancel order mutation with retry logic
   const cancelMutation = useMutation({
     mutationFn: async (orderId: string): Promise<boolean> => {
       if (!address) {
         throw new ApiError('Wallet not connected', 'UNAUTHORIZED', 401);
       }
 
-      await mutateApi<{ success: boolean }>(
-        `/api/orders/${orderId}`,
-        'DELETE',
-        undefined,
-        undefined,
-        { signal: undefined }
+      await withRetry(
+        () => mutateApi<{ success: boolean }>(
+          `/api/orders/${orderId}`,
+          'DELETE',
+          undefined,
+          undefined,
+          { signal: undefined }
+        ),
+        MAX_RETRY_ATTEMPTS,
+        (attempt, error) => {
+          console.warn(`[useOrders] Retrying order cancellation, attempt ${attempt}:`, error.message);
+        }
       );
 
       return true;
@@ -322,6 +443,15 @@ export function useOrders(marketId?: Hex): UseOrdersReturn {
     },
     onError: (error: Error) => {
       setCancelError(error);
+      
+      // Log detailed error for debugging
+      if (error instanceof ApiError) {
+        console.error('[useOrders] Order cancellation failed:', {
+          code: error.code,
+          status: error.status,
+          message: error.message,
+        });
+      }
     },
   });
 
@@ -340,35 +470,47 @@ export function useOrders(marketId?: Hex): UseOrdersReturn {
     [submitMutation]
   );
 
-  // Wrapped cancel function with header
+  // Wrapped cancel function with header and retry logic
   const cancelOrder = useCallback(
     async (orderId: string): Promise<boolean> => {
       if (!address) {
         throw new ApiError('Wallet not connected', 'UNAUTHORIZED', 401);
       }
 
-      // Need to pass maker address in header
-      const response = await fetch(`/api/orders/${orderId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-Maker-Address': address,
-        },
-      });
+      const performCancel = async (): Promise<boolean> => {
+        const response = await fetch(`/api/orders/${orderId}`, {
+          method: 'DELETE',
+          headers: {
+            'X-Maker-Address': address,
+          },
+        });
 
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({}));
-        throw new ApiError(
-          errorBody.error || 'Failed to cancel order',
-          'UNKNOWN',
-          response.status
-        );
-      }
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          const error = new ApiError(
+            errorBody.error || 'Failed to cancel order',
+            response.status >= 500 ? 'SERVER_ERROR' : 'UNKNOWN',
+            response.status
+          );
+          throw error;
+        }
+
+        return true;
+      };
+
+      const result = await withRetry(
+        performCancel,
+        MAX_RETRY_ATTEMPTS,
+        (attempt, error) => {
+          console.warn(`[useOrders] Retrying order cancellation via fetch, attempt ${attempt}:`, error.message);
+        }
+      );
 
       // Invalidate queries on success
       queryClient.invalidateQueries({ queryKey: queryKeys.trading.userOrders(address) });
       queryClient.invalidateQueries({ queryKey: queryKeys.trading.balances(address) });
 
-      return true;
+      return result;
     },
     [address, queryClient]
   );

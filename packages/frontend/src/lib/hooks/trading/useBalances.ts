@@ -4,14 +4,14 @@
  * Hook for balance management including fetching, deposits, and withdrawals.
  * Integrates with the backend API and SettlementVault contract.
  *
- * Requirements: 1.1, 6.1, 6.2, 6.3
+ * Requirements: 1.1, 3.3, 3.4, 3.5, 6.1, 6.2, 6.3
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type Address, type Hex, erc20Abi } from 'viem';
-import { fetchApi, queryKeys } from '../../api';
+import { fetchApi, ApiError, queryKeys } from '../../api';
 
 // ============================================
 // Types
@@ -110,21 +110,31 @@ export interface UseBalancesReturn {
   withdrawError: Error | null;
   /** Refetch balances */
   refetch: () => void;
+  /** On-chain USDC balance */
+  onChainUsdcBalance: bigint | undefined;
+  /** On-chain vault deposit balance */
+  onChainVaultBalance: bigint | undefined;
+  /** Whether configuration is valid for blockchain operations */
+  isConfigured: boolean;
+  /** Missing configuration items */
+  missingConfig: string[];
 }
 
 // ============================================
 // Constants
 // ============================================
 
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as Address;
+
 /**
  * Get vault address from environment
  */
 function getVaultAddress(): Address {
   const envAddress = import.meta.env.VITE_VAULT_ADDRESS;
-  if (envAddress && envAddress !== '0x0000000000000000000000000000000000000000') {
+  if (envAddress && envAddress !== ZERO_ADDRESS) {
     return envAddress as Address;
   }
-  return '0x0000000000000000000000000000000000000000' as Address;
+  return ZERO_ADDRESS;
 }
 
 /**
@@ -132,11 +142,18 @@ function getVaultAddress(): Address {
  */
 function getUsdcAddress(): Address {
   const envAddress = import.meta.env.VITE_USDC_ADDRESS;
-  if (envAddress && envAddress !== '0x0000000000000000000000000000000000000000') {
+  if (envAddress && envAddress !== ZERO_ADDRESS) {
     return envAddress as Address;
   }
   // Default to Polygon mainnet USDC
   return '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359' as Address;
+}
+
+/**
+ * Check if an address is configured (not zero address)
+ */
+function isAddressConfigured(address: Address): boolean {
+  return address !== ZERO_ADDRESS;
 }
 
 // ============================================
@@ -192,6 +209,18 @@ export function useBalances(): UseBalancesReturn {
   const vaultAddress = getVaultAddress();
   const usdcAddress = getUsdcAddress();
 
+  // Check configuration
+  const isVaultConfigured = isAddressConfigured(vaultAddress);
+  const isUsdcConfigured = isAddressConfigured(usdcAddress);
+  const isConfigured = isVaultConfigured && isUsdcConfigured;
+  
+  const missingConfig = useMemo(() => {
+    const missing: string[] = [];
+    if (!isVaultConfigured) missing.push('settlementVault');
+    if (!isUsdcConfigured) missing.push('usdc');
+    return missing;
+  }, [isVaultConfigured, isUsdcConfigured]);
+
   // Contract write hooks
   const { writeContractAsync: writeApprove, isPending: isApproving } = useWriteContract();
   const { writeContractAsync: writeDeposit, isPending: isDepositPending, data: depositTxHash } = useWriteContract();
@@ -205,7 +234,31 @@ export function useBalances(): UseBalancesReturn {
     hash: claimTxHash,
   });
 
-  // Query for user's balances
+  // Read on-chain USDC balance
+  const { data: onChainUsdcBalance } = useReadContract({
+    address: usdcAddress,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && isConnected && isUsdcConfigured,
+      staleTime: 10_000,
+    },
+  });
+
+  // Read on-chain vault deposit balance
+  const { data: onChainVaultBalance } = useReadContract({
+    address: vaultAddress,
+    abi: settlementVaultAbi,
+    functionName: 'deposits',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && isConnected && isVaultConfigured,
+      staleTime: 10_000,
+    },
+  });
+
+  // Query for user's balances from backend
   const {
     data: balancesData,
     isLoading: isBalancesLoading,
@@ -216,11 +269,18 @@ export function useBalances(): UseBalancesReturn {
     queryKey: queryKeys.trading.balances(address),
     queryFn: async () => {
       if (!address) return null;
-      const response = await fetchApi<BalancesResponse>(`/api/balances/${address}`);
-      return response;
+      try {
+        const response = await fetchApi<BalancesResponse>(`/api/balances/${address}`);
+        return response;
+      } catch (err) {
+        // Log error but don't throw - backend may not be available
+        console.warn('[useBalances] Failed to fetch balances from backend:', err);
+        throw err;
+      }
     },
     enabled: !!address && isConnected,
     staleTime: 5_000, // 5 seconds
+    retry: 2,
   });
 
   // Query for pending deposits
@@ -235,13 +295,15 @@ export function useBalances(): UseBalancesReturn {
       try {
         const response = await fetchApi<DepositsResponse>(`/api/deposits/${address}`);
         return response;
-      } catch {
-        // Indexer may not be configured
+      } catch (err) {
+        // Indexer may not be configured - this is not a critical error
+        console.debug('[useBalances] Deposits endpoint not available:', err);
         return null;
       }
     },
     enabled: !!address && isConnected,
     staleTime: 10_000, // 10 seconds
+    retry: false, // Don't retry - endpoint may not exist
   });
 
   // Query for withdrawal proofs
@@ -256,13 +318,15 @@ export function useBalances(): UseBalancesReturn {
       try {
         const response = await fetchApi<WithdrawalsResponse>(`/api/withdrawals/${address}`);
         return response;
-      } catch {
-        // Settlement service may not be configured
+      } catch (err) {
+        // Settlement service may not be configured - this is not a critical error
+        console.debug('[useBalances] Withdrawals endpoint not available:', err);
         return null;
       }
     },
     enabled: !!address && isConnected,
     staleTime: 30_000, // 30 seconds
+    retry: false, // Don't retry - endpoint may not exist
   });
 
   // Parse balances into Map
@@ -296,17 +360,32 @@ export function useBalances(): UseBalancesReturn {
     return withdrawalsData?.proofs || [];
   }, [withdrawalsData?.proofs]);
 
-  // Deposit function
+  // Deposit function - calls SettlementVault.deposit
   const deposit = useCallback(
     async (amount: bigint): Promise<Hex> => {
       if (!address) {
-        throw new Error('Wallet not connected');
+        throw new ApiError('Wallet not connected', 'UNAUTHORIZED', 401);
+      }
+
+      if (!isConfigured) {
+        throw new ApiError(
+          `Contract addresses not configured: ${missingConfig.join(', ')}`,
+          'VALIDATION_ERROR',
+          400
+        );
       }
 
       setDepositError(null);
 
       try {
+        console.log('[useBalances] Starting deposit flow:', {
+          amount: amount.toString(),
+          vaultAddress,
+          usdcAddress,
+        });
+
         // First, approve USDC spending
+        console.log('[useBalances] Approving USDC...');
         await writeApprove({
           address: usdcAddress,
           abi: erc20Abi,
@@ -315,12 +394,15 @@ export function useBalances(): UseBalancesReturn {
         });
 
         // Then deposit to vault
+        console.log('[useBalances] Depositing to vault...');
         const txHash = await writeDeposit({
           address: vaultAddress,
           abi: settlementVaultAbi,
           functionName: 'deposit',
           args: [amount],
         });
+
+        console.log('[useBalances] Deposit transaction submitted:', txHash);
 
         // Invalidate queries after deposit
         queryClient.invalidateQueries({ queryKey: queryKeys.trading.balances(address) });
@@ -329,29 +411,72 @@ export function useBalances(): UseBalancesReturn {
         return txHash;
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Deposit failed');
+        console.error('[useBalances] Deposit failed:', error);
         setDepositError(error);
         throw error;
       }
     },
-    [address, usdcAddress, vaultAddress, writeApprove, writeDeposit, queryClient]
+    [address, isConfigured, missingConfig, usdcAddress, vaultAddress, writeApprove, writeDeposit, queryClient]
   );
 
-  // Withdraw function
+  // Withdraw function - fetches proof and calls SettlementVault.claim
   const withdraw = useCallback(
     async (epochId: number): Promise<Hex> => {
       if (!address) {
-        throw new Error('Wallet not connected');
+        throw new ApiError('Wallet not connected', 'UNAUTHORIZED', 401);
+      }
+
+      if (!isVaultConfigured) {
+        throw new ApiError(
+          'Settlement vault address not configured',
+          'VALIDATION_ERROR',
+          400
+        );
       }
 
       setWithdrawError(null);
 
-      // Find the proof for this epoch
-      const proof = withdrawalProofs.find((p) => p.epochId === epochId);
+      // Find the proof for this epoch from cached data
+      let proof = withdrawalProofs.find((p) => p.epochId === epochId);
+      
+      // If not in cache, fetch from API
       if (!proof) {
-        throw new Error(`No withdrawal proof found for epoch ${epochId}`);
+        console.log('[useBalances] Fetching withdrawal proof from API...');
+        try {
+          const response = await fetchApi<{ proof: WithdrawalProof }>(
+            `/api/settlement/proof/${epochId}/${address}`
+          );
+          proof = response.proof;
+        } catch (err) {
+          const error = err instanceof ApiError 
+            ? err 
+            : new ApiError(
+                `Failed to fetch withdrawal proof for epoch ${epochId}`,
+                'NOT_FOUND',
+                404
+              );
+          setWithdrawError(error);
+          throw error;
+        }
+      }
+
+      if (!proof) {
+        const error = new ApiError(
+          `No withdrawal proof found for epoch ${epochId}`,
+          'NOT_FOUND',
+          404
+        );
+        setWithdrawError(error);
+        throw error;
       }
 
       try {
+        console.log('[useBalances] Claiming withdrawal:', {
+          epochId,
+          amount: proof.amount,
+          proofLength: proof.proof.length,
+        });
+
         const txHash = await writeClaim({
           address: vaultAddress,
           abi: settlementVaultAbi,
@@ -363,6 +488,8 @@ export function useBalances(): UseBalancesReturn {
           ],
         });
 
+        console.log('[useBalances] Claim transaction submitted:', txHash);
+
         // Invalidate queries after withdrawal
         queryClient.invalidateQueries({ queryKey: queryKeys.trading.balances(address) });
         queryClient.invalidateQueries({ queryKey: queryKeys.trading.withdrawals(address) });
@@ -370,11 +497,12 @@ export function useBalances(): UseBalancesReturn {
         return txHash;
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Withdrawal failed');
+        console.error('[useBalances] Withdrawal failed:', error);
         setWithdrawError(error);
         throw error;
       }
     },
-    [address, vaultAddress, withdrawalProofs, writeClaim, queryClient]
+    [address, isVaultConfigured, vaultAddress, withdrawalProofs, writeClaim, queryClient]
   );
 
   // Refetch all data
@@ -406,6 +534,10 @@ export function useBalances(): UseBalancesReturn {
       depositError,
       withdrawError,
       refetch,
+      onChainUsdcBalance: onChainUsdcBalance as bigint | undefined,
+      onChainVaultBalance: onChainVaultBalance as bigint | undefined,
+      isConfigured,
+      missingConfig,
     }),
     [
       balances,
@@ -423,6 +555,10 @@ export function useBalances(): UseBalancesReturn {
       depositError,
       withdrawError,
       refetch,
+      onChainUsdcBalance,
+      onChainVaultBalance,
+      isConfigured,
+      missingConfig,
     ]
   );
 }

@@ -21,18 +21,96 @@ const app = new Hono();
 
 // ============ Configuration ============
 
-// Chain configuration
-const CHAIN_ID = parseInt(process.env.CHAIN_ID || "137"); // Polygon mainnet by default
+/**
+ * Load and validate backend configuration
+ * Requirements: 1.2, 4.1
+ */
+function loadBackendConfig() {
+  // Chain configuration
+  const chainId = parseInt(process.env.CHAIN_ID || "137"); // Polygon mainnet by default
 
-// Settlement batch interval (default: 60 seconds)
-const SETTLEMENT_BATCH_INTERVAL_MS = parseInt(process.env.SETTLEMENT_BATCH_INTERVAL_MS || "60000");
+  // Settlement batch interval (default: 60 seconds)
+  const settlementBatchIntervalMs = parseInt(process.env.SETTLEMENT_BATCH_INTERVAL_MS || "60000");
 
-// Reconciliation interval (default: 5 minutes)
-const RECONCILIATION_INTERVAL_MS = parseInt(process.env.RECONCILIATION_INTERVAL_MS || "300000");
+  // Reconciliation interval (default: 5 minutes)
+  const reconciliationIntervalMs = parseInt(process.env.RECONCILIATION_INTERVAL_MS || "300000");
 
-// Contract addresses
-const EXCHANGE_ADDRESS = process.env.EXCHANGE_ADDRESS || "0x0000000000000000000000000000000000000000";
-const VAULT_ADDRESS = process.env.VAULT_ADDRESS || "0x0000000000000000000000000000000000000000";
+  // Contract addresses
+  const exchangeAddress = process.env.EXCHANGE_ADDRESS || "0x0000000000000000000000000000000000000000";
+  const vaultAddress = process.env.VAULT_ADDRESS || "0x0000000000000000000000000000000000000000";
+  const usdcAddress = process.env.USDC_ADDRESS || "0x0000000000000000000000000000000000000000";
+  const ctfAddress = process.env.CTF_ADDRESS || "0x0000000000000000000000000000000000000000";
+
+  // RPC and operator configuration
+  const rpcUrl = process.env.RPC_URL;
+  const operatorPrivateKey = process.env.OPERATOR_PRIVATE_KEY;
+
+  // Validate configuration
+  const isZeroAddress = (addr: string) => addr === "0x0000000000000000000000000000000000000000";
+  
+  const missingAddresses: string[] = [];
+  if (isZeroAddress(exchangeAddress)) missingAddresses.push("EXCHANGE_ADDRESS");
+  if (isZeroAddress(vaultAddress)) missingAddresses.push("VAULT_ADDRESS");
+  if (isZeroAddress(usdcAddress)) missingAddresses.push("USDC_ADDRESS");
+  if (isZeroAddress(ctfAddress)) missingAddresses.push("CTF_ADDRESS");
+
+  const blockchainEnabled = !!(rpcUrl && !isZeroAddress(exchangeAddress) && !isZeroAddress(vaultAddress));
+  const settlementEnabled = !!(rpcUrl && operatorPrivateKey && !isZeroAddress(exchangeAddress) && !isZeroAddress(vaultAddress));
+
+  return {
+    chainId,
+    settlementBatchIntervalMs,
+    reconciliationIntervalMs,
+    exchangeAddress,
+    vaultAddress,
+    usdcAddress,
+    ctfAddress,
+    rpcUrl,
+    operatorPrivateKey,
+    missingAddresses,
+    blockchainEnabled,
+    settlementEnabled,
+  };
+}
+
+const config = loadBackendConfig();
+
+// Log configuration status
+console.log("[CONFIG] Backend configuration loaded:");
+console.log(`[CONFIG]   Chain ID: ${config.chainId}`);
+console.log(`[CONFIG]   Exchange Address: ${config.exchangeAddress}`);
+console.log(`[CONFIG]   Vault Address: ${config.vaultAddress}`);
+console.log(`[CONFIG]   RPC URL: ${config.rpcUrl ? "configured" : "NOT CONFIGURED"}`);
+console.log(`[CONFIG]   Operator Key: ${config.operatorPrivateKey ? "configured" : "NOT CONFIGURED"}`);
+
+// Log warnings for missing configuration
+if (config.missingAddresses.length > 0) {
+  console.warn("[CONFIG] ⚠️  Missing contract addresses:", config.missingAddresses.join(", "));
+  console.warn("[CONFIG]    Some blockchain features will be disabled.");
+}
+
+if (!config.rpcUrl) {
+  console.warn("[CONFIG] ⚠️  RPC_URL not configured - blockchain features disabled");
+  console.warn("[CONFIG]    The following features are unavailable:");
+  console.warn("[CONFIG]    - Deposit indexing");
+  console.warn("[CONFIG]    - On-chain settlement");
+  console.warn("[CONFIG]    - Balance reconciliation");
+}
+
+if (!config.operatorPrivateKey && config.rpcUrl) {
+  console.warn("[CONFIG] ⚠️  OPERATOR_PRIVATE_KEY not configured - settlement disabled");
+  console.warn("[CONFIG]    Orders will be matched but not settled on-chain.");
+}
+
+console.log(`[CONFIG] Blockchain features: ${config.blockchainEnabled ? "ENABLED" : "DISABLED"}`);
+console.log(`[CONFIG] Settlement features: ${config.settlementEnabled ? "ENABLED" : "DISABLED"}`);
+
+// Legacy exports for backwards compatibility
+const CHAIN_ID = config.chainId;
+const SETTLEMENT_BATCH_INTERVAL_MS = config.settlementBatchIntervalMs;
+const RECONCILIATION_INTERVAL_MS = config.reconciliationIntervalMs;
+const EXCHANGE_ADDRESS = config.exchangeAddress;
+const VAULT_ADDRESS = config.vaultAddress;
 
 // ============ Service Initialization ============
 

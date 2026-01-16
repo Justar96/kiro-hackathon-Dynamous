@@ -22,6 +22,8 @@ export { ErrorBoundary, ErrorFallback, InlineError } from './ErrorBoundary';
 export type { ErrorBoundaryProps, ErrorFallbackProps } from './ErrorBoundary';
 export { ErrorMessage } from './ErrorMessage';
 export type { ErrorMessageProps, ErrorMessageVariant } from './ErrorMessage';
+export { ConfigError } from './ConfigError';
+export type { ConfigErrorProps } from './ConfigError';
 
 // Loading States
 export { 

@@ -4,12 +4,12 @@
  * Hook for real-time order book updates via SSE subscription.
  * Maintains local order book state and handles reconnection.
  *
- * Requirements: 9.4, 9.5
+ * Requirements: 3.2, 9.4, 9.5
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { type Hex } from 'viem';
-import { fetchApi } from '../../api';
+import { fetchApi, ApiError } from '../../api';
 
 // ============================================
 // Types
@@ -115,6 +115,10 @@ export interface UseOrderBookReturn {
   reconnect: () => void;
   /** Disconnect from SSE */
   disconnect: () => void;
+  /** Number of reconnection attempts */
+  reconnectAttempts: number;
+  /** Last successful update timestamp */
+  lastUpdateTime: number | null;
 }
 
 // ============================================
@@ -217,14 +221,45 @@ export function useOrderBook(
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [lastUpdateTime, setLastUpdateTime] = useState<number | null>(null);
 
   // Refs for SSE management
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isUnmountedRef = useRef(false);
+  const heartbeatTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch initial order book data
+  // Heartbeat timeout (30 seconds without any event triggers reconnect)
+  const HEARTBEAT_TIMEOUT = 30000;
+
+  // Reset heartbeat timer
+  const resetHeartbeat = useCallback(() => {
+    if (heartbeatTimeoutRef.current) {
+      clearTimeout(heartbeatTimeoutRef.current);
+    }
+    
+    if (!isUnmountedRef.current && connectionStatus === 'connected') {
+      heartbeatTimeoutRef.current = setTimeout(() => {
+        console.warn('[useOrderBook] Heartbeat timeout, reconnecting...');
+        if (!isUnmountedRef.current && eventSourceRef.current) {
+          eventSourceRef.current.close();
+          setConnectionStatus('error');
+          // Trigger reconnection
+          if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+            reconnectAttemptsRef.current += 1;
+            reconnectTimeoutRef.current = setTimeout(() => {
+              if (!isUnmountedRef.current) {
+                connect();
+              }
+            }, reconnectDelay);
+          }
+        }
+      }, HEARTBEAT_TIMEOUT);
+    }
+  }, [connectionStatus, maxReconnectAttempts, reconnectDelay]);
+
+  // Fetch initial order book data with error handling
   const fetchOrderBook = useCallback(async () => {
     if (!marketId || tokenId === undefined) return;
 
@@ -249,10 +284,19 @@ export function useOrderBook(
           asks,
           timestamp: response.timestamp,
         });
+        setLastUpdateTime(Date.now());
       }
     } catch (err) {
       if (!isUnmountedRef.current) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch order book'));
+        const apiError = err instanceof ApiError 
+          ? err 
+          : new ApiError(
+              err instanceof Error ? err.message : 'Failed to fetch order book',
+              'UNKNOWN',
+              0
+            );
+        setError(apiError);
+        console.error('[useOrderBook] Failed to fetch order book:', apiError.message);
       }
     } finally {
       if (!isUnmountedRef.current) {
@@ -264,6 +308,9 @@ export function useOrderBook(
   // Handle SSE events
   const handleSSEEvent = useCallback((event: MessageEvent, eventType: OrderBookEventType) => {
     if (isUnmountedRef.current) return;
+
+    // Reset heartbeat on any event
+    resetHeartbeat();
 
     try {
       const data = event.data ? JSON.parse(event.data) : null;
@@ -279,6 +326,7 @@ export function useOrderBook(
             timestamp: Date.now(),
           });
           setIsLoading(false);
+          setLastUpdateTime(Date.now());
           break;
         }
 
@@ -306,15 +354,15 @@ export function useOrderBook(
         }
 
         case 'ping':
-          // Keep-alive, no action needed
+          // Keep-alive, no action needed but heartbeat is reset
           break;
       }
     } catch (err) {
-      console.error('Error handling SSE event:', err);
+      console.error('[useOrderBook] Error handling SSE event:', err);
     }
-  }, [fetchOrderBook]);
+  }, [fetchOrderBook, resetHeartbeat]);
 
-  // Connect to SSE stream
+  // Connect to SSE stream with improved reconnection logic
   const connect = useCallback(() => {
     if (!marketId || tokenId === undefined || !enableSSE) return;
 
@@ -323,55 +371,87 @@ export function useOrderBook(
       eventSourceRef.current.close();
     }
 
+    // Clear any pending reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
     setConnectionStatus('connecting');
+    setError(null);
 
     const url = `/api/orderbook/${marketId}/${tokenId}/stream`;
-    const eventSource = new EventSource(url);
-    eventSourceRef.current = eventSource;
+    
+    try {
+      const eventSource = new EventSource(url);
+      eventSourceRef.current = eventSource;
 
-    eventSource.onopen = () => {
-      if (!isUnmountedRef.current) {
-        setConnectionStatus('connected');
-        setError(null);
-        reconnectAttemptsRef.current = 0;
-      }
-    };
-
-    eventSource.onerror = () => {
-      if (!isUnmountedRef.current) {
-        setConnectionStatus('error');
-        eventSource.close();
-
-        // Attempt reconnection
-        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-          reconnectAttemptsRef.current += 1;
-          reconnectTimeoutRef.current = setTimeout(() => {
-            if (!isUnmountedRef.current) {
-              connect();
-            }
-          }, reconnectDelay * reconnectAttemptsRef.current);
-        } else {
-          setError(new Error('Failed to connect to order book stream'));
+      eventSource.onopen = () => {
+        if (!isUnmountedRef.current) {
+          setConnectionStatus('connected');
+          setError(null);
+          reconnectAttemptsRef.current = 0;
+          resetHeartbeat();
+          console.log('[useOrderBook] SSE connected');
         }
+      };
+
+      eventSource.onerror = (e) => {
+        if (!isUnmountedRef.current) {
+          console.warn('[useOrderBook] SSE error, attempting reconnection...', e);
+          setConnectionStatus('error');
+          eventSource.close();
+
+          // Clear heartbeat on error
+          if (heartbeatTimeoutRef.current) {
+            clearTimeout(heartbeatTimeoutRef.current);
+          }
+
+          // Attempt reconnection with exponential backoff
+          if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+            reconnectAttemptsRef.current += 1;
+            const delay = reconnectDelay * Math.pow(1.5, reconnectAttemptsRef.current - 1);
+            const jitteredDelay = delay + (Math.random() * 1000); // Add jitter
+            
+            console.log(`[useOrderBook] Reconnecting in ${Math.round(jitteredDelay)}ms (attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+            
+            reconnectTimeoutRef.current = setTimeout(() => {
+              if (!isUnmountedRef.current) {
+                connect();
+              }
+            }, jitteredDelay);
+          } else {
+            setError(new ApiError(
+              'Failed to connect to order book stream after multiple attempts',
+              'NETWORK_ERROR',
+              0
+            ));
+            console.error('[useOrderBook] Max reconnection attempts reached');
+          }
+        }
+      };
+
+      // Register event handlers
+      const eventTypes: OrderBookEventType[] = [
+        'snapshot',
+        'order_added',
+        'order_removed',
+        'order_updated',
+        'trade',
+        'ping',
+      ];
+
+      for (const eventType of eventTypes) {
+        eventSource.addEventListener(eventType, (event) => {
+          handleSSEEvent(event as MessageEvent, eventType);
+        });
       }
-    };
-
-    // Register event handlers
-    const eventTypes: OrderBookEventType[] = [
-      'snapshot',
-      'order_added',
-      'order_removed',
-      'order_updated',
-      'trade',
-      'ping',
-    ];
-
-    for (const eventType of eventTypes) {
-      eventSource.addEventListener(eventType, (event) => {
-        handleSSEEvent(event as MessageEvent, eventType);
-      });
+    } catch (err) {
+      console.error('[useOrderBook] Failed to create EventSource:', err);
+      setConnectionStatus('error');
+      setError(err instanceof Error ? err : new Error('Failed to connect'));
     }
-  }, [marketId, tokenId, enableSSE, maxReconnectAttempts, reconnectDelay, handleSSEEvent]);
+  }, [marketId, tokenId, enableSSE, maxReconnectAttempts, reconnectDelay, handleSSEEvent, resetHeartbeat]);
 
   // Disconnect from SSE stream
   const disconnect = useCallback(() => {
@@ -383,11 +463,16 @@ export function useOrderBook(
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
+    if (heartbeatTimeoutRef.current) {
+      clearTimeout(heartbeatTimeoutRef.current);
+      heartbeatTimeoutRef.current = null;
+    }
     setConnectionStatus('disconnected');
   }, []);
 
   // Reconnect manually
   const reconnect = useCallback(() => {
+    console.log('[useOrderBook] Manual reconnect triggered');
     reconnectAttemptsRef.current = 0;
     disconnect();
     connect();
@@ -439,6 +524,8 @@ export function useOrderBook(
       error,
       reconnect,
       disconnect,
+      reconnectAttempts: reconnectAttemptsRef.current,
+      lastUpdateTime,
     }),
     [
       orderBook.bids,
@@ -451,6 +538,7 @@ export function useOrderBook(
       error,
       reconnect,
       disconnect,
+      lastUpdateTime,
     ]
   );
 }
