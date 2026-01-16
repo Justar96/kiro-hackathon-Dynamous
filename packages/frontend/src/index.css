@@ -335,29 +335,86 @@
 
 /* ============================================
    Compact Auth Modal Styles
-   Paper-minimal clean design
+   Dark theme - paper dossier aesthetic
    ============================================ */
 
-/* Override CSS variables for shadcn/ui components */
+/* Hide the Neon Auth card wrapper border and background */
+[data-slot="card"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+[data-slot="card-header"] {
+  display: none !important;
+}
+
+[data-slot="card-content"] {
+  padding: 0 !important;
+}
+
+[data-slot="card-footer"] {
+  padding: 0 !important;
+  border: none !important;
+  margin-top: 1rem !important;
+}
+
+/* Override CSS variables for dark theme */
 .auth-modal-compact,
 .auth-modal-compact * {
   --input: 0 0% 100%;
-  --background: 0 0% 100%;
-  --card: 0 0% 100%;
-  --foreground: 0 0% 7%;
-  --primary: 0 0% 7%;
+  --background: 220 6% 9%;
+  --card: 220 6% 9%;
+  --foreground: 240 6% 93%;
+  --primary: 220 80% 65%;
   --primary-foreground: 0 0% 100%;
-  --muted: 40 20% 96%;
-  --muted-foreground: 220 9% 46%;
-  --border: 0 0% 0% / 0.1;
-  --ring: 221 83% 53%;
-  --radius: 4px;
+  --muted: 220 6% 15%;
+  --muted-foreground: 220 6% 60%;
+  --border: 220 6% 18%;
+  --ring: 220 80% 65%;
+  --radius: 2px;
 }
 
-/* Ensure inputs have white background */
+/* Dark theme input styling */
 .auth-modal-compact input {
-  background-color: #FFFFFF !important;
-  background: #FFFFFF !important;
+  background-color: #0D0D0F !important;
+  background: #0D0D0F !important;
+  border-color: #2A2A2E !important;
+  color: #E8E8EC !important;
+}
+
+.auth-modal-compact input::placeholder {
+  color: #5C5C64 !important;
+}
+
+.auth-modal-compact input:focus {
+  border-color: #5B8DEF !important;
+  box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.2) !important;
+}
+
+/* Dark theme labels */
+.auth-modal-compact label {
+  color: #9A9AA0 !important;
+}
+
+/* Dark theme links */
+.auth-modal-compact a {
+  color: #5B8DEF !important;
+}
+
+.auth-modal-compact a:hover {
+  color: #4A7DE0 !important;
+}
+
+/* Dark theme separator */
+.auth-modal-compact [data-slot="separator"],
+.auth-modal-compact [role="none"] {
+  background-color: #2A2A2E !important;
+}
+
+.auth-modal-compact .text-muted-foreground {
+  color: #5C5C64 !important;
 }
 
 /* Constrain OAuth button icons */
@@ -381,9 +438,8 @@
 @layer base {
   html {
     @apply bg-page-bg;
-    /* Minimal scrollbar for webkit browsers */
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
   }
 
   @supports (content-visibility: auto) {
@@ -396,76 +452,39 @@
 
   body {
     @apply font-body text-text-primary antialiased;
-    /* Base body text line-height for optimal readability
-       Requirements: 1.3 - Body text line-height 1.6-1.8 */
     line-height: 1.7;
   }
   
-  /* Base heading styles with refined line-heights
-     Requirements: 1.3, 1.5 - Clear typographic hierarchy */
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading text-text-primary;
   }
   
-  h1 {
-    line-height: 1.25;
-  }
-  
-  h2 {
-    line-height: 1.3;
-  }
-  
-  h3, h4, h5, h6 {
-    line-height: 1.35;
-  }
-  
-  /* Paragraph text with proper line-height */
-  p {
-    line-height: 1.7;
-  }
+  h1 { line-height: 1.25; }
+  h2 { line-height: 1.3; }
+  h3, h4, h5, h6 { line-height: 1.35; }
+  p { line-height: 1.7; }
 
-  /* Webkit scrollbar styling (Chrome, Safari, Edge) */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
+  /* Dark scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.15);
+    background-color: rgba(255,255,255,0.15);
     border-radius: 4px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(0, 0, 0, 0.25);
-  }
-
-  ::-webkit-scrollbar-corner {
-    background: transparent;
-  }
-
-  /* Hide scrollbar arrows */
-  ::-webkit-scrollbar-button {
-    display: none;
-  }
+  ::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.25); }
+  ::-webkit-scrollbar-corner { background: transparent; }
+  ::-webkit-scrollbar-button { display: none; }
   
-  /* Global focus-visible styles for keyboard navigation (Requirement 1.7) */
-  /* Only show focus ring when using keyboard, not mouse */
   :focus-visible {
     @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-page-bg;
   }
   
-  /* Remove default focus outline since we're using focus-visible */
   :focus:not(:focus-visible) {
     @apply outline-none ring-0;
   }
   
-  /* Ensure buttons and interactive elements have visible focus */
   button:focus-visible,
   a:focus-visible,
   [role="button"]:focus-visible,
@@ -473,96 +492,59 @@
     @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-page-bg;
   }
   
-  /* Input/textarea focus - use border only (single line, no ring) */
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
     @apply outline-none ring-0 ring-offset-0;
   }
   
-  /* Special focus styles for modal elements */
   [role="dialog"]:focus-visible {
     @apply outline-none ring-2 ring-accent/50 ring-offset-0;
   }
 }
 
 @layer components {
-  /* Typography - Headings (Serif) */
-  .heading-1 {
-    @apply font-heading text-heading-1 text-text-primary;
-  }
+  .heading-1 { @apply font-heading text-heading-1 text-text-primary; }
+  .heading-2 { @apply font-heading text-heading-2 text-text-primary; }
+  .heading-3 { @apply font-heading text-heading-3 text-text-primary; }
+  .body-large { @apply font-body text-body-large text-text-primary; }
+  .body-text { @apply font-body text-body text-text-primary; }
+  .body-small { @apply font-body text-body-small text-text-primary; }
+  .label-text { @apply font-body text-label uppercase tracking-wider text-text-secondary; }
+  .caption-text { @apply font-body text-caption text-text-secondary; }
   
-  .heading-2 {
-    @apply font-heading text-heading-2 text-text-primary;
-  }
-  
-  .heading-3 {
-    @apply font-heading text-heading-3 text-text-primary;
-  }
-  
-  /* Typography - Body (Sans-serif) */
-  .body-large {
-    @apply font-body text-body-large text-text-primary;
-  }
-  
-  .body-text {
-    @apply font-body text-body text-text-primary;
-  }
-  
-  .body-small {
-    @apply font-body text-body-small text-text-primary;
-  }
-  
-  /* Typography - UI Elements */
-  .label-text {
-    @apply font-body text-label uppercase tracking-wider text-text-secondary;
-  }
-  
-  .caption-text {
-    @apply font-body text-caption text-text-secondary;
-  }
-  
-  /* Paper surface */
   .paper-surface {
-    @apply bg-paper shadow-paper rounded-subtle;
+    @apply bg-paper shadow-paper rounded-subtle border border-divider;
   }
   
-  /* Hairline border */
   .border-hairline {
-    @apply border border-black/[0.08];
+    @apply border border-divider;
   }
   
-  /* ============================================
-     Paper Polish CSS Classes
-     Requirements: 3.3, 4.1, 4.5
-     ============================================ */
-  
-  /* Paper divider - subtle horizontal rule for section separation
-     Requirements: 3.3 - Horizontal rule styling */
   .paper-divider {
     height: 1px;
-    background-color: #E5E5E0;
+    background-color: #2A2A2E;
     border: none;
     width: 100%;
     margin-top: 1.5rem;
     margin-bottom: 1.5rem;
   }
   
-  /* Small-caps - academic/editorial style for status labels and metadata
-     Requirements: 4.1 - Status label styling */
   .small-caps {
     font-variant: small-caps;
     text-transform: lowercase;
     letter-spacing: 0.05em;
   }
   
-  /* Monospace label - refined metadata display
-     Requirements: 4.5 - Metadata label letter-spacing */
   .monospace-label {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-family: "Courier Prime", "Courier New", Courier, monospace;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
+  }
+  
+  .typewriter {
+    font-family: "Courier Prime", "Courier New", Courier, monospace;
   }
 }
 

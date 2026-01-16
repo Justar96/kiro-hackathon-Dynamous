@@ -202,17 +202,17 @@ export function TradingPanel({
   const isSubmitting = orderBookActions.isLoading;
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4">
-      <h3 className="text-lg font-semibold mb-4">Place Order</h3>
+    <div className="dossier-card rounded-subtle p-5 pt-8 relative">
+      <span className="folder-tab">Trade</span>
 
       {/* Order Type Selector */}
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setOrderType('buy')}
-          className={`flex-1 py-2 rounded font-medium transition-colors ${
+          className={`flex-1 py-2 rounded-subtle font-medium transition-colors ${
             orderType === 'buy'
-              ? 'bg-green-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-support text-white'
+              : 'bg-paper-aged text-text-secondary hover:bg-divider'
           }`}
           disabled={isSubmitting}
         >
@@ -220,10 +220,10 @@ export function TradingPanel({
         </button>
         <button
           onClick={() => setOrderType('sell')}
-          className={`flex-1 py-2 rounded font-medium transition-colors ${
+          className={`flex-1 py-2 rounded-subtle font-medium transition-colors ${
             orderType === 'sell'
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-oppose text-white'
+              : 'bg-paper-aged text-text-secondary hover:bg-divider'
           }`}
           disabled={isSubmitting}
         >
@@ -235,10 +235,10 @@ export function TradingPanel({
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setTokenSide('yes')}
-          className={`flex-1 py-2 rounded font-medium transition-colors ${
+          className={`flex-1 py-2 rounded-subtle font-medium transition-colors ${
             tokenSide === 'yes'
-              ? 'bg-green-100 text-green-700 border-2 border-green-500'
-              : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+              ? 'bg-support/15 text-support border-2 border-support'
+              : 'bg-paper-aged text-text-secondary border border-divider hover:bg-divider'
           }`}
           disabled={isSubmitting}
         >
@@ -246,10 +246,10 @@ export function TradingPanel({
         </button>
         <button
           onClick={() => setTokenSide('no')}
-          className={`flex-1 py-2 rounded font-medium transition-colors ${
+          className={`flex-1 py-2 rounded-subtle font-medium transition-colors ${
             tokenSide === 'no'
-              ? 'bg-red-100 text-red-700 border-2 border-red-500'
-              : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+              ? 'bg-oppose/15 text-oppose border-2 border-oppose'
+              : 'bg-paper-aged text-text-secondary border border-divider hover:bg-divider'
           }`}
           disabled={isSubmitting}
         >
@@ -260,7 +260,7 @@ export function TradingPanel({
       <div className="space-y-4">
         {/* Amount Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-body-small font-medium text-text-primary mb-1">
             {orderType === 'buy' ? 'Amount (USDC)' : 'Shares to Sell'}
           </label>
           <input
@@ -270,10 +270,10 @@ export function TradingPanel({
             placeholder="0.00"
             min="0"
             step="0.01"
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-paper border border-divider rounded-subtle focus:outline-none focus:ring-2 focus:ring-accent text-text-primary typewriter"
             disabled={isSubmitting}
           />
-          <div className="mt-1 text-xs text-gray-500 flex justify-between">
+          <div className="mt-1 text-caption text-text-tertiary flex justify-between">
             <span>
               {orderType === 'buy' ? 'Available:' : 'You have:'}{' '}
               {orderType === 'buy'
@@ -287,7 +287,7 @@ export function TradingPanel({
                   ? userUsdcBalance.toFixed(2)
                   : userTokenBalance.toFixed(2)
               )}
-              className="text-blue-600 hover:underline"
+              className="text-accent hover:underline"
               disabled={isSubmitting}
             >
               Max
@@ -298,20 +298,20 @@ export function TradingPanel({
         {/* Price Input (for limit orders) */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-sm font-medium text-gray-700">Price</label>
-            <label className="flex items-center gap-1 text-xs text-gray-500">
+            <label className="text-body-small font-medium text-text-primary">Price</label>
+            <label className="flex items-center gap-1 text-caption text-text-tertiary">
               <input
                 type="checkbox"
                 checked={useMarketPrice}
                 onChange={(e) => setUseMarketPrice(e.target.checked)}
-                className="rounded"
+                className="rounded-subtle"
                 disabled={isSubmitting}
               />
               Use market price
             </label>
           </div>
           {useMarketPrice ? (
-            <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded text-gray-700">
+            <div className="px-3 py-2 bg-paper-aged border border-divider rounded-subtle text-text-secondary typewriter">
               {formatPriceAsCents(currentPrice)} (market)
             </div>
           ) : (
@@ -320,31 +320,31 @@ export function TradingPanel({
               value={priceInput}
               onChange={(e) => setPriceInput(e.target.value)}
               placeholder="0.50 or 50%"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-paper border border-divider rounded-subtle focus:outline-none focus:ring-2 focus:ring-accent text-text-primary typewriter"
               disabled={isSubmitting}
             />
           )}
         </div>
 
         {/* Order Summary */}
-        <div className="bg-gray-50 p-3 rounded space-y-1 text-sm">
+        <div className="bg-paper-aged p-3 rounded-subtle space-y-1 text-body-small border border-divider">
           <div className="flex justify-between">
-            <span className="text-gray-600">Price per share</span>
-            <span className="font-medium">{formatPriceAsCents(effectivePrice)}</span>
+            <span className="text-text-secondary">Price per share</span>
+            <span className="font-medium typewriter">{formatPriceAsCents(effectivePrice)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">
+            <span className="text-text-secondary">
               {orderType === 'buy' ? 'Shares to receive' : 'Proceeds'}
             </span>
-            <span className="font-medium">
+            <span className="font-medium typewriter">
               {orderType === 'buy' ? shares.toFixed(0) : `$${cost.toFixed(2)}`}
             </span>
           </div>
-          <div className="flex justify-between pt-2 border-t">
-            <span className="text-gray-600">
+          <div className="flex justify-between pt-2 border-t border-divider">
+            <span className="text-text-secondary">
               {orderType === 'buy' ? 'Potential profit' : 'You receive'}
             </span>
-            <span className={`font-medium ${potentialReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`font-medium typewriter ${potentialReturn >= 0 ? 'text-support' : 'text-oppose'}`}>
               {orderType === 'buy'
                 ? `$${potentialReturn.toFixed(2)}`
                 : `$${potentialReturn.toFixed(2)}`}
@@ -354,29 +354,29 @@ export function TradingPanel({
 
         {/* Transaction Status */}
         {statusMessage && (
-          <div className={`p-3 rounded-lg flex items-center gap-2 ${
+          <div className={`p-3 rounded-subtle flex items-center gap-2 ${
             orderBookActions.transactionState.status === 'confirmed'
-              ? 'bg-green-50 text-green-700'
-              : 'bg-blue-50 text-blue-700'
+              ? 'bg-support/10 text-support border border-support/30'
+              : 'bg-accent/10 text-accent border border-accent/30'
           }`}>
             {orderBookActions.transactionState.status === 'confirmed' ? (
               <CheckCircleIcon className="w-5 h-5" />
             ) : (
               <SpinnerIcon className="w-5 h-5 animate-spin" />
             )}
-            <span className="text-sm">{statusMessage}</span>
+            <span className="text-body-small">{statusMessage}</span>
           </div>
         )}
 
         {/* Transaction Hash Link */}
         {orderBookActions.transactionState.status === 'pending_confirmation' && (
-          <div className="text-xs text-gray-500">
+          <div className="text-caption text-text-tertiary">
             Transaction:{' '}
             <a
               href={`https://amoy.polygonscan.com/tx/${orderBookActions.transactionState.hash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:underline font-mono"
+              className="text-accent hover:underline typewriter"
             >
               {orderBookActions.transactionState.hash.slice(0, 10)}...
             </a>
@@ -385,9 +385,9 @@ export function TradingPanel({
 
         {/* Error Message */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <WarningIcon className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <span className="text-sm text-red-700">{error}</span>
+          <div className="p-3 bg-oppose/10 border border-oppose/30 rounded-subtle flex items-start gap-2">
+            <WarningIcon className="w-5 h-5 text-oppose flex-shrink-0 mt-0.5" />
+            <span className="text-body-small text-oppose">{error}</span>
           </div>
         )}
 
@@ -395,10 +395,10 @@ export function TradingPanel({
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || (!isConnected && !connectors.length)}
-          className={`w-full py-3 rounded font-medium flex items-center justify-center gap-2 transition-colors ${
+          className={`w-full py-3 rounded-subtle font-medium flex items-center justify-center gap-2 transition-colors ${
             orderType === 'buy'
-              ? 'bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400'
-              : 'bg-red-600 text-white hover:bg-red-700 disabled:bg-gray-400'
+              ? 'bg-support text-white hover:bg-support/90 disabled:bg-text-tertiary'
+              : 'bg-oppose text-white hover:bg-oppose/90 disabled:bg-text-tertiary'
           } disabled:cursor-not-allowed`}
         >
           {isSubmitting && <SpinnerIcon className="w-4 h-4 animate-spin" />}
@@ -411,7 +411,7 @@ export function TradingPanel({
 
         {/* Wallet Connection Warning */}
         {!isConnected && (
-          <p className="text-center text-xs text-gray-500">
+          <p className="text-center text-caption text-text-tertiary italic">
             Connect your wallet to start trading
           </p>
         )}

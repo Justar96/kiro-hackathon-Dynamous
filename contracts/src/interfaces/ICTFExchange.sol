@@ -98,6 +98,12 @@ interface ICTFExchange {
         bytes32 indexed conditionId
     );
 
+    /// @dev Emitted when fees are withdrawn
+    event FeesWithdrawn(address indexed token, uint256 amount, address indexed to);
+
+    /// @dev Emitted when all orders are cancelled via nonce increment
+    event AllOrdersCancelled(address indexed maker, uint256 newNonce);
+
     // ============ Errors ============
 
     error InvalidSignature();
@@ -192,6 +198,9 @@ interface ICTFExchange {
     /// @notice Increment nonce to invalidate all orders with current nonce
     function incrementNonce() external;
 
+    /// @notice Cancel all orders by incrementing nonce (emits AllOrdersCancelled event)
+    function cancelAllOrders() external;
+
     // ============ Admin Functions ============
 
     /// @notice Register a token pair for trading
@@ -209,4 +218,10 @@ interface ICTFExchange {
 
     /// @notice Unpause the exchange
     function unpause() external;
+
+    /// @notice Withdraw accumulated fees (owner only)
+    /// @param token The token address to withdraw (0 for collateral, or CTF token ID)
+    /// @param amount The amount to withdraw
+    /// @param to The recipient address
+    function withdrawFees(address token, uint256 amount, address to) external;
 }

@@ -1,5 +1,4 @@
 import { Link } from '@tanstack/react-router';
-import { ChartIcon } from '../icons';
 
 interface MarketCardProps {
   marketId: string;
@@ -17,8 +16,6 @@ export function MarketCard({
   question,
   yesPrice,
   noPrice,
-  volume,
-  liquidity,
   endDate,
   category,
 }: MarketCardProps) {
@@ -29,31 +26,50 @@ export function MarketCard({
     <Link
       to="/markets/$marketId"
       params={{ marketId }}
-      className="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 transition-colors"
+      className="group block dossier-card rounded-subtle p-4 hover:shadow-elevated transition-all h-full"
     >
+      {/* Category */}
       {category && (
-        <span className="text-xs text-gray-500 uppercase">{category}</span>
+        <span className="small-caps text-[10px] text-text-tertiary tracking-wider">{category}</span>
       )}
-      <h3 className="mt-2 text-lg font-semibold text-gray-900">{question}</h3>
       
-      <div className="mt-4 flex gap-2">
-        <button className="flex-1 py-2 px-4 bg-green-50 border border-green-200 rounded text-green-700 font-medium hover:bg-green-100">
+      {/* Question */}
+      <h3 className="font-heading text-body text-text-primary leading-snug group-hover:text-accent transition-colors mt-1 mb-4 line-clamp-3">
+        {question}
+      </h3>
+
+      {/* Market Bar */}
+      <div className="mb-4">
+        <div className="h-2 bg-divider rounded-full overflow-hidden flex">
+          <div className="bg-support transition-all duration-300" style={{ width: `${yesPercent}%` }} />
+          <div className="bg-oppose transition-all duration-300" style={{ width: `${noPercent}%` }} />
+        </div>
+        <div className="flex justify-between mt-1.5">
+          <span className="text-[11px] text-support font-medium">Yes {yesPercent}%</span>
+          <span className="text-[11px] text-oppose font-medium">No {noPercent}%</span>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <button 
+          onClick={(e) => { e.preventDefault(); }}
+          className="flex-1 py-2 bg-support/10 border border-support/30 rounded-subtle text-support text-body-small font-medium hover:bg-support/20 transition-colors"
+        >
           Yes {yesPercent}¢
         </button>
-        <button className="flex-1 py-2 px-4 bg-red-50 border border-red-200 rounded text-red-700 font-medium hover:bg-red-100">
+        <button 
+          onClick={(e) => { e.preventDefault(); }}
+          className="flex-1 py-2 bg-oppose/10 border border-oppose/30 rounded-subtle text-oppose text-body-small font-medium hover:bg-oppose/20 transition-colors"
+        >
           No {noPercent}¢
         </button>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1">
-            <ChartIcon className="w-4 h-4" />
-            ${volume}
-          </span>
-          <span>Liquidity: ${liquidity}</span>
-        </div>
-        <span>{endDate}</span>
+      {/* Footer */}
+      <div className="mt-3 pt-3 border-t border-divider flex justify-between items-center">
+        <span className="text-[10px] text-text-tertiary">{endDate}</span>
+        <span className="text-[10px] text-text-tertiary typewriter">$1.2k vol</span>
       </div>
     </Link>
   );

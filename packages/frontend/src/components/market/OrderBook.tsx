@@ -49,7 +49,7 @@ function getMaxQuantity(levels: OrderBookLevel[]): bigint {
 }
 
 /**
- * Order book level row component
+ * Order book level row component - dossier style
  */
 function OrderBookRow({
   level,
@@ -64,24 +64,24 @@ function OrderBookRow({
     ? Math.min(100, Number((level.quantity * 100n) / maxQuantity))
     : 0;
 
-  const bgColor = side === 'bid' ? 'bg-green-100' : 'bg-red-100';
-  const textColor = side === 'bid' ? 'text-green-700' : 'text-red-700';
+  const bgColor = side === 'bid' ? 'bg-support/20' : 'bg-oppose/20';
+  const textColor = side === 'bid' ? 'text-support' : 'text-oppose';
 
   return (
-    <div className="relative flex justify-between text-sm py-1 hover:bg-gray-50 cursor-pointer">
+    <div className="relative flex justify-between text-body-small py-1.5 hover:bg-paper-aged cursor-pointer transition-colors">
       {/* Background bar */}
       <div
-        className={`absolute inset-y-0 ${side === 'bid' ? 'right-0' : 'left-0'} ${bgColor} opacity-30`}
+        className={`absolute inset-y-0 ${side === 'bid' ? 'right-0' : 'left-0'} ${bgColor}`}
         style={{ width: `${widthPercent}%` }}
       />
       {/* Content */}
-      <span className={`relative font-medium ${textColor}`}>
+      <span className={`relative font-medium typewriter ${textColor}`}>
         {formatPriceAsCents(level.price)}
       </span>
-      <span className="relative text-gray-600">
+      <span className="relative text-text-secondary typewriter">
         {formatQuantity(level.quantity)}
         {level.orderCount > 1 && (
-          <span className="text-xs text-gray-400 ml-1">({level.orderCount})</span>
+          <span className="text-caption text-text-tertiary ml-1">({level.orderCount})</span>
         )}
       </span>
     </div>
@@ -134,25 +134,25 @@ export function OrderBook({
   const hasOnChainData = !!marketId && !!activeTokenId;
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4">
+    <div className="dossier-card rounded-subtle p-4">
       {/* Tab Selector */}
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setActiveTab('yes')}
-          className={`flex-1 py-2 rounded font-medium transition-colors ${
+          className={`flex-1 py-2 rounded-subtle font-medium transition-colors ${
             activeTab === 'yes'
-              ? 'bg-green-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-support text-white'
+              : 'bg-paper-aged text-text-secondary hover:bg-divider'
           }`}
         >
           Yes
         </button>
         <button
           onClick={() => setActiveTab('no')}
-          className={`flex-1 py-2 rounded font-medium transition-colors ${
+          className={`flex-1 py-2 rounded-subtle font-medium transition-colors ${
             activeTab === 'no'
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-oppose text-white'
+              : 'bg-paper-aged text-text-secondary hover:bg-divider'
           }`}
         >
           No
@@ -161,7 +161,7 @@ export function OrderBook({
 
       {/* Mid Price and Spread */}
       {midPrice !== null && midPrice !== undefined && (
-        <div className="flex justify-between text-xs text-gray-500 mb-2 px-1">
+        <div className="flex justify-between monospace-label text-text-tertiary mb-3 px-1">
           <span>Mid: {formatPriceAsCents(midPrice)}</span>
           {spread !== null && spread !== undefined && (
             <span>Spread: {formatPriceAsCents(spread)}</span>
@@ -172,17 +172,17 @@ export function OrderBook({
       {/* Loading State */}
       {hasOnChainData && isLoading && (
         <div className="flex items-center justify-center py-8">
-          <SpinnerIcon className="w-6 h-6 animate-spin text-gray-400" />
+          <SpinnerIcon className="w-6 h-6 animate-spin text-text-tertiary" />
         </div>
       )}
 
       {/* Error State */}
       {hasOnChainData && isError && (
         <div className="text-center py-4">
-          <p className="text-sm text-red-500 mb-2">Failed to load order book</p>
+          <p className="text-body-small text-oppose mb-2">Failed to load order book</p>
           <button
             onClick={() => refetch()}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-body-small text-accent hover:underline"
           >
             Retry
           </button>
@@ -193,14 +193,14 @@ export function OrderBook({
       {(!hasOnChainData || (!isLoading && !isError)) && (
         <div className="space-y-1">
           {/* Header */}
-          <div className="flex justify-between text-xs text-gray-500 font-medium pb-2 border-b">
+          <div className="flex justify-between monospace-label text-text-tertiary pb-2 border-b border-divider">
             <span>Price</span>
             <span>Amount</span>
           </div>
 
           {/* Asks (Sell Orders) - Displayed in reverse order (highest first) */}
           {asks.length > 0 && (
-            <div className="space-y-0.5 pb-2 border-b border-dashed">
+            <div className="space-y-0.5 pb-2 border-b border-dashed border-divider">
               {[...asks].reverse().slice(0, depth).map((level, idx) => (
                 <OrderBookRow
                   key={`ask-${idx}`}
@@ -214,7 +214,7 @@ export function OrderBook({
 
           {/* Spread Indicator */}
           {bids.length > 0 && asks.length > 0 && spread !== null && spread !== undefined && (
-            <div className="text-center text-xs text-gray-400 py-1">
+            <div className="text-center monospace-label text-text-tertiary py-1">
               Spread: {formatPriceAsCents(spread)}
             </div>
           )}
@@ -235,7 +235,7 @@ export function OrderBook({
 
           {/* Empty State */}
           {bids.length === 0 && asks.length === 0 && (
-            <div className="text-center py-8 text-gray-400 text-sm">
+            <div className="text-center py-8 text-text-tertiary text-body-small italic">
               No orders yet
             </div>
           )}

@@ -84,6 +84,22 @@ export const queryKeys = {
   
   // Health
   health: ['health'] as const,
+  
+  // Trading (Hybrid CLOB)
+  trading: {
+    all: ['trading'] as const,
+    userOrders: (address: string | undefined) => 
+      [...queryKeys.trading.all, 'orders', address] as const,
+    orderBook: (marketId: string, tokenId: string) => 
+      [...queryKeys.trading.all, 'orderbook', marketId, tokenId] as const,
+    balances: (address: string | undefined) => 
+      [...queryKeys.trading.all, 'balances', address] as const,
+    deposits: (address: string | undefined) => 
+      [...queryKeys.trading.all, 'deposits', address] as const,
+    withdrawals: (address: string | undefined) => 
+      [...queryKeys.trading.all, 'withdrawals', address] as const,
+    epochs: () => [...queryKeys.trading.all, 'epochs'] as const,
+  },
 } as const;
 
 // ============================================================================

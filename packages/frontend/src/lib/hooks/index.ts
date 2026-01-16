@@ -16,3 +16,6 @@ export * from './ui';
 
 // Web3 hooks
 export * from './web3';
+
+// Trading hooks (Hybrid CLOB)
+export * from './trading';

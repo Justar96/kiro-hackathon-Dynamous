@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "bun:test";
-import { RiskEngine } from "../src/services/riskEngine";
+import { RiskEngine, UserTier, TIER_LIMITS } from "../src/services/riskEngine";
 import { Side, SignatureType, type SignedOrder } from "../src/types";
 
 function createOrder(overrides: Partial<SignedOrder> = {}): SignedOrder {
@@ -43,10 +43,11 @@ describe("RiskEngine", () => {
   });
 
   it("should reject order exceeding exposure limit", () => {
-    const order = createOrder({ makerAmount: 10n ** 24n });
+    // STANDARD tier has maxExposure of 10^24 (1M tokens)
+    const order = createOrder({ makerAmount: 10n ** 23n }); // 100K per order
     
-    // Record multiple orders to build up exposure
-    for (let i = 0; i < 15; i++) {
+    // Record multiple orders to build up exposure (need > 10 to exceed 1M)
+    for (let i = 0; i < 12; i++) {
       risk.recordOrder(`order-${i}`, order);
     }
     
@@ -72,7 +73,8 @@ describe("RiskEngine", () => {
 
   it("should reject withdrawal exceeding daily limit", () => {
     const user = "0x1234";
-    risk.recordWithdrawal(user, 10n ** 24n);
+    // STANDARD tier has maxWithdrawalPerDay of 10^23 (100K tokens)
+    risk.recordWithdrawal(user, 10n ** 23n);
     
     const result = risk.validateWithdrawal(user, 10n ** 20n);
     expect(result.valid).toBe(false);
@@ -96,5 +98,82 @@ describe("RiskEngine", () => {
     
     risk.releaseOrder("order-1", order.maker, order.makerAmount);
     expect(risk.getActiveOrderCount(order.maker)).toBe(0);
+  });
+
+  describe("Tier-based limits", () => {
+    it("should default to STANDARD tier", () => {
+      const user = "0x1234";
+      expect(risk.getTier(user)).toBe(UserTier.STANDARD);
+      expect(risk.getLimits(user)).toEqual(TIER_LIMITS[UserTier.STANDARD]);
+    });
+
+    it("should apply PREMIUM tier limits when set", () => {
+      const user = "0x1234";
+      risk.setTier(user, UserTier.PREMIUM);
+      
+      expect(risk.getTier(user)).toBe(UserTier.PREMIUM);
+      expect(risk.getLimits(user)).toEqual(TIER_LIMITS[UserTier.PREMIUM]);
+    });
+
+    it("should apply VIP tier limits when set", () => {
+      const user = "0x1234";
+      risk.setTier(user, UserTier.VIP);
+      
+      expect(risk.getTier(user)).toBe(UserTier.VIP);
+      expect(risk.getLimits(user)).toEqual(TIER_LIMITS[UserTier.VIP]);
+    });
+
+    it("should clear custom limits when tier is set", () => {
+      const user = "0x1234";
+      risk.setLimits(user, { maxOrdersPerMinute: 999 });
+      expect(risk.getLimits(user).maxOrdersPerMinute).toBe(999);
+      
+      risk.setTier(user, UserTier.PREMIUM);
+      expect(risk.getLimits(user).maxOrdersPerMinute).toBe(TIER_LIMITS[UserTier.PREMIUM].maxOrdersPerMinute);
+    });
+
+    it("should allow VIP users higher order sizes", () => {
+      const user = "0x1234";
+      // Order that exceeds STANDARD but within VIP limits
+      const order = createOrder({ 
+        maker: user,
+        makerAmount: 10n ** 24n // 1M tokens - exceeds STANDARD (100K) but within VIP (10M)
+      });
+      
+      // Should fail with STANDARD tier
+      let result = risk.validateOrder(order);
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBe("Order size exceeds limit");
+      
+      // Should pass with VIP tier
+      risk.setTier(user, UserTier.VIP);
+      result = risk.validateOrder(order);
+      expect(result.valid).toBe(true);
+    });
+
+    it("should return tier limits via getTierLimits", () => {
+      expect(risk.getTierLimits(UserTier.STANDARD)).toEqual(TIER_LIMITS[UserTier.STANDARD]);
+      expect(risk.getTierLimits(UserTier.PREMIUM)).toEqual(TIER_LIMITS[UserTier.PREMIUM]);
+      expect(risk.getTierLimits(UserTier.VIP)).toEqual(TIER_LIMITS[UserTier.VIP]);
+    });
+
+    it("should have progressively higher limits for higher tiers", () => {
+      const standard = TIER_LIMITS[UserTier.STANDARD];
+      const premium = TIER_LIMITS[UserTier.PREMIUM];
+      const vip = TIER_LIMITS[UserTier.VIP];
+      
+      // VIP > PREMIUM > STANDARD for all limits
+      expect(vip.maxOrderSize > premium.maxOrderSize).toBe(true);
+      expect(premium.maxOrderSize > standard.maxOrderSize).toBe(true);
+      
+      expect(vip.maxExposure > premium.maxExposure).toBe(true);
+      expect(premium.maxExposure > standard.maxExposure).toBe(true);
+      
+      expect(vip.maxOrdersPerMinute > premium.maxOrdersPerMinute).toBe(true);
+      expect(premium.maxOrdersPerMinute > standard.maxOrdersPerMinute).toBe(true);
+      
+      expect(vip.maxWithdrawalPerDay > premium.maxWithdrawalPerDay).toBe(true);
+      expect(premium.maxWithdrawalPerDay > standard.maxWithdrawalPerDay).toBe(true);
+    });
   });
 });

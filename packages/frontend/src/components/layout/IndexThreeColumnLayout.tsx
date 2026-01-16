@@ -102,20 +102,20 @@ export function IndexThreeColumnLayout({ leftRail, centerContent, rightRail }: I
 
       {/* Desktop Layout - 3 columns */}
       <div className="hidden lg:block">
-        <div className="max-w-[1320px] mx-auto px-6 py-8">
+        <div className="max-w-[1600px] mx-auto px-6 py-8">
           <div className="flex gap-6 items-start">
-            {/* Left Rail - wider for better content display */}
-            <aside className="w-72 flex-shrink-0 sticky top-20">
+            {/* Left Rail */}
+            <aside className="w-52 flex-shrink-0 sticky top-20">
               {leftRail}
             </aside>
 
-            {/* Center Content - No paper background */}
+            {/* Center Content - Wider for 4-col grid */}
             <main className="flex-1 min-w-0">
               {centerContent}
             </main>
 
-            {/* Right Rail - slightly narrower */}
-            <aside className="w-64 flex-shrink-0 sticky top-20">
+            {/* Right Rail */}
+            <aside className="w-56 flex-shrink-0 sticky top-20">
               {rightRail}
             </aside>
           </div>

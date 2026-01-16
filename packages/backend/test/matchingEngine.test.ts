@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import { MatchingEngine } from "../src/services/matchingEngine";
-import { Side, SignatureType, type SignedOrder } from "../src/types";
+import { Side, SignatureType, MatchType, type SignedOrder } from "../src/types";
 
 describe("MatchingEngine", () => {
   let engine: MatchingEngine;
@@ -128,5 +128,131 @@ describe("MatchingEngine", () => {
 
     expect(bestBid).not.toBeNull();
     expect(bestAsk).not.toBeNull();
+  });
+
+  // ============ MINT/MERGE Detection Tests ============
+
+  describe("MatchType Detection", () => {
+    test("should detect COMPLEMENTARY for BUY vs SELL", () => {
+      const buyOrder = createOrder("0xAlice", Side.BUY, 50n * ONE, 100n * ONE);
+      const sellOrder = createOrder("0xBob", Side.SELL, 50n * ONE, 100n * ONE);
+
+      const matchType = engine.detectMatchType(buyOrder, sellOrder);
+      expect(matchType).toBe(MatchType.COMPLEMENTARY);
+    });
+
+    test("should detect MINT for two BUY orders with prices summing >= 1.0", () => {
+      // Buy YES at $0.60 (60 collateral for 100 tokens)
+      const buyYes = createOrder("0xAlice", Side.BUY, 60n * ONE, 100n * ONE);
+      // Buy NO at $0.50 (50 collateral for 100 tokens) - sum = 1.10 >= 1.0
+      const buyNo = createOrder("0xBob", Side.BUY, 50n * ONE, 100n * ONE);
+
+      const matchType = engine.detectMatchType(buyYes, buyNo);
+      expect(matchType).toBe(MatchType.MINT);
+    });
+
+    test("should detect MINT at exact boundary (prices sum = 1.0)", () => {
+      // Buy YES at $0.50
+      const buyYes = createOrder("0xAlice", Side.BUY, 50n * ONE, 100n * ONE);
+      // Buy NO at $0.50 - sum = 1.0
+      const buyNo = createOrder("0xBob", Side.BUY, 50n * ONE, 100n * ONE);
+
+      const matchType = engine.detectMatchType(buyYes, buyNo);
+      expect(matchType).toBe(MatchType.MINT);
+    });
+
+    test("should NOT detect MINT for two BUY orders with prices summing < 1.0", () => {
+      // Buy YES at $0.40
+      const buyYes = createOrder("0xAlice", Side.BUY, 40n * ONE, 100n * ONE);
+      // Buy NO at $0.40 - sum = 0.80 < 1.0
+      const buyNo = createOrder("0xBob", Side.BUY, 40n * ONE, 100n * ONE);
+
+      // This should be COMPLEMENTARY since MINT condition not met
+      const matchType = engine.detectMatchType(buyYes, buyNo);
+      expect(matchType).toBe(MatchType.COMPLEMENTARY);
+    });
+
+    test("should detect MERGE for two SELL orders with prices summing <= 1.0", () => {
+      // Sell YES at $0.40: selling 100 tokens for 40 collateral
+      // price = takerAmount / makerAmount = 40 / 100 = 0.40
+      const sellYes = createOrder("0xAlice", Side.SELL, 100n * ONE, 40n * ONE);
+      // Sell NO at $0.50: selling 100 tokens for 50 collateral
+      // price = 50 / 100 = 0.50, sum = 0.90 <= 1.0
+      const sellNo = createOrder("0xBob", Side.SELL, 100n * ONE, 50n * ONE);
+
+      const matchType = engine.detectMatchType(sellYes, sellNo);
+      expect(matchType).toBe(MatchType.MERGE);
+    });
+
+    test("should detect MERGE at exact boundary (prices sum = 1.0)", () => {
+      // Sell YES at $0.50: selling 100 tokens for 50 collateral
+      const sellYes = createOrder("0xAlice", Side.SELL, 100n * ONE, 50n * ONE);
+      // Sell NO at $0.50: selling 100 tokens for 50 collateral - sum = 1.0
+      const sellNo = createOrder("0xBob", Side.SELL, 100n * ONE, 50n * ONE);
+
+      const matchType = engine.detectMatchType(sellYes, sellNo);
+      expect(matchType).toBe(MatchType.MERGE);
+    });
+
+    test("should NOT detect MERGE for two SELL orders with prices summing > 1.0", () => {
+      // Sell YES at $0.60: selling 100 tokens for 60 collateral
+      const sellYes = createOrder("0xAlice", Side.SELL, 100n * ONE, 60n * ONE);
+      // Sell NO at $0.60: selling 100 tokens for 60 collateral - sum = 1.20 > 1.0
+      const sellNo = createOrder("0xBob", Side.SELL, 100n * ONE, 60n * ONE);
+
+      // This should be COMPLEMENTARY since MERGE condition not met
+      const matchType = engine.detectMatchType(sellYes, sellNo);
+      expect(matchType).toBe(MatchType.COMPLEMENTARY);
+    });
+  });
+
+  describe("canMint helper", () => {
+    test("should return true for valid MINT condition", () => {
+      const buyYes = createOrder("0xAlice", Side.BUY, 60n * ONE, 100n * ONE);
+      const buyNo = createOrder("0xBob", Side.BUY, 50n * ONE, 100n * ONE);
+
+      expect(engine.canMint(buyYes, buyNo)).toBe(true);
+    });
+
+    test("should return false for non-BUY orders", () => {
+      const buyOrder = createOrder("0xAlice", Side.BUY, 60n * ONE, 100n * ONE);
+      const sellOrder = createOrder("0xBob", Side.SELL, 100n * ONE, 50n * ONE);
+
+      expect(engine.canMint(buyOrder, sellOrder)).toBe(false);
+    });
+
+    test("should return false when prices sum < 1.0", () => {
+      const buyYes = createOrder("0xAlice", Side.BUY, 30n * ONE, 100n * ONE);
+      const buyNo = createOrder("0xBob", Side.BUY, 30n * ONE, 100n * ONE);
+
+      expect(engine.canMint(buyYes, buyNo)).toBe(false);
+    });
+  });
+
+  describe("canMerge helper", () => {
+    test("should return true for valid MERGE condition", () => {
+      // Sell YES at $0.40: selling 100 tokens for 40 collateral
+      const sellYes = createOrder("0xAlice", Side.SELL, 100n * ONE, 40n * ONE);
+      // Sell NO at $0.50: selling 100 tokens for 50 collateral - sum = 0.90 <= 1.0
+      const sellNo = createOrder("0xBob", Side.SELL, 100n * ONE, 50n * ONE);
+
+      expect(engine.canMerge(sellYes, sellNo)).toBe(true);
+    });
+
+    test("should return false for non-SELL orders", () => {
+      const buyOrder = createOrder("0xAlice", Side.BUY, 40n * ONE, 100n * ONE);
+      const sellOrder = createOrder("0xBob", Side.SELL, 100n * ONE, 50n * ONE);
+
+      expect(engine.canMerge(buyOrder, sellOrder)).toBe(false);
+    });
+
+    test("should return false when prices sum > 1.0", () => {
+      // Sell YES at $0.60: selling 100 tokens for 60 collateral
+      const sellYes = createOrder("0xAlice", Side.SELL, 100n * ONE, 60n * ONE);
+      // Sell NO at $0.60: selling 100 tokens for 60 collateral - sum = 1.20 > 1.0
+      const sellNo = createOrder("0xBob", Side.SELL, 100n * ONE, 60n * ONE);
+
+      expect(engine.canMerge(sellYes, sellNo)).toBe(false);
+    });
   });
 });

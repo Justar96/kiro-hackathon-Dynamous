@@ -10,6 +10,8 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ICTFExchange} from "./interfaces/ICTFExchange.sol";
 import {IConditionalTokens} from "./interfaces/IConditionalTokens.sol";
+import {IProxyWallet} from "./interfaces/IProxyWallet.sol";
+import {IGnosisSafe} from "./interfaces/IGnosisSafe.sol";
 
 /**
  * @title CTFExchange
@@ -221,6 +223,12 @@ contract CTFExchange is ICTFExchange, EIP712, ReentrancyGuard, Ownable {
         _nonces[msg.sender]++;
     }
 
+    /// @inheritdoc ICTFExchange
+    function cancelAllOrders() external override {
+        _nonces[msg.sender]++;
+        emit AllOrdersCancelled(msg.sender, _nonces[msg.sender]);
+    }
+
     // ============ Admin Functions ============
 
     /// @inheritdoc ICTFExchange
@@ -247,6 +255,23 @@ contract CTFExchange is ICTFExchange, EIP712, ReentrancyGuard, Ownable {
     /// @inheritdoc ICTFExchange
     function unpause() external override onlyOwner {
         _paused = false;
+    }
+
+    /// @inheritdoc ICTFExchange
+    function withdrawFees(address token, uint256 amount, address to) external override onlyOwner {
+        if (to == address(0)) revert InvalidTokenId();
+        if (amount == 0) return;
+        
+        if (token == address(0) || token == address(_collateral)) {
+            // Withdraw collateral (USDC)
+            _collateral.safeTransfer(to, amount);
+        } else {
+            // Withdraw CTF tokens - token address is treated as token ID
+            uint256 tokenId = uint256(uint160(token));
+            _ctf.safeTransferFrom(address(this), to, tokenId, amount, "");
+        }
+        
+        emit FeesWithdrawn(token, amount, to);
     }
 
     // ============ Internal Functions ============
@@ -537,17 +562,37 @@ contract CTFExchange is ICTFExchange, EIP712, ReentrancyGuard, Ownable {
         return _ctf.balanceOf(address(this), tokenId);
     }
 
+    /// @notice EIP-1271 magic value for valid signatures
+    bytes4 private constant EIP1271_MAGIC_VALUE = 0x1626ba7e;
+
     function _isValidSignature(
         address signer,
         address maker,
         bytes32 structHash,
         bytes memory signature,
         SignatureType sigType
-    ) internal pure returns (bool) {
+    ) internal view returns (bool) {
         if (sigType == SignatureType.EOA) {
             return signer == maker && ECDSA.recover(structHash, signature) == signer;
         }
-        // TODO: Add POLY_PROXY and POLY_GNOSIS_SAFE validation
+        if (sigType == SignatureType.POLY_PROXY) {
+            // Verify via proxy wallet contract (EIP-1271)
+            // The maker is the proxy wallet address
+            try IProxyWallet(maker).isValidSignature(structHash, signature) returns (bytes4 magicValue) {
+                return magicValue == EIP1271_MAGIC_VALUE;
+            } catch {
+                return false;
+            }
+        }
+        if (sigType == SignatureType.POLY_GNOSIS_SAFE) {
+            // Verify via Gnosis Safe contract (EIP-1271)
+            // The maker is the Safe address
+            try IGnosisSafe(maker).isValidSignature(structHash, signature) returns (bytes4 magicValue) {
+                return magicValue == EIP1271_MAGIC_VALUE;
+            } catch {
+                return false;
+            }
+        }
         return false;
     }
 

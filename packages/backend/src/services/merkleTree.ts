@@ -75,8 +75,14 @@ export class MerkleTree {
       const isRight = index % 2 === 1;
       const siblingIndex = isRight ? index - 1 : index + 1;
 
+      // If sibling exists, add it to proof
+      // If sibling doesn't exist (odd layer), the node was paired with itself
+      // In that case, we add the node itself as the sibling
       if (siblingIndex < layer.length) {
         proof.push(layer[siblingIndex]);
+      } else {
+        // Node was duplicated - add itself as sibling
+        proof.push(layer[index]);
       }
 
       index = Math.floor(index / 2);

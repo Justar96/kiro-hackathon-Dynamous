@@ -150,7 +150,7 @@ export function CreateMarketForm({ onSuccess, onCancel }: CreateMarketFormProps)
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Market Question */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-body-small font-medium text-text-primary mb-1">
           Market Question
         </label>
         <input
@@ -158,42 +158,42 @@ export function CreateMarketForm({ onSuccess, onCancel }: CreateMarketFormProps)
           value={formData.question}
           onChange={(e) => setFormData({ ...formData, question: e.target.value })}
           placeholder="Will Bitcoin reach $100k by end of 2026?"
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-paper border border-divider rounded-subtle focus:outline-none focus:ring-2 focus:ring-accent text-text-primary"
           disabled={isSubmitting}
           required
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-caption text-text-tertiary">
           Ask a clear yes/no question about a future event
         </p>
       </div>
 
       {/* Resolution Criteria */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-body-small font-medium text-text-primary mb-1">
           Resolution Criteria
         </label>
         <textarea
           value={formData.resolutionCriteria}
           onChange={(e) => setFormData({ ...formData, resolutionCriteria: e.target.value })}
           placeholder="This market resolves YES if Bitcoin's price on CoinGecko exceeds $100,000 USD at any point before the end date. Otherwise, it resolves NO."
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+          className="w-full px-3 py-2 bg-paper border border-divider rounded-subtle focus:outline-none focus:ring-2 focus:ring-accent text-text-primary min-h-[80px]"
           disabled={isSubmitting}
           required
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-caption text-text-tertiary">
           Describe exactly how this market will be resolved
         </p>
       </div>
 
       {/* Category */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-body-small font-medium text-text-primary mb-1">
           Category
         </label>
         <select
           value={formData.category}
           onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-paper border border-divider rounded-subtle focus:outline-none focus:ring-2 focus:ring-accent text-text-primary"
           disabled={isSubmitting}
           required
         >
@@ -208,7 +208,7 @@ export function CreateMarketForm({ onSuccess, onCancel }: CreateMarketFormProps)
 
       {/* End Date */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-body-small font-medium text-text-primary mb-1">
           End Date
         </label>
         <input
@@ -216,18 +216,18 @@ export function CreateMarketForm({ onSuccess, onCancel }: CreateMarketFormProps)
           value={formData.endDate}
           onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
           min={new Date().toISOString().slice(0, 16)}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-paper border border-divider rounded-subtle focus:outline-none focus:ring-2 focus:ring-accent text-text-primary"
           disabled={isSubmitting}
           required
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-caption text-text-tertiary">
           When should this market close for trading?
         </p>
       </div>
 
       {/* Initial Liquidity */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-body-small font-medium text-text-primary mb-1">
           Initial Liquidity (USDC)
         </label>
         <input
@@ -238,15 +238,15 @@ export function CreateMarketForm({ onSuccess, onCancel }: CreateMarketFormProps)
           }
           min={MIN_LIQUIDITY_USDC}
           step="1"
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-paper border border-divider rounded-subtle focus:outline-none focus:ring-2 focus:ring-accent text-text-primary typewriter"
           disabled={isSubmitting}
           required
         />
-        <div className="mt-1 flex justify-between text-xs">
-          <span className="text-gray-500">
+        <div className="mt-1 flex justify-between text-caption">
+          <span className="text-text-tertiary">
             Minimum: {MIN_LIQUIDITY_USDC} USDC
           </span>
-          <span className={hasEnoughBalance ? 'text-gray-500' : 'text-red-500'}>
+          <span className={hasEnoughBalance ? 'text-text-tertiary' : 'text-oppose'}>
             Your balance: {userUsdcBalance.toFixed(2)} USDC
           </span>
         </div>
@@ -254,29 +254,29 @@ export function CreateMarketForm({ onSuccess, onCancel }: CreateMarketFormProps)
 
       {/* Transaction Status */}
       {statusMessage && (
-        <div className={`p-3 rounded-lg flex items-center gap-2 ${
+        <div className={`p-3 rounded-subtle flex items-center gap-2 ${
           actions.transactionState.status === 'confirmed'
-            ? 'bg-green-50 text-green-700'
-            : 'bg-blue-50 text-blue-700'
+            ? 'bg-support/10 text-support border border-support/30'
+            : 'bg-accent/10 text-accent border border-accent/30'
         }`}>
           {actions.transactionState.status === 'confirmed' ? (
             <CheckCircleIcon className="w-5 h-5" />
           ) : (
             <SpinnerIcon className="w-5 h-5 animate-spin" />
           )}
-          <span className="text-sm">{statusMessage}</span>
+          <span className="text-body-small">{statusMessage}</span>
         </div>
       )}
 
       {/* Transaction Hash Link */}
       {actions.transactionState.status === 'pending_confirmation' && (
-        <div className="text-xs text-gray-500">
+        <div className="text-caption text-text-tertiary">
           Transaction hash:{' '}
           <a
             href={`https://amoy.polygonscan.com/tx/${actions.transactionState.hash}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline font-mono"
+            className="text-accent hover:underline typewriter"
           >
             {actions.transactionState.hash.slice(0, 10)}...
           </a>
@@ -285,9 +285,9 @@ export function CreateMarketForm({ onSuccess, onCancel }: CreateMarketFormProps)
 
       {/* Error Message */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-          <WarningIcon className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <span className="text-sm text-red-700">{error}</span>
+        <div className="p-3 bg-oppose/10 border border-oppose/30 rounded-subtle flex items-start gap-2">
+          <WarningIcon className="w-5 h-5 text-oppose flex-shrink-0 mt-0.5" />
+          <span className="text-body-small text-oppose">{error}</span>
         </div>
       )}
 
@@ -296,14 +296,14 @@ export function CreateMarketForm({ onSuccess, onCancel }: CreateMarketFormProps)
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 py-2 px-4 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="flex-1 py-2 px-4 border border-divider rounded-subtle text-text-secondary hover:bg-paper-aged disabled:opacity-50 transition-colors"
           disabled={isSubmitting}
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="flex-1 py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex-1 py-2 px-4 bg-accent text-white rounded-subtle hover:bg-accent-hover disabled:bg-text-tertiary disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
           disabled={isSubmitting || !isConnected}
         >
           {isSubmitting && <SpinnerIcon className="w-4 h-4 animate-spin" />}
@@ -313,7 +313,7 @@ export function CreateMarketForm({ onSuccess, onCancel }: CreateMarketFormProps)
 
       {/* Wallet Connection Warning */}
       {!isConnected && (
-        <p className="text-center text-sm text-amber-600">
+        <p className="text-center text-body-small text-stamp-red italic">
           Please connect your wallet to create a market
         </p>
       )}

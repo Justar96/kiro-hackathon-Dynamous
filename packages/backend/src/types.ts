@@ -34,6 +34,19 @@ export interface OrderBookEntry {
   timestamp: number;
 }
 
+/**
+ * Match type for trades in the hybrid CLOB system.
+ * 
+ * - COMPLEMENTARY: Standard BUY vs SELL match
+ * - MINT: Two BUY orders with prices summing >= 1.0 (triggers splitPosition on CTF)
+ * - MERGE: Two SELL orders with prices summing <= 1.0 (triggers mergePositions on CTF)
+ */
+export enum MatchType {
+  COMPLEMENTARY = 0,  // BUY vs SELL
+  MINT = 1,           // BUY vs BUY (prices sum >= 1)
+  MERGE = 2,          // SELL vs SELL (prices sum <= 1)
+}
+
 export interface Trade {
   id: string;
   takerOrderHash: string;
@@ -43,7 +56,12 @@ export interface Trade {
   tokenId: bigint;
   amount: bigint;
   price: bigint;
+  matchType: MatchType;
   timestamp: number;
+  /** Fee charged for this trade (in collateral units) */
+  fee: bigint;
+  /** Fee rate in basis points used for this trade */
+  feeRateBps: bigint;
 }
 
 export interface UserBalance {

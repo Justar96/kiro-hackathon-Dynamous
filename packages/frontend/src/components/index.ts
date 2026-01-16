@@ -92,6 +92,18 @@ export {
 export { HorizontalDivider, SPACING_VALUES } from './ui';
 export type { HorizontalDividerProps, DividerSpacing } from './ui';
 
+// Feed Components
+export {
+  CompactMarketCard,
+  InfiniteFeed,
+  TrendingRail,
+} from './feed';
+export type {
+  CompactMarketCardProps,
+  InfiniteFeedProps,
+  TrendingRailProps,
+} from './feed';
+
 // Icons
 export {
   createIcon,

@@ -7,30 +7,40 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Background layers
-        'page-bg': '#F9F9F6',
-        'paper': '#FFFFFF',
-        'paper-shadow': 'rgba(0,0,0,0.04)',
+        // Dark theme - paper dossier tones
+        'page-bg': '#0D0D0F',
+        'paper': '#161619',
+        'paper-aged': '#1C1C20',
+        'paper-shadow': 'rgba(0,0,0,0.4)',
         
-        // Divider
-        'divider': '#E5E5E0',
+        // Divider - muted
+        'divider': '#2A2A2E',
         
         // Text hierarchy
-        'text-primary': '#1A1A1A',
-        'text-secondary': '#6B6B6B',
-        'text-tertiary': '#9CA3AF',
+        'text-primary': '#E8E8EC',
+        'text-secondary': '#9A9AA0',
+        'text-tertiary': '#5C5C64',
         
-        // Accent - refined paper blue
-        'accent': '#4A6FA5',
-        'accent-hover': '#3D5D8A',
+        // Accent - blue
+        'accent': '#5B8DEF',
+        'accent-hover': '#4A7DE0',
         
-        // Semantic - muted tones for paper aesthetic
-        'support': '#2D8A6E',
-        'oppose': '#C75B5B',
+        // Semantic
+        'support': '#4ADE80',
+        'oppose': '#F87171',
+        
+        // Extras
+        'stamp-red': '#DC2626',
+        'folder-tab': '#2A2A2E',
+        'ink-faded': '#6B6B74',
       },
       fontFamily: {
         'heading': ['"Source Serif 4"', 'Literata', 'Georgia', 'serif'],
         'body': ['Inter', '"IBM Plex Sans"', 'system-ui', 'sans-serif'],
+        'mono': ['"Courier Prime"', '"Courier New"', 'Courier', 'monospace'],
+      },
+      backgroundImage: {
+        'paper-texture': "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E\")",
       },
       spacing: {
         'paper-max': '720px',
@@ -53,10 +63,11 @@ export default {
         'hairline': 'rgba(0,0,0,0.08)',
       },
       boxShadow: {
-        'paper': '0 1px 3px rgba(0,0,0,0.04)',
-        'elevated': '0 4px 12px rgba(0,0,0,0.08)',
-        'modal': '0 8px 24px rgba(0,0,0,0.12)',
-        'toast': '0 4px 12px rgba(0,0,0,0.1)',
+        'paper': '0 1px 4px rgba(0,0,0,0.3)',
+        'elevated': '0 4px 12px rgba(0,0,0,0.4)',
+        'modal': '0 8px 24px rgba(0,0,0,0.5)',
+        'toast': '0 4px 12px rgba(0,0,0,0.4)',
+        'inset-worn': 'inset 0 0 20px rgba(0,0,0,0.2)',
       },
       zIndex: {
         'dropdown': '100',
@@ -118,12 +129,12 @@ export default {
     },
   },
   plugins: [
-    function({ addUtilities }) {
+    function({ addUtilities, addComponents }) {
       addUtilities({
         // Horizontal rule utility for paper dividers
         '.horizontal-rule': {
           'height': '1px',
-          'background-color': '#E5E5E0',
+          'background-color': '#2A2A2E',
           'border': 'none',
           'width': '100%',
         },
@@ -135,10 +146,67 @@ export default {
         },
         // Monospace label utility for metadata
         '.monospace-label': {
-          'font-family': 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+          'font-family': '"Courier Prime", "Courier New", Courier, monospace',
           'font-size': '0.75rem',
           'letter-spacing': '0.05em',
           'text-transform': 'uppercase',
+        },
+        // Typewriter text
+        '.typewriter': {
+          'font-family': '"Courier Prime", "Courier New", Courier, monospace',
+        },
+      })
+      addComponents({
+        // Dossier card - dark theme
+        '.dossier-card': {
+          'background-color': '#161619',
+          'border': '1px solid #2A2A2E',
+          'box-shadow': '0 1px 4px rgba(0,0,0,0.3)',
+          'position': 'relative',
+        },
+        // Folder tab
+        '.folder-tab': {
+          'background-color': '#2A2A2E',
+          'color': '#E8E8EC',
+          'font-family': '"Courier Prime", "Courier New", Courier, monospace',
+          'font-size': '0.6875rem',
+          'letter-spacing': '0.1em',
+          'text-transform': 'uppercase',
+          'padding': '0.25rem 0.75rem',
+          'position': 'absolute',
+          'top': '-1px',
+          'left': '1rem',
+          'border-radius': '0 0 4px 4px',
+        },
+        // Stamp style
+        '.stamp': {
+          'font-family': '"Courier Prime", "Courier New", Courier, monospace',
+          'font-weight': '700',
+          'text-transform': 'uppercase',
+          'letter-spacing': '0.15em',
+          'color': '#DC2626',
+          'border': '3px solid #DC2626',
+          'padding': '0.25rem 0.5rem',
+          'transform': 'rotate(-5deg)',
+          'opacity': '0.85',
+        },
+        // Worn edge effect
+        '.worn-edge': {
+          'position': 'relative',
+          '&::before': {
+            'content': '""',
+            'position': 'absolute',
+            'inset': '0',
+            'border': '1px solid rgba(255,255,255,0.05)',
+            'pointer-events': 'none',
+            'box-shadow': 'inset 0 0 30px rgba(0,0,0,0.3)',
+          },
+        },
+        // Redacted text
+        '.redacted': {
+          'background-color': '#E8E8EC',
+          'color': 'transparent',
+          'user-select': 'none',
         },
       })
     }

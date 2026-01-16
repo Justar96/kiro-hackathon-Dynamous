@@ -163,6 +163,15 @@ export interface MarketPrice {
   mindChangeCount: number;
 }
 
+export interface PriceHistoryPoint {
+  timestamp: number;
+  yesPrice: number;
+  noPrice: number;
+  volume: number;
+}
+
+export type PriceHistoryTimeframe = '1H' | '1D' | '1W' | '1M' | 'ALL';
+
 export interface StanceSpike {
   timestamp: Date;
   argumentId: string;

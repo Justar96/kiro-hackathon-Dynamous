@@ -142,20 +142,11 @@ export function useAuthModal(): AuthModalContextValue {
 /**
  * AuthModal - Modal component for authentication
  * 
- * Requirements: 1.1, 1.2, 1.8, 2.1
- * - Integrates with Neon Auth AuthView
- * - Handles sign-in and sign-up views
- * - Displays loading state on submit button (handled by AuthView)
- * - Displays error messages within modal (handled by AuthView)
- * - Google OAuth button included via NeonAuthUIProvider social config
- * - AuthView includes built-in toggle between sign-in/sign-up
+ * Paper dossier aesthetic with dark theme colors.
  */
 function AuthModal() {
   const { isOpen, view, close } = useAuthModal();
-
-  // Map view to pathname for AuthView
   const pathname = view === 'sign-up' ? 'sign-up' : 'sign-in';
-
   const isSignUp = view === 'sign-up';
 
   return (
@@ -168,50 +159,49 @@ function AuthModal() {
       trapFocus={true}
       ariaLabelledBy="auth-modal-title"
     >
-      <div className="p-5">
-        {/* Compact header with inline close button */}
-        <div className="flex items-center justify-between mb-4">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-divider bg-paper-aged rounded-t-small">
+        <div className="flex items-center justify-between">
           <h2
             id="auth-modal-title"
             className="font-heading text-xl font-semibold text-text-primary"
           >
-            {isSignUp ? 'Create account' : 'Sign in'}
+            {isSignUp ? 'Create account' : 'Welcome back'}
           </h2>
-          {/* Close button - minimal style */}
           <button
             onClick={close}
-            className="w-8 h-8 flex items-center justify-center text-text-tertiary hover:text-text-primary transition-colors rounded hover:bg-black/5 -mr-1"
+            className="w-8 h-8 flex items-center justify-center text-text-tertiary hover:text-text-primary hover:bg-divider rounded-subtle transition-colors"
             aria-label="Close modal"
           >
             <XIcon size="sm" decorative />
           </button>
         </div>
+        <p className="text-sm text-text-tertiary mt-1">
+          {isSignUp ? 'Join to start trading predictions' : 'Sign in to continue trading'}
+        </p>
+      </div>
 
-        {/* Auth Form - Neon Auth handles loading states, error display, and view toggle */}
-        {/* Google OAuth button appears automatically via NeonAuthUIProvider social config */}
-        <div className="auth-modal-compact">
-          <AuthView
-            pathname={pathname}
-            classNames={{
-              // Hide default title and description - we have our own header
-              title: 'hidden',
-              description: 'hidden',
-              header: 'hidden',
-              // Style the form elements for paper-minimal look
-              form: {
-                input: 'bg-white border-black/10 text-text-primary placeholder:text-text-tertiary focus:border-accent focus:ring-accent/10',
-                label: 'text-sm font-medium text-text-primary',
-                primaryButton: 'bg-text-primary hover:bg-text-primary/90 text-white',
-                providerButton: 'bg-white border-black/10 hover:bg-page-bg text-text-primary',
-                icon: 'w-[18px] h-[18px] flex-shrink-0',
-              },
-              separator: 'text-xs text-text-tertiary',
-              continueWith: 'text-xs text-text-tertiary text-center justify-center',
-              footer: 'text-xs text-center justify-center',
-              footerLink: 'text-accent hover:text-accent-hover',
-            }}
-          />
-        </div>
+      {/* Auth Form */}
+      <div className="p-6">
+        <AuthView
+          pathname={pathname}
+          classNames={{
+            title: 'hidden',
+            description: 'hidden',
+            header: 'hidden',
+            form: {
+              input: 'w-full px-3 py-2.5 bg-page-bg border border-divider rounded-subtle text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-colors',
+              label: 'block text-sm font-medium text-text-secondary mb-1.5',
+              primaryButton: 'w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-medium rounded-subtle transition-colors',
+              providerButton: 'w-full py-2.5 bg-paper-aged border border-divider hover:bg-divider text-text-primary font-medium rounded-subtle transition-colors flex items-center justify-center gap-2',
+              icon: 'w-5 h-5 flex-shrink-0',
+            },
+            separator: 'text-xs text-text-tertiary uppercase tracking-wider',
+            continueWith: 'text-xs text-text-tertiary',
+            footer: 'text-sm text-text-secondary text-center mt-4 pt-4 border-t border-divider',
+            footerLink: 'text-accent hover:text-accent-hover font-medium',
+          }}
+        />
       </div>
     </Modal>
   );
